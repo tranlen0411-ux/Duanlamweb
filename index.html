@@ -1439,6 +1439,7 @@
       <div class="ai-input-bar-img17">
         <input type="text" id="ai-chat-input-field" class="ai-input-field" placeholder="Hỏi Ong AI về bài toán..." />
         <button class="mic-btn-blue" id="ai-mic-btn" onclick="toggleVoiceAIInput()" title="Bấm để nói qua Micro">🎙️</button>
+        <button class="btn btn-primary" id="ai-chat-send-btn" onclick="sendBeeMessage()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);">Gửi 🚀</button>
       </div>
     </div>
   </div>
@@ -3290,85 +3291,89 @@
       };
 
       window.updateStudentModalView = function () {
-        const listContainer = document.getElementById("leaderboard-list");
-        if (!listContainer) return;
+        try {
+          const listContainer = document.getElementById("leaderboard-list");
+          if (!listContainer) return;
 
-        // 1. Lấy toàn bộ danh sách tất cả học sinh tham gia hệ thống (không bị giới hạn/lọc thiếu)
-        let studentsList = [...globalStudents];
+          let studentsList = Array.isArray(globalStudents) ? [...globalStudents] : [];
 
-        // Đồng bộ học sinh hiện tại từ localStorage
-        const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
-        const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
-        const currentStudentXP = parseInt(localStorage.getItem("userXP")) || 450;
+          // Đồng bộ học sinh hiện tại từ localStorage
+          const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
+          const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
+          const currentStudentXP = parseInt(localStorage.getItem("userXP")) || 450;
 
-        let currentStudentObj = studentsList.find(s => s.name.toLowerCase() === currentStudentName.toLowerCase());
-        if (!currentStudentObj) {
-          currentStudentObj = {
-            id: 102,
-            name: currentStudentName,
-            classId: currentStudentClass
-          };
-          studentsList.push(currentStudentObj);
-        } else {
-          currentStudentObj.classId = currentStudentClass;
-        }
-
-        // 2. Tổng hợp điểm XP đầy đủ cho từng học sinh
-        let mergedData = studentsList.map(student => {
-          let studentXP = 0;
-
-          if (student.name.toLowerCase() === currentStudentName.toLowerCase()) {
-            studentXP = currentStudentXP;
+          let currentStudentObj = studentsList.find(s => s && s.name && s.name.toLowerCase() === currentStudentName.toLowerCase());
+          if (!currentStudentObj) {
+            currentStudentObj = {
+              id: 102,
+              name: currentStudentName,
+              classId: currentStudentClass
+            };
+            studentsList.push(currentStudentObj);
           } else {
-            for (let catKey in gameTaskScoreStore) {
-              const items = gameTaskScoreStore[catKey] || [];
-              const found = items.find(i => i.studentId === student.id || (i.name && i.name.toLowerCase() === student.name.toLowerCase()));
-              if (found && found.xp > studentXP) {
-                studentXP = found.xp;
-              }
-            }
-            if (studentXP === 0) {
-              const defaultXPMap = { 101: 2100, 102: 1900, 103: 1750, 104: 1500, 105: 1350, 106: 1200 };
-              studentXP = defaultXPMap[student.id] || 1000;
-            }
+            currentStudentObj.classId = currentStudentClass;
           }
 
-          let classObj = globalClasses.find(c => c.id === student.classId);
-          let className = classObj ? classObj.name : (student.classId || "Lớp 2 AI");
+          let scoreStore = (typeof gameTaskScoreStore !== "undefined" && gameTaskScoreStore) ? gameTaskScoreStore : {};
 
-          return {
-            id: student.id,
-            name: student.name,
-            className: className,
-            xp: studentXP
-          };
-        });
+          let mergedData = studentsList.map(student => {
+            let studentXP = 0;
 
-        // 3. Sắp xếp danh sách học sinh theo điểm XP giảm dần
-        mergedData.sort((a, b) => b.xp - a.xp);
+            if (student.name && student.name.toLowerCase() === currentStudentName.toLowerCase()) {
+              studentXP = currentStudentXP;
+            } else {
+              for (let catKey in scoreStore) {
+                const items = scoreStore[catKey] || [];
+                if (Array.isArray(items)) {
+                  const found = items.find(i => i && (i.studentId === student.id || (i.name && i.name.toLowerCase() === student.name.toLowerCase())));
+                  if (found && typeof found.xp === "number" && found.xp > studentXP) {
+                    studentXP = found.xp;
+                  }
+                }
+              }
+              if (studentXP === 0) {
+                const defaultXPMap = { 101: 2100, 102: 1900, 103: 1750, 104: 1500, 105: 1350, 106: 1200 };
+                studentXP = defaultXPMap[student.id] || 1000;
+              }
+            }
 
-        // 4. Render danh sách đầy đủ tất cả học sinh
-        const badges = ["🥇", "🥈", "🥉"];
-        listContainer.innerHTML = mergedData.map((item, index) => {
-          const badgeIcon = badges[index] || `<span style="display:inline-block; width:22px; text-align:center; color:#64748b; font-weight:bold;">#${index + 1}</span>`;
-          const isCurrentUser = item.name.toLowerCase() === currentStudentName.toLowerCase();
-          
-          return `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:8px; background:${isCurrentUser ? '#fef3c7' : '#f8fafc'}; border-radius:12px; border:1px solid ${isCurrentUser ? '#fde047' : '#e2e8f0'}; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:1.15rem; font-weight:900;">${badgeIcon}</span>
-                <span style="font-weight:900; color:${isCurrentUser ? '#92400e' : '#1e293b'}; font-size:0.95rem;">${item.name} ${isCurrentUser ? '🌟 (Bạn)' : ''}</span>
-                <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-weight:bold;">${item.className}</span>
+            let classesArr = (typeof globalClasses !== "undefined" && Array.isArray(globalClasses)) ? globalClasses : [];
+            let classObj = classesArr.find(c => c && c.id === student.classId);
+            let className = classObj ? classObj.name : (student.classId || "Lớp 2 AI");
+
+            return {
+              id: student.id,
+              name: student.name || "Học sinh",
+              className: className,
+              xp: studentXP
+            };
+          });
+
+          mergedData.sort((a, b) => b.xp - a.xp);
+
+          const badges = ["🥇", "🥈", "🥉"];
+          listContainer.innerHTML = mergedData.map((item, index) => {
+            const badgeIcon = badges[index] || `<span style="display:inline-block; width:22px; text-align:center; color:#64748b; font-weight:bold;">#${index + 1}</span>`;
+            const isCurrentUser = item.name.toLowerCase() === currentStudentName.toLowerCase();
+            
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:8px; background:${isCurrentUser ? '#fef3c7' : '#f8fafc'}; border-radius:12px; border:1px solid ${isCurrentUser ? '#fde047' : '#e2e8f0'}; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:1.15rem; font-weight:900;">${badgeIcon}</span>
+                  <span style="font-weight:900; color:${isCurrentUser ? '#92400e' : '#1e293b'}; font-size:0.95rem;">${item.name} ${isCurrentUser ? '🌟 (Bạn)' : ''}</span>
+                  <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-weight:bold;">${item.className}</span>
+                </div>
+                <span style="color:#ea580c; font-weight:900; font-size:0.95rem;">${item.xp} XP</span>
               </div>
-              <span style="color:#ea580c; font-weight:900; font-size:0.95rem;">${item.xp} XP</span>
-            </div>
-          `;
-        }).join('');
+            `;
+          }).join('');
+        } catch (e) {
+          console.error("Lỗi khi cập nhật bảng xếp hạng:", e);
+        }
       };
 
-      window.updateLeaderboardData = function () {
-        updateStudentModalView();
-      };
+      window.updateLeaderboardData = window.updateStudentModalView;
+      window.renderLeaderboardDataList = window.updateStudentModalView;
 
       window.handleClassChange = function (selectedClass) {
         if (selectedClass && selectedClass !== "ALL") {
