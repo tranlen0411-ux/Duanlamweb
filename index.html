@@ -3288,6 +3288,97 @@
         updateStudentModalView();
       };
 
+      /**
+       * HÀM TỰ ĐỘNG CẬP NHẬT ĐIỂM VÀO BẢNG XẾP HẠNG (CHẠY NGẦM SAU KHI NỘP BÀI THI HOẶC HOÀN THÀNH MINI-GAME)
+       * @param {number|string} studentId - ID của học sinh (Nếu null/undefined sẽ tự lấy học sinh hiện tại)
+       * @param {string} categoryKey - Danh mục ("game-pika", "game-clock", "game-zoo", "game-lego", "game-pizza", "game-race", "exam-weekly"...)
+       * @param {number} addedXp - Số điểm XP cộng dồn (Ví dụ: +20, +50, +100...)
+       */
+      window.updateLeaderboardScoreAutomatically = function (studentId, categoryKey, addedXp) {
+        try {
+          const xpToAdd = parseInt(addedXp) || 0;
+          if (xpToAdd <= 0) return;
+
+          // 1. Xác định học sinh hiện tại nếu không truyền studentId
+          const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
+          const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
+
+          let targetStudentId = studentId;
+          if (!targetStudentId) {
+            const found = (typeof globalStudents !== "undefined" && Array.isArray(globalStudents))
+              ? globalStudents.find(s => s && s.name && s.name.toLowerCase() === currentStudentName.toLowerCase())
+              : null;
+            targetStudentId = found ? found.id : 102;
+          }
+
+          // 2. Cập nhật tổng điểm XP cá nhân trong localStorage & Header UI
+          const currentXP = parseInt(localStorage.getItem("userXP")) || 450;
+          const newTotalXP = currentXP + xpToAdd;
+          localStorage.setItem("userXP", newTotalXP);
+
+          const xpDisplay = document.getElementById("user-xp-display");
+          if (xpDisplay) {
+            xpDisplay.textContent = `${newTotalXP} XP`;
+          }
+
+          // 3. Cộng dồn vào gameTaskScoreStore hoặc examScoreStore
+          const category = categoryKey || "game-pika";
+          if (category.startsWith("exam")) {
+            if (typeof examScoreStore !== "undefined" && Array.isArray(examScoreStore)) {
+              let examObj = examScoreStore.find(e => e && e.studentId === targetStudentId);
+              if (examObj) {
+                examObj.score = `${newTotalXP} đ`;
+                examObj.time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+              } else {
+                examScoreStore.push({
+                  studentId: targetStudentId,
+                  score: `${newTotalXP} đ`,
+                  time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+                });
+              }
+              localStorage.setItem("examScoreStore", JSON.stringify(examScoreStore));
+            }
+          } else {
+            if (typeof gameTaskScoreStore !== "undefined" && gameTaskScoreStore) {
+              if (!gameTaskScoreStore[category]) {
+                gameTaskScoreStore[category] = [];
+              }
+              let items = gameTaskScoreStore[category];
+              let foundScore = items.find(i => i && (i.studentId === targetStudentId || (i.name && i.name.toLowerCase() === currentStudentName.toLowerCase())));
+
+              if (foundScore) {
+                foundScore.xp = (foundScore.xp || 0) + xpToAdd;
+              } else {
+                items.push({
+                  studentId: targetStudentId,
+                  name: currentStudentName,
+                  xp: newTotalXP
+                });
+              }
+
+              // Tự động sắp xếp lại danh sách từ cao xuống thấp
+              items.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+              localStorage.setItem("gameTaskScoreStore", JSON.stringify(gameTaskScoreStore));
+            }
+          }
+
+          // 4. Đồng bộ cập nhật lại Bảng Xếp Hạng nếu đang hiển thị
+          if (typeof updateStudentModalView === "function") {
+            updateStudentModalView();
+          }
+          if (typeof renderGameTaskTable === "function") {
+            renderGameTaskTable();
+          }
+          if (typeof renderExamTable === "function") {
+            renderExamTable();
+          }
+
+          console.log(`[Leaderboard Auto-Update] Đã cộng dồn +${xpToAdd} XP cho học sinh (ID: ${targetStudentId}) ở danh mục [${category}]. Tổng XP mới: ${newTotalXP}`);
+        } catch (err) {
+          console.error("Lỗi khi tự động cập nhật điểm Bảng Xếp Hạng:", err);
+        }
+      };
+
       window.handleClassChange = function (selectedClass) {
         if (selectedClass && selectedClass !== "ALL") {
           localStorage.setItem("studentClass", selectedClass);
