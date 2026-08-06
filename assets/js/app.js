@@ -20,26 +20,40 @@ function initApp() {
 }
 
 function updateUserStatsUI() {
-  const user = DBStore.getUserProfile();
-  const xpEl = document.getElementById('user-xp-display');
-  const coinsEl = document.getElementById('user-coins-display');
+  try {
+    const user = (typeof DBStore !== 'undefined' && typeof DBStore.getUserProfile === 'function')
+      ? DBStore.getUserProfile()
+      : (window.dbStore ? window.dbStore.getUserProfile() : { xp: 450, coins: 1250 });
 
-  if (xpEl) xpEl.textContent = `${user.xp} XP`;
-  if (coinsEl) coinsEl.textContent = user.coins;
+    const xpEl = document.getElementById('user-xp-display');
+    const coinsEl = document.getElementById('user-coins-display');
+
+    if (xpEl && user) xpEl.textContent = `${user.xp || 450} XP`;
+    if (coinsEl && user) coinsEl.textContent = user.coins || 1250;
+  } catch (e) {
+    console.warn("updateUserStatsUI warning:", e);
+  }
 }
 
 function updateGradeUI() {
-  const selectedGrade = DBStore.getSelectedGrade();
-  const gradeBadgeTexts = document.querySelectorAll('#current-grade-badge-text');
-  const gradeTags = document.querySelectorAll('.current-grade-tag');
+  try {
+    const selectedGrade = (typeof DBStore !== 'undefined' && typeof DBStore.getSelectedGrade === 'function')
+      ? DBStore.getSelectedGrade()
+      : (window.dbStore ? window.dbStore.getSelectedGrade() : 2);
 
-  gradeBadgeTexts.forEach(el => {
-    el.textContent = `Lớp ${selectedGrade} AI`;
-  });
+    const gradeBadgeTexts = document.querySelectorAll('#current-grade-badge-text');
+    const gradeTags = document.querySelectorAll('.current-grade-tag');
 
-  gradeTags.forEach(el => {
-    el.textContent = `Lớp ${selectedGrade}`;
-  });
+    gradeBadgeTexts.forEach(el => {
+      if (el) el.textContent = `Lớp ${selectedGrade} AI`;
+    });
+
+    gradeTags.forEach(el => {
+      if (el) el.textContent = `Lớp ${selectedGrade}`;
+    });
+  } catch (e) {
+    console.warn("updateGradeUI warning:", e);
+  }
 }
 
 function setStudentNameUI(name) {

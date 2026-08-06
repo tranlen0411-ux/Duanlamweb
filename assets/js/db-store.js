@@ -72,10 +72,39 @@ class DBStore {
   getUsers() { return this.getItem("users") || []; }
   getStudents() { return this.getUsers().filter(u => u.role === "student"); }
   
-  getCurrentUser() {
-    const role = this.getItem("current_role") || "student";
-    const users = this.getUsers();
-    return role === "student" ? users.find(u => u.role === "student") : users.find(u => u.role === "teacher");
+  // Lấy thông tin hồ sơ người dùng (User Profile)
+  getUserProfile() {
+    try {
+      const student = this.getCurrentUser() || {};
+      const savedCoins = parseInt(localStorage.getItem("userXu")) || student.coins || 1250;
+      const savedXp = parseInt(localStorage.getItem("userXP")) || student.xpPoints || student.xp || 450;
+      const studentName = localStorage.getItem("studentName") || student.fullName || student.name || "Bé Nam";
+      return {
+        id: student.id || 102,
+        name: studentName,
+        fullName: studentName,
+        xp: savedXp,
+        coins: savedCoins,
+        level: Math.floor(savedXp / 100) + 1,
+        selectedGrade: student.selectedGrade || this.getSelectedGrade()
+      };
+    } catch (e) {
+      return { id: 102, name: "Bé Nam", fullName: "Bé Nam", xp: 450, coins: 1250, level: 5, selectedGrade: 2 };
+    }
+  }
+
+  static getUserProfile() {
+    return window.dbStore ? window.dbStore.getUserProfile() : { id: 102, name: "Bé Nam", fullName: "Bé Nam", xp: 450, coins: 1250, level: 5, selectedGrade: 2 };
+  }
+
+  static getSelectedGrade() {
+    return window.dbStore ? window.dbStore.getSelectedGrade() : 2;
+  }
+
+  static setSelectedGrade(gradeNum) {
+    if (window.dbStore) {
+      window.dbStore.setSelectedGrade(gradeNum);
+    }
   }
 
   setRole(role) { this.setItem("current_role", role); }
