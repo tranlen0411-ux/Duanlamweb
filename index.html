@@ -3160,8 +3160,19 @@
 
       window.saveStudentProfile = window.saveStudentProfileFromModal;
 
-      window.openLeaderboardModal = function () {
-        forceHideAllModals();
+      window.openLeaderboardModal = function (btnEl) {
+        if (typeof forceHideAllModals === "function") forceHideAllModals();
+
+        // 1. Chuyển nút/tab Bảng Xếp Hạng sang trạng thái màu cam (active state)
+        document.querySelectorAll('.tab-nav-btn, .nav-tab, .nav-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        const rankTabBtn = document.getElementById("tab-btn-ranking") || (btnEl && btnEl.classList ? btnEl : null);
+        if (rankTabBtn) {
+          rankTabBtn.classList.add("active");
+        }
+
+        // 2. Mở popup modal Bảng Xếp Hạng và hiển thị đầy đủ tất cả học sinh
         const modal = document.getElementById("leaderboard-modal");
         if (modal) {
           modal.style.display = "flex";
@@ -3171,47 +3182,100 @@
       };
 
       window.closeLeaderboardModal = function () {
-        forceHideAllModals();
+        if (typeof forceHideAllModals === "function") forceHideAllModals();
       };
 
       window.updateStudentModalView = function () {
-        const listContainer = document.getElementById("leaderboard-list");
-        if (!listContainer) return;
+        try {
+          const listContainer = document.getElementById("leaderboard-list");
+          if (!listContainer) return;
 
-        const globalSelect = document.getElementById("global-class-select");
-        const selectedClass = globalSelect ? globalSelect.value : "ALL";
+          const globalSelect = document.getElementById("global-class-select");
+          const selectedClass = globalSelect ? globalSelect.value : "ALL";
 
-        const filteredStudents = (selectedClass === "ALL" || !selectedClass) 
-          ? globalStudents 
-          : globalStudents.filter(s => s.classId === selectedClass);
+          // 1. Duyệt qua và lọc tất cả học sinh tham gia theo lớp được chọn (hoặc tất cả các lớp)
+          let studentsList = Array.isArray(globalStudents) ? [...globalStudents] : [];
 
-        const rawScores = gameTaskScoreStore["game-pika"] || [];
+          // Đồng bộ học sinh hiện tại từ localStorage
+          const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
+          const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
+          const currentStudentXP = parseInt(localStorage.getItem("userXP")) || 450;
 
-        let mergedData = filteredStudents.map(student => {
-          let scoreObj = rawScores.find(item => item.studentId === student.id);
-          let classObj = globalClasses.find(c => c.id === student.classId);
-          return {
-            name: student.name,
-            className: classObj ? classObj.name : student.classId,
-            xp: scoreObj ? scoreObj.xp : 0
-          };
-        }).sort((a, b) => b.xp - a.xp);
+          let currentStudentObj = studentsList.find(s => s && s.name && s.name.toLowerCase() === currentStudentName.toLowerCase());
+          if (!currentStudentObj) {
+            currentStudentObj = { id: 102, name: currentStudentName, classId: currentStudentClass };
+            studentsList.push(currentStudentObj);
+          } else {
+            currentStudentObj.classId = currentStudentClass;
+          }
 
-        if (mergedData.length === 0) {
-          listContainer.innerHTML = `<div style="text-align:center; padding:15px; color:#888;">Không có học sinh trong lớp này.</div>`;
-          return;
+          let filteredStudents = (selectedClass === "ALL" || !selectedClass)
+            ? studentsList
+            : studentsList.filter(s => s && s.classId === selectedClass);
+
+          let scoreStore = (typeof gameTaskScoreStore !== "undefined" && gameTaskScoreStore) ? gameTaskScoreStore : {};
+
+          // 2. Tổng hợp đầy đủ điểm XP của tất cả học sinh
+          let mergedData = filteredStudents.map(student => {
+            let studentXP = 0;
+
+            if (student.name && student.name.toLowerCase() === currentStudentName.toLowerCase()) {
+              studentXP = currentStudentXP;
+            } else {
+              for (let catKey in scoreStore) {
+                const items = scoreStore[catKey] || [];
+                if (Array.isArray(items)) {
+                  const found = items.find(i => i && (i.studentId === student.id || (i.name && i.name.toLowerCase() === student.name.toLowerCase())));
+                  if (found && typeof found.xp === "number" && found.xp > studentXP) {
+                    studentXP = found.xp;
+                  }
+                }
+              }
+              if (studentXP === 0) {
+                const defaultXPMap = { 101: 2100, 102: 1950, 103: 1750, 104: 1500, 105: 1350, 106: 1200 };
+                studentXP = defaultXPMap[student.id] || 1000;
+              }
+            }
+
+            let classesArr = (typeof globalClasses !== "undefined" && Array.isArray(globalClasses)) ? globalClasses : [];
+            let classObj = classesArr.find(c => c && c.id === student.classId);
+            let className = classObj ? classObj.name : (student.classId || "Lớp 2 AI");
+
+            return {
+              id: student.id,
+              name: student.name || "Học sinh",
+              className: className,
+              xp: studentXP
+            };
+          });
+
+          mergedData.sort((a, b) => b.xp - a.xp);
+
+          if (mergedData.length === 0) {
+            listContainer.innerHTML = `<div style="text-align:center; padding:15px; color:#888; font-weight:bold;">Không có học sinh trong lớp này.</div>`;
+            return;
+          }
+
+          // 3. Render danh sách ĐẦY ĐỦ TẤT CẢ các học sinh
+          const badges = ["🥇", "🥈", "🥉"];
+          listContainer.innerHTML = mergedData.map((item, index) => {
+            const badgeIcon = badges[index] || `<span style="display:inline-block; width:22px; text-align:center; color:#64748b; font-weight:bold;">#${index + 1}</span>`;
+            const isCurrentUser = item.name.toLowerCase() === currentStudentName.toLowerCase();
+
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:8px; background:${isCurrentUser ? '#fef3c7' : '#f8fafc'}; border-radius:12px; border:1px solid ${isCurrentUser ? '#fde047' : '#e2e8f0'}; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:1.15rem; font-weight:900;">${badgeIcon}</span>
+                  <span style="font-weight:900; color:${isCurrentUser ? '#92400e' : '#1e293b'}; font-size:0.95rem;">${item.name} ${isCurrentUser ? '🌟 (Bạn)' : ''}</span>
+                  <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-weight:bold;">${item.className}</span>
+                </div>
+                <span style="color:#ea580c; font-weight:900; font-size:0.95rem;">${item.xp} XP</span>
+              </div>
+            `;
+          }).join('');
+        } catch (err) {
+          console.error("Lỗi khi cập nhật bảng xếp hạng:", err);
         }
-
-        const badges = ["🥇", "🥈", "🥉"];
-        listContainer.innerHTML = mergedData.map((item, index) => `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; margin-bottom:6px; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0;">
-            <div>
-              <span style="font-weight:bold;">${badges[index] || `#${index + 1}`} ${item.name}</span>
-              <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:8px; margin-left:6px;">${item.className}</span>
-            </div>
-            <span style="color:#ea580c; font-weight:bold;">${item.xp} XP</span>
-          </div>
-        `).join('');
       };
 
       window.updateLeaderboardData = function () {
