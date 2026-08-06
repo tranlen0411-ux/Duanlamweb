@@ -555,7 +555,128 @@
       border-color: #ea580c !important;
       box-shadow: 0 6px 18px rgba(234, 88, 12, 0.35) !important;
     }
+
+    /* CHỐNG GIAN LẬN (ANTI-CHEAT) - CÔ LẬP TRONG MÀN HÌNH LÀM BÀI THI (#exam-working-screen) */
+    #exam-working-screen {
+      position: relative;
+    }
+    #anti-cheat-modal-toast {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99999;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #ffffff;
+      padding: 12px 22px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 2px solid #fecaca;
+      animation: antiCheatSlideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: opacity 0.3s ease;
+    }
+    @keyframes antiCheatSlideDown {
+      from { opacity: 0; transform: translate(-50%, -20px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
   </style>
+
+  <script>
+    /* ============================================================
+       CHỐNG GIAN LẬN ANTI-CHEAT CÔ LẬP NGUYÊN TẮC AN TOÀN TUYỆT ĐỐI
+       CHỈ HOẠT ĐỘNG KHI MÀN HÌNH THI (#exam-working-screen) HIỂN THỊ
+       ============================================================ */
+    (function ScopedAntiCheatGuard() {
+      let cheatCount = 0;
+      let toastTimer = null;
+
+      function isExamWorkingActive() {
+        const examScreen = document.getElementById("exam-working-screen");
+        if (!examScreen) return false;
+        const isHidden = examScreen.classList.contains("hidden") ||
+                         window.getComputedStyle(examScreen).display === "none" ||
+                         window.getComputedStyle(examScreen).visibility === "hidden";
+        return !isHidden;
+      }
+
+      function showAntiCheatToast(count, maxAllowed) {
+        const examScreen = document.getElementById("exam-working-screen");
+        if (!examScreen) return;
+
+        let toast = document.getElementById("anti-cheat-modal-toast");
+        if (!toast) {
+          toast = document.createElement("div");
+          toast.id = "anti-cheat-modal-toast";
+          examScreen.appendChild(toast);
+        }
+
+        toast.style.display = "flex";
+        toast.style.opacity = "1";
+        toast.innerHTML = `
+          <span style="font-size: 1.4rem;">⚠️</span>
+          <div>
+            <strong style="display:block; font-size: 0.98rem; margin-bottom: 2px;">Cảnh báo Anti-Cheat!</strong>
+            <span>Bạn vừa rời khỏi màn hình làm bài (Lần <strong>${count}</strong>/${maxAllowed})</span>
+          </div>
+        `;
+
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function() {
+          if (toast) {
+            toast.style.opacity = "0";
+            setTimeout(function() { toast.style.display = "none"; }, 300);
+          }
+        }, 3500);
+      }
+
+      function handleExamTabViolation() {
+        if (!isExamWorkingActive()) return;
+
+        cheatCount++;
+
+        const cheatCountSpan = document.getElementById("cheat-count");
+        if (cheatCountSpan) {
+          cheatCountSpan.textContent = cheatCount;
+        }
+
+        showAntiCheatToast(cheatCount, 3);
+
+        if (cheatCount >= 3) {
+          setTimeout(function() {
+            if (typeof window.submitExamNow === "function") {
+              window.submitExamNow();
+            } else if (typeof window.submitQuiz === "function") {
+              window.submitQuiz();
+            }
+          }, 500);
+        }
+      }
+
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          handleExamTabViolation();
+        }
+      });
+
+      window.addEventListener("blur", function () {
+        handleExamTabViolation();
+      });
+
+      window.resetAntiCheatCounter = function () {
+        cheatCount = 0;
+        const cheatCountSpan = document.getElementById("cheat-count");
+        if (cheatCountSpan) cheatCountSpan.textContent = "0";
+        const toast = document.getElementById("anti-cheat-modal-toast");
+        if (toast) toast.style.display = "none";
+      };
+    })();
+  </script>
 </head>
 <body>
 
