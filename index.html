@@ -606,7 +606,7 @@
         <div style="position: absolute; right: 0; top: 0; width: 50%; height: 100%; background-color: #fdf2f8; background-image: radial-gradient(#ec4899 1.5px, transparent 1.5px); background-size: 20px 20px; z-index: 0;"></div>
 
         <!-- Nút Làm Bài Ngay -->
-        <button class="btn-lam-bai-ngay" onclick="document.getElementById('tab-btn-exam')?.click() || document.querySelectorAll('.nav-tab, .tab-nav-btn')[2]?.click();" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); z-index: 10; background: linear-gradient(135deg, #ff8c00, #ff5500); color: white; font-weight: bold; border: none; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 85, 0, 0.35); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+        <button class="btn-lam-bai-ngay" onclick="handleBannerButtonClick(event)" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); z-index: 10; background: linear-gradient(135deg, #ff8c00, #ff5500); color: white; font-weight: bold; border: none; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 85, 0, 0.35); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
           📝 Làm Bài Ngay
         </button>
 
@@ -621,7 +621,7 @@
           <p style="font-size: 1.05rem; font-weight: 700; line-height: 1.5;">
             Chào mừng <strong class="student-name-text" style="color: #fef08a; font-size: 1.15rem;">Bé Nam</strong> đến với thế giới Toán học Lớp 2 cùng Trợ lý Ong Mascot!
           </p>
-          <button id="hero-banner-cta-btn" class="btn-hero-cta btn-cta" onclick="document.getElementById('tab-btn-exam')?.click() || handleBannerButtonClick(event);">📝 Làm Bài Ngay</button>
+          <button id="hero-banner-cta-btn" class="btn-hero-cta btn-cta" onclick="handleBannerButtonClick(event)">📝 Làm Bài Ngay</button>
         </div>
         
         <div class="hero-banner-right-bubble mascot-speech-card" style="display: none;">
@@ -1579,26 +1579,40 @@
       if (examTabBtn) examTabBtn.onclick = function() { activatePanel("tab-weekly-exam", this); };
       if (historyTabBtn) historyTabBtn.onclick = function() { activatePanel("tab-history-feedback", this); };
 
-      // HÀM XỬ LÝ CLICK NÚT BANNER
+      // HÀM XỬ LÝ CLICK NÚT BANNER (LÀM BÀI NGAY)
       window.handleBannerButtonClick = function (e) {
         if (e) e.preventDefault();
 
-        const tabExamBtn = document.getElementById("tab-btn-exam");
-        activatePanel("tab-weekly-exam", tabExamBtn);
+        // 1. Đảm bảo hiển thị giao diện Học sinh nếu đang ở giao diện Giáo viên
+        const studentView = document.getElementById("student-view-container");
+        const teacherView = document.getElementById("teacher-view-container");
+        if (studentView && teacherView) {
+          teacherView.style.display = "none";
+          studentView.style.display = "block";
+        }
 
-        const weekSelectContainer = document.getElementById('week-selector-container') || document.getElementById('select-week');
+        // 2. Chuyển sang Tab "Bài Thi Hằng Tuần"
+        const tabExamBtn = document.getElementById("tab-btn-exam");
+        if (typeof activatePanel === "function") {
+          activatePanel("tab-weekly-exam", tabExamBtn);
+        }
+
+        // 3. Cuộn mượt trực tiếp đến khu vực bộ chọn tuần bài thi
+        const weekSelectContainer = document.getElementById('week-selector-container') || document.getElementById('select-week') || document.querySelector('.exam-container');
 
         if (weekSelectContainer) {
-          weekSelectContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-          weekSelectContainer.style.transition = "transform 0.3s, box-shadow 0.3s";
-          weekSelectContainer.style.transform = "scale(1.08)";
-          weekSelectContainer.style.boxShadow = "0 0 20px rgba(59, 130, 246, 0.6)";
-
           setTimeout(() => {
-            weekSelectContainer.style.transform = "scale(1)";
-            weekSelectContainer.style.boxShadow = "none";
-          }, 600);
+            weekSelectContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            weekSelectContainer.style.transition = "transform 0.3s ease, box-shadow 0.3s ease";
+            weekSelectContainer.style.transform = "scale(1.08)";
+            weekSelectContainer.style.boxShadow = "0 0 22px rgba(59, 130, 246, 0.6)";
+
+            setTimeout(() => {
+              weekSelectContainer.style.transform = "scale(1)";
+              weekSelectContainer.style.boxShadow = "none";
+            }, 600);
+          }, 50);
         }
       };
 
