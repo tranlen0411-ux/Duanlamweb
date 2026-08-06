@@ -13,8 +13,8 @@
 
   <style>
     /* ============================================================
-        ANIMATED MINI-GAME POPUP & CANVAS/CSS STAGE FOR ALL 6 GAMES
-        ============================================================ */
+       ANIMATED MINI-GAME POPUP & CANVAS/CSS STAGE FOR ALL 6 GAMES
+       ============================================================ */
     .custom-game-backdrop {
       position: fixed;
       top: 0;
@@ -408,45 +408,147 @@
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
 
-    /* CSS cho Modal Leaderboard - Đảm bảo hiển thị nổi lên trên cùng */
-    .leaderboard-modal {
-      position: fixed; 
-      top: 0; 
-      left: 0; 
-      width: 100vw; 
-      height: 100vh;
-      background: rgba(15, 23, 42, 0.75); 
-      backdrop-filter: blur(8px);
-      display: none; 
-      justify-content: center; 
-      align-items: center; 
-      z-index: 999999;
+    /* ============================================================================== */
+    /* FIX TỔNG QUÁT: SẮP XẾP GIAO DIỆN CHO TẤT CẢ CÁC MODAL TRÒ CHƠI                  */
+    /* ============================================================================== */
+
+    /* 1. Reset khung chứa nội dung modal trò chơi */
+    .modal-content, .game-modal-content, [class*="game-pop"], .custom-game-modal {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        padding: 20px !important;
+        gap: 12px !important; /* Khoảng cách đều giữa các hàng, chống chồng đè */
+        max-width: 500px !important;
+        width: 90% !important;
+        box-sizing: border-box !important;
     }
-    .leaderboard-modal.active {
-      display: flex !important;
+
+    /* 2. Loại bỏ định vị tuyệt đối gây lỗi đè chữ trên toàn bộ các phần tử con (Ngoại trừ phần sân chơi hoạt hình .game-anim-stage) */
+    .modal-content *:not(.game-anim-stage *), .game-modal-content *:not(.game-anim-stage *), .custom-game-modal *:not(.game-anim-stage *) {
+        position: static !important; 
+        margin: 0 !important;
+        transform: none !important;
+    }
+
+    /* 3. Ngoại lệ: Giữ nguyên vị trí các nút cố định (Nút Quay Về, Nút Đóng X) */
+    .modal-content .btn-close, .modal-content [class*="close"], .custom-game-modal .btn-modal-nav-close,
+    .modal-content .btn-back, .modal-content [class*="back"],
+    .modal-content [class*="home"], .custom-game-modal .btn-modal-nav-home {
+        position: absolute !important;
+    }
+    .modal-content .btn-close, .modal-content [class*="close"], .custom-game-modal .btn-modal-nav-close {
+        top: 12px !important;
+        right: 15px !important;
+    }
+    .modal-content .btn-back, .modal-content [class*="back"],
+    .modal-content [class*="home"], .custom-game-modal .btn-modal-nav-home {
+        top: 12px !important;
+        left: 15px !important;
+    }
+
+    /* 4. Sắp xếp lại Tiêu đề trò chơi (Pika-Chung Cư, Khu Rừng Phân Số,...) */
+    .modal-content h2, .modal-content h3, .modal-content .game-title, .custom-game-modal .game-modal-header-title {
+        font-size: 20px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        margin-top: 10px !important;
+        width: 100% !important;
+    }
+
+    /* 5. Khung chứa Thưởng (Bánh pizza, Pikachu, Xu, XP) */
+    .modal-content [class*="reward"], .modal-content [class*="badge"], .modal-content [class*="info"] {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        background-color: #eef7ff !important;
+        padding: 6px 16px !important;
+        border-radius: 20px !important;
+        font-size: 13px !important;
+    }
+
+    /* Chỉnh kích thước icon hình ảnh đại diện (Pizza/Pikachu) */
+    .modal-content [class*="reward"] img, .modal-content [class*="badge"] img, .modal-content img:not(.game-anim-stage img) {
+        max-height: 35px !important;
+        width: auto !important;
+        display: inline-block !important;
+    }
+
+    /* 6. Thanh tiến trình màn chơi (Tiến trình 1/2,...) */
+    .modal-content [class*="progress"], .modal-content [class*="step"] {
+        width: 100% !important;
+        text-align: center !important;
+        font-size: 13px !important;
+        color: #555 !important;
+    }
+
+    /* 7. Khung chứa câu hỏi */
+    .modal-content [class*="question"], .modal-content .question-box {
+        width: 100% !important;
+        background: #f8f9fa !important;
+        border: 1px solid #e9ecef !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        text-align: center !important;
+        font-size: 15px !important;
+        line-height: 1.5 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 8. Lưới chứa 4 nút đáp án (A, B, C, D) */
+    .modal-content [class*="options"], .modal-content [class*="answers"], .modal-content [class*="grid"], .custom-game-modal .game-options-grid-4col {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; /* 2 cột gọn gàng */
+        gap: 10px !important;
+        width: 100% !important;
+        margin-top: 5px !important;
+    }
+
+    /* Định dạng nút bấm đáp án */
+    .modal-content button, .modal-content [class*="btn-option"], .custom-game-modal .btn-opt-color {
+        padding: 10px 15px !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        cursor: pointer !important;
+    }
+
+    /* CSS cho Modal Leaderboard - độc lập hoàn toàn */
+    .leaderboard-modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999;
     }
     .leaderboard-content {
-      background: #fff; 
-      padding: 24px; 
-      border-radius: 24px; 
-      width: 480px; 
-      max-width: 90%;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
-      border: 3px solid #facc15;
+      background: #fff; padding: 24px; border-radius: 20px; width: 450px; max-width: 90%;
     }
+    /* Tạo thanh cuộn cho danh sách người tham gia bên trong Modal */
     .leaderboard-list-container {
-      max-height: 280px;
+      max-height: 250px;
       overflow-y: auto;
       margin-top: 15px;
       padding-right: 5px;
     }
+    .rank-item {
+      background: #fef9c3;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid #fde047;
+      font-weight: bold;
+      color: #713f12;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .tab-btn.active { background: #ff7d29; color: white; }
   </style>
 </head>
 <body>
 
-  <!-- 1. Thanh Điều Hướng Header Bar -->
+  <!-- 1. Thanh Điều Hướng Header Bar Chuẩn Ảnh Mẫu 1 -->
   <header class="app-container" style="padding-bottom: 0;">
     <nav class="navbar" id="main-navbar">
+      <!-- Logo Toán Cùng Em & Tag Khối Lớp -->
       <div class="brand-logo">
         <img src="assets/images/mascot_bee.jpg" alt="Linh vật Ong" style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid #f59e0b; object-fit: cover;" />
         <svg width="150" height="42" viewBox="0 0 170 45" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -455,6 +557,7 @@
           <text x="120" y="32" font-family="'Nunito', sans-serif" font-weight="900" font-size="26" fill="#10B981">Em</text>
         </svg>
 
+        <!-- Bộ chọn lớp dạng Dropdown thay thế nút Lớp 2 AI gốc -->
         <div class="header-class-selector" style="background: #fef08a; border: 1px solid #fde047; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
           <span style="font-size: 14px;">🎓</span>
           <select id="global-class-select" onchange="handleClassChange(this.value)" style="background: transparent; border: none; font-weight: bold; color: #854d0e; font-size: 13px; cursor: pointer; outline: none;">
@@ -466,6 +569,7 @@
         </div>
       </div>
 
+      <!-- Stats Chips & Buttons Góc Phải -->
       <div style="display:flex; align-items:center; gap:12px;">
         <div class="header-stat-box">
           <span>⭐</span> <span id="user-coins-display">1250</span>
@@ -488,46 +592,75 @@
   <!-- 2. Thân Ứng Dụng Main Container -->
   <main class="app-container">
 
+    <!-- ============================================================
+         GIAO DIỆN HỌC SINH (STUDENT DASHBOARD)
+         ============================================================ -->
     <div id="student-view-container">
 
-      <!-- BANNER HERO -->
+      <!-- BANNER HERO CẢI TIẾN RỰC RỠ -->
       <div class="hero-banner-blue hero-banner" style="position: relative; width: 100%; aspect-ratio: 1200 / 320; min-height: 280px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); padding: 0;">
+        <!-- Lớp chấm bi bên trái (Màu xanh dương) -->
         <div style="position: absolute; left: 0; top: 0; width: 50%; height: 100%; background-color: #f0f9ff; background-image: radial-gradient(#3b82f6 1.5px, transparent 1.5px); background-size: 20px 20px; z-index: 0;"></div>
+        
+        <!-- Lớp chấm bi bên phải (Màu hồng) -->
         <div style="position: absolute; right: 0; top: 0; width: 50%; height: 100%; background-color: #fdf2f8; background-image: radial-gradient(#ec4899 1.5px, transparent 1.5px); background-size: 20px 20px; z-index: 0;"></div>
 
+        <!-- Nút Làm Bài Ngay -->
         <button class="btn-lam-bai-ngay" onclick="handleBannerButtonClick(event)" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); z-index: 10; background: linear-gradient(135deg, #ff8c00, #ff5500); color: white; font-weight: bold; border: none; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 85, 0, 0.35); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
           📝 Làm Bài Ngay
         </button>
 
+        <!-- Khung chứa ảnh banner (Đã xóa thẻ div Lớp 2) -->
         <div style="position: relative; width: 100%; height: 100%; max-width: 1000px; margin: 0 auto; z-index: 1;">
           <img src="banner-moi.png" alt="Banner" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+
+        <div class="hero-banner-left banner-content" style="display: none;">
+          <span class="badge-hot">🔥 Hot Tuần Bứt Phá</span>
+          <h1 style="font-size: 2.1rem; font-weight: 900; color: white; margin: 6px 0 10px 0;">Học Toán Vui – Bứt Phá Điểm Số! 🌟</h1>
+          <p style="font-size: 1.05rem; font-weight: 700; line-height: 1.5;">
+            Chào mừng <strong class="student-name-text" style="color: #fef08a; font-size: 1.15rem;">Bé Nam</strong> đến với thế giới Toán học Lớp 2 cùng Trợ lý Ong Mascot!
+          </p>
+          <button id="hero-banner-cta-btn" class="btn-hero-cta btn-cta" onclick="handleBannerButtonClick(event)">📝 Làm Bài Ngay</button>
+        </div>
+        
+        <div class="hero-banner-right-bubble mascot-speech-card" style="display: none;">
+          <div class="speech-bubble-text speech-bubble">
+            "Chào <strong class="student-name-text" style="color: #0284c7;">Bé Nam</strong>! Cùng Ong Mascot chinh phục thử thách toán học hôm nay nhé! 🐝✨"
+          </div>
+          <div class="mascot-avatar">
+            <img src="assets/images/mascot_bee.jpg" alt="Ong Mascot" class="bee-tutor-avatar-img" />
+          </div>
         </div>
       </div>
 
       <!-- THANH 4 TAB ĐIỀU HƯỚNG -->
       <div class="tab-navigation-bar">
-        <button class="tab-nav-btn active" id="tab-btn-home" onclick="activatePanel('tab-home-tasks', this)">
+        <button class="tab-nav-btn active" id="tab-btn-home">
           🏠 Trang Chủ & Nhiệm Vụ
         </button>
-        <button class="tab-nav-btn" id="tab-btn-games" onclick="activatePanel('tab-game-arena', this)">
+        <button class="tab-nav-btn" id="tab-btn-games">
           🎮 Đấu Trường Trò Chơi
         </button>
-        <!-- Nút Bảng Xếp Hạng chuẩn hóa gọi hàm mở modal trực tiếp -->
+        <!-- Nút Bảng Xếp Hạng -->
         <button class="tab-nav-btn" id="tab-btn-ranking" onclick="openLeaderboardModal(this)">
           🏆 Bảng Xếp Hạng
         </button>
-        <button class="tab-nav-btn" id="tab-btn-exam" onclick="activatePanel('tab-weekly-exam', this)">
+        <button class="tab-nav-btn" id="tab-btn-exam">
           📝 Bài Thi Hằng Tuần
         </button>
-        <button class="tab-nav-btn" id="tab-btn-history" onclick="activatePanel('tab-history-feedback', this)">
+        <button class="tab-nav-btn" id="tab-btn-history">
           📜 Lịch Sử & Nhận Xét
         </button>
       </div>
 
-      <!-- TAB 1: TRANG CHỦ & NHIỆM VỤ -->
+      <!-- ============================================================
+            TAB 1: TRANG CHỦ & NHIỆM VỤ HÀNG NGÀY (5 NHIỆM VỤ CÓ TƯƠNG TÁC GAME)
+            ============================================================ -->
       <div class="tab-content-panel active" id="tab-home-tasks">
         <div class="home-tasks-grid">
           
+          <!-- DANH SÁCH NHIỆM VỤ HÀNG NGÀY -->
           <div class="card-white-panel daily-tasks-card">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
               <h3 style="font-size: 1.35rem; font-weight: 900; color: #0f172a; margin: 0;">🎯 Nhiệm Vụ Hàng Ngày</h3>
@@ -535,7 +668,67 @@
             </div>
             
             <div class="task-list" style="display: flex; flex-direction: column; gap: 14px;">
-              <!-- Nhiệm vụ hỏi bài AI Ong -->
+              <!-- Nhiệm vụ 1: Thám hiểm Rừng Xanh -->
+              <div class="mission-item-card task-item completed">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <span class="task-icon" style="font-size: 2.2rem;">🌲</span>
+                  <div class="task-info">
+                    <h4 style="font-size: 1.05rem; font-weight: 900; margin: 0;">Thám hiểm Rừng Xanh</h4>
+                    <p style="font-size: 0.88rem; color: var(--neutral-gray); font-weight: 700; margin: 3px 0 0 0;">Chơi 1 ván game toán Rừng Xanh (Thưởng: +50 XP, +10 ⭐)</p>
+                  </div>
+                </div>
+                <button class="btn-complete-mission btn-task done custom-game-trigger" data-game-key="zoo" data-game-title="Vườn Thú Toán Học">Hoàn thành</button>
+              </div>
+
+              <!-- Nhiệm vụ 2: Luyện tập Tính Nhẩm -->
+              <div class="mission-item-card task-item">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <span class="task-icon" style="font-size: 2.2rem;">🧩</span>
+                  <div class="task-info">
+                    <h4 style="font-size: 1.05rem; font-weight: 900; margin: 0;">Luyện tập Tính Nhẩm</h4>
+                    <p style="font-size: 0.88rem; color: var(--neutral-gray); font-weight: 700; margin: 3px 0 0 0;">Trả lời đúng 5 phép cộng có nhớ (Thưởng: +30 XP, +5 ⭐)</p>
+                  </div>
+                </div>
+                <button class="btn-complete-mission btn-task active custom-game-trigger" style="background: #3b82f6;" data-game-key="speed" data-game-title="Đua Xe Phép Tính">Làm ngay</button>
+              </div>
+
+              <!-- Nhiệm vụ 3: Chuỗi Học Tập Chăm Chỉ -->
+              <div class="mission-item-card task-item">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <span class="task-icon" style="font-size: 2.2rem;">🔥</span>
+                  <div class="task-info">
+                    <h4 style="font-size: 1.05rem; font-weight: 900; margin: 0;">Chuỗi Học Tập Chăm Chỉ</h4>
+                    <p style="font-size: 0.88rem; color: var(--neutral-gray); font-weight: 700; margin: 3px 0 0 0;">Đăng nhập và hoàn thành ít nhất 1 bài tập trong ngày (Thưởng: +20 XP, +3 ⭐)</p>
+                  </div>
+                </div>
+                <button class="btn-complete-mission btn-task active custom-game-trigger" style="background: #f97316;" data-game-key="pika" data-game-title="Pika-Chung Cự">Làm ngay</button>
+              </div>
+
+              <!-- Nhiệm vụ 4: Thử Thách Đấu Trường -->
+              <div class="mission-item-card task-item">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <span class="task-icon" style="font-size: 2.2rem;">⚔️</span>
+                  <div class="task-info">
+                    <h4 style="font-size: 1.05rem; font-weight: 900; margin: 0;">Thử Thách Đấu Trường</h4>
+                    <p style="font-size: 0.88rem; color: var(--neutral-gray); font-weight: 700; margin: 3px 0 0 0;">Tham gia 1 trận thi đấu tại Đấu Trường Trò Chơi (Thưởng: +40 XP, +8 ⭐)</p>
+                  </div>
+                </div>
+                <button class="btn-complete-mission btn-task active custom-game-trigger" style="background: #8b5cf6;" data-game-key="tower" data-game-title="Xây Tháp Số">Làm ngay</button>
+              </div>
+
+              <!-- Nhiệm vụ 5: Điểm Số Hoàn Hảo -->
+              <div class="mission-item-card task-item">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <span class="task-icon" style="font-size: 2.2rem;">💯</span>
+                  <div class="task-info">
+                    <h4 style="font-size: 1.05rem; font-weight: 900; margin: 0;">Điểm Số Hoàn Hảo</h4>
+                    <p style="font-size: 0.88rem; color: var(--neutral-gray); font-weight: 700; margin: 3px 0 0 0;">Đạt điểm 10 tuyệt đối trong 1 bài thi hàng tuần (Thưởng: +100 XP, +15 ⭐)</p>
+                  </div>
+                </div>
+                <button class="btn-complete-mission btn-task active" style="background: #10b981;" onclick="handleBannerButtonClick(event)">Làm ngay</button>
+              </div>
+
+              <!-- Nhiệm vụ 6 (MỚI): Trợ Lý Ong Chăm Chỉ -->
               <div style="background: #ffffff; padding: 20px 16px; border-radius: 16px; border: 2px solid #fef08a; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); min-height: 82px; box-sizing: border-box;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                   <div style="font-size: 32px;">🐝</div>
@@ -549,111 +742,742 @@
             </div>
           </div>
 
+          <!-- Huy Hiệu Của Bé Panel -->
           <div class="badges-container-card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <h3 style="font-size: 1.25rem; font-weight: 900; color: #854d0e;">🏆 Huy Hiệu Của Bé</h3>
               <span>⭐</span>
             </div>
 
-            <div class="user-badges-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px 0;">
+            <!-- Khối "Huy Hiệu Của Bé" được nâng cấp (Bên trong thẻ div màu vàng nhạt) -->
+            <div class="user-badges-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 15px 0; min-height: 480px;">
+
+              <!-- === CÁC HUY HIỆU CỦ - ĐÃ PHÓNG TO === -->
+              
+              <!-- Dũng Sĩ Toán (Phóng to) -->
               <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
                 <div style="font-size: 40px; margin-bottom: 8px;">🏅</div>
                 <div style="font-size: 13px; font-weight: bold; color: #422006;">Dũng Sĩ Toán</div>
               </div>
+
+              <!-- Thám Hiểm Gia (Phóng to) -->
+              <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="font-size: 40px; margin-bottom: 8px;">🚀</div>
+                <div style="font-size: 13px; font-weight: bold; color: #422006;">Thám Hiểm Gia</div>
+              </div>
+
+              <!-- Bạn Ong AI (Phóng to) -->
               <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
                 <div style="font-size: 40px; margin-bottom: 8px;">🐝</div>
                 <div style="font-size: 13px; font-weight: bold; color: #422006;">Bạn Ong AI</div>
               </div>
+
+              <!-- Học Chăm Chỉ (Phóng to) -->
+              <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="font-size: 40px; margin-bottom: 8px;">📚</div>
+                <div style="font-size: 13px; font-weight: bold; color: #422006;">Học Chăm Chỉ</div>
+              </div>
+
+              <!-- Siêu Tính Nhẩm (Phóng to) -->
+              <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="font-size: 40px; margin-bottom: 8px;">⚡</div>
+                <div style="font-size: 13px; font-weight: bold; color: #422006;">Siêu Tính Nhẩm</div>
+              </div>
+
+              <!-- Ngôi Sao Sáng (Phóng to) -->
+              <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="font-size: 40px; margin-bottom: 8px;">⭐</div>
+                <div style="font-size: 13px; font-weight: bold; color: #422006;">Ngôi Sao Sáng</div>
+              </div>
+
+
+              <!-- === CÁC HUY HIỆU MỚI - ĐỂ LẤP ĐẦY KHOẢNG TRỐNG === -->
+
+              <!-- Toán Đọc Hiểu (Mới) -->
+              <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="font-size: 40px; margin-bottom: 8px;">🧭</div>
+                <div style="font-size: 13px; font-weight: bold; color: #422006;">Toán Đọc Hiểu</div>
+              </div>
+
+              <!-- Vươn Tầm Thế Giới (Mới) -->
+              <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="font-size: 40px; margin-bottom: 8px;">🌏</div>
+                <div style="font-size: 13px; font-weight: bold; color: #422006;">Vươn Tầm</div>
+              </div>
+
+              <!-- Hoàng Tử Điểm Số (Mới) -->
+              <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="font-size: 40px; margin-bottom: 8px;">👑</div>
+                <div style="font-size: 13px; font-weight: bold; color: #422006;">Hoàng Tử</div>
+              </div>
+
+              <!-- Nhà Thông Thái (Mới) -->
+              <div style="background: #ffffff; padding: 20px 10px; border-radius: 16px; text-align: center; border: 1px solid #fef08a; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="font-size: 40px; margin-bottom: 8px;">💡</div>
+                <div style="font-size: 13px; font-weight: bold; color: #422006;">Nhà Thông Thái</div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+            TAB 2: ĐẤU TRƯỜNG TRÒ CHƠI (6 GAME TƯƠNG TÁC TẬP TRUNG)
+            ============================================================ -->
+      <div class="tab-content-panel" id="tab-game-arena">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 style="font-size: 1.45rem; font-weight: 900;">🎮 Đấu Trường Trò Chơi Toán Học (6 Game Tương Tác)</h3>
+          <span style="font-size: 0.92rem; color: #059669; font-weight: 800;">Chơi vui • Giỏi toán</span>
+        </div>
+
+        <div class="game-grid-img17">
+          <div class="game-card-img17 pika">
+            <div>
+              <div class="card-title-img17">Pika-Chung Cự</div>
+              <div class="card-subtitle-img17">Cấp độ: Lớp 2 • Phép cộng 100</div>
+              <div class="card-rewards-img17">
+                <span class="reward-chip-img17">⭐ +50 XP</span>
+                <span class="reward-chip-img17">💰 +20 Xu</span>
+              </div>
+            </div>
+            <img src="assets/images/game_pika.jpg" alt="Pika-Chung Cự" class="card-illustration-img17" />
+            <button class="btn-play-img17 pika custom-game-trigger" data-game-key="pika" data-game-title="Pika-Chung Cự">Chơi Ngay ✨</button>
+          </div>
+
+          <div class="game-card-img17 speed">
+            <div>
+              <div class="card-title-img17">Đua Xe Phép Tính</div>
+              <div class="card-subtitle-img17">Cấp độ: Vừa • Bảng nhân 2 & 5</div>
+              <div class="card-rewards-img17">
+                <span class="reward-chip-img17">⭐ +50 XP</span>
+                <span class="reward-chip-img17">💰 +20 Xu</span>
+              </div>
+            </div>
+            <img src="assets/images/game_race_car.jpg" alt="Đua Xe Phép Tính" class="card-illustration-img17" />
+            <button class="btn-play-img17 speed custom-game-trigger" data-game-key="speed" data-game-title="Đua Xe Phép Tính">Chơi Ngay ✨</button>
+          </div>
+
+          <div class="game-card-img17 tower">
+            <div>
+              <div class="card-title-img17">Xây Tháp Số</div>
+              <div class="card-subtitle-img17">Cấp độ: Dễ • So sánh số lớn/nhỏ</div>
+              <div class="card-rewards-img17">
+                <span class="reward-chip-img17">⭐ +50 XP</span>
+                <span class="reward-chip-img17">💰 +20 Xu</span>
+              </div>
+            </div>
+            <img src="assets/images/game_lego.jpg" alt="Xây Tháp Số" class="card-illustration-img17" />
+            <button class="btn-play-img17 tower custom-game-trigger" data-game-key="tower" data-game-title="Xây Tháp Số">Chơi Ngay ✨</button>
+          </div>
+
+          <div class="game-card-img17 zoo">
+            <div>
+              <div class="card-title-img17">Vườn Thú Toán Học</div>
+              <div class="card-subtitle-img17">Cấp độ: Lớp 2 • Đếm thú & Phép cộng</div>
+              <div class="card-rewards-img17">
+                <span class="reward-chip-img17">⭐ +50 XP</span>
+                <span class="reward-chip-img17">💰 +20 Xu</span>
+              </div>
+            </div>
+            <img src="assets/images/game_zoo.jpg" alt="Vườn Thú Toán Học" class="card-illustration-img17" />
+            <button class="btn-play-img17 zoo custom-game-trigger" data-game-key="zoo" data-game-title="Vườn Thú Toán Học">Chơi Ngay ✨</button>
+          </div>
+
+          <div class="game-card-img17 clock">
+            <div>
+              <div class="card-title-img17">Kho Báu Thời Gian</div>
+              <div class="card-subtitle-img17">Cấp độ: Thử thách • Đọc giờ đồng hồ</div>
+              <div class="card-rewards-img17">
+                <span class="reward-chip-img17">⭐ +50 XP</span>
+                <span class="reward-chip-img17">💰 +25 Xu</span>
+              </div>
+            </div>
+            <img src="assets/images/game_clock.jpg" alt="Kho Báu Thời Gian" class="card-illustration-img17" />
+            <button class="btn-play-img17 clock custom-game-trigger" data-game-key="clock" data-game-title="Kho Báu Thời Gian">Chơi Ngay ✨</button>
+          </div>
+
+          <div class="game-card-img17 fraction">
+            <div>
+              <div class="card-title-img17">Khu Rừng Phân Số</div>
+              <div class="card-subtitle-img17">Cấp độ: Nâng cao • Bánh Pizza phân số</div>
+              <div class="card-rewards-img17">
+                <span class="reward-chip-img17">⭐ +50 XP</span>
+                <span class="reward-chip-img17">💰 +20 Xu</span>
+              </div>
+            </div>
+            <img src="assets/images/game_pizza.jpg" alt="Khu Rừng Phân Số" class="card-illustration-img17" />
+            <button class="btn-play-img17 fraction custom-game-trigger" data-game-key="fraction" data-game-title="Khu Rừng Phân Số">Chơi Ngay ✨</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+            TAB 3: KHU VỰC BÀI THI HẰNG TUẦN (CÓ BỘ CHỌN TUẦN THI LINH HOẠT & ANTI-CHEAT)
+            ============================================================ -->
+      <div class="tab-content-panel" id="tab-weekly-exam">
+        <div class="exam-container">
+
+          <!-- Bộ chọn Tuần thi linh hoạt -->
+          <div id="week-selector-container" style="text-align: center; margin: 0 auto 20px auto; background: #ffffff; padding: 14px 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 2px solid #bae6fd; max-width: 480px;">
+              <label for="select-week" style="font-weight: 800; color: #1e293b; margin-right: 10px; font-size: 1.05rem;">📌 Chọn bài kiểm tra:</label>
+              <select id="select-week" style="padding: 8px 16px; border-radius: 14px; border: 2px solid #3b82f6; font-weight: 900; color: #2563eb; cursor: pointer; font-size: 1rem; background: #f0f9ff;">
+                  <option value="week_1">Bài kiểm tra Tuần 1</option>
+                  <option value="week_2">Bài kiểm tra Tuần 2</option>
+                  <option value="week_3">Bài kiểm tra Tuần 3</option>
+                  <option value="week_4">Bài kiểm tra Tuần 4</option>
+              </select>
+          </div>
+
+          <!-- Màn hình chờ bắt đầu -->
+          <div id="exam-start-screen" class="exam-card">
+            <div class="exam-icon">📝</div>
+            <h2 id="current-selected-exam-title" style="font-size: 1.8rem; font-weight: 900; margin-bottom: 12px;">BÀI KIỂM TRA TUẦN 1</h2>
+            <p style="font-size: 1.05rem; color: var(--neutral-gray); max-width: 620px; margin: 0 auto 20px auto; font-weight: 700;">
+              Bài thi gồm 5 câu hỏi ngẫu nhiên trong thời gian 5 phút. Hệ thống có cơ chế <strong>Giám sát Anti-Cheat</strong> (phát hiện chuyển tab).
+            </p>
+            <button id="btn-start-exam" class="btn-primary-exam" onclick="startRealWeeklyExam()">🚀 Bắt Đầu Làm Bài Thi Ngay</button>
+          </div>
+
+          <!-- Màn hình làm bài (Mặc định ẩn) -->
+          <div id="exam-working-screen" class="exam-card hidden">
+            <div class="exam-header">
+              <div class="timer-box">⏱️ Thời gian còn lại: <span id="timer">05:00</span></div>
+              <div class="cheat-warning" id="cheat-alert">⚠️ Số lần chuyển tab: <span id="cheat-count">0</span>/3</div>
+            </div>
+
+            <div class="question-box">
+              <h3 id="question-title" style="font-size: 1.25rem; font-weight: 900; color: #0f172a; margin-bottom: 16px;">Câu 1: ...</h3>
+              <div id="options-container" class="options-grid">
+                <!-- Các đáp án sẽ tự động render bằng JS -->
+              </div>
+            </div>
+
+            <div class="exam-footer">
+              <button id="btn-next-question" class="btn-secondary-exam" onclick="nextExamQuestion()">Câu tiếp theo ➡️</button>
+              <button id="btn-submit-exam" class="btn-submit-exam hidden" onclick="submitExamNow()">Nộp Bài 🏆</button>
             </div>
           </div>
 
-        </div>
-      </div>
-
-      <!-- TAB 2: ĐẤU TRƯỜNG TRÒ CHƠI -->
-      <div class="tab-content-panel" id="tab-game-arena">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h3 style="font-size: 1.45rem; font-weight: 900;">🎮 Đấu Trường Trò Chơi Toán Học</h3>
-        </div>
-      </div>
-
-      <!-- TAB 3: BÀI THI HẰNG TUẦN -->
-      <div class="tab-content-panel" id="tab-weekly-exam">
-        <div class="exam-container">
-          <div id="exam-start-screen" class="exam-card">
-            <div class="exam-icon">📝</div>
-            <h2>BÀI KIỂM TRA TUẦN 1</h2>
-            <button class="btn-primary-exam" onclick="startRealWeeklyExam()">🚀 Bắt Đầu Làm Bài Thi Ngay</button>
+          <!-- Màn hình kết quả (Mặc định ẩn) -->
+          <div id="exam-result-screen" class="exam-card hidden">
+            <h2 style="font-size: 2rem; font-weight: 900; color: #0f172a;">🎉 KẾT QUẢ BÀI THI</h2>
+            <p id="result-score" class="score-text">Bạn đạt: 5/5 câu đúng</p>
+            <p id="result-msg" style="font-size: 1.1rem; font-weight: 800; color: #059669; margin-bottom: 20px;"></p>
+            <button onclick="startRealWeeklyExam()" class="btn-primary-exam">Làm Bài Khác 🔄</button>
           </div>
         </div>
       </div>
 
-      <!-- TAB 4: LỊCH SỬ -->
+      <!-- ============================================================
+            TAB 4: LỊCH SỬ & NHẬN XÉT CỦA GIÁO VIÊN (CLICK TRỰC TIẾP TỪNG DÒNG)
+            ============================================================ -->
       <div class="tab-content-panel" id="tab-history-feedback">
         <div class="history-table-card">
-          <h3>📜 Lịch Sử Bài Làm</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="font-size: 1.4rem; font-weight: 900; margin: 0;">📜 Lịch Sử Bài Làm & Lời Nhắn Từ Giáo Viên</h3>
+            <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800; border: 2px solid #10b981; color: #047857;" onclick="nhapNhanXetGiaoVien()">
+              ✏️ Ghi / Sửa Nhận Xét (Dành Cho Giáo Viên)
+            </button>
+          </div>
+
+          <p style="font-size: 0.88rem; color: #0284c7; font-weight: 800; margin-bottom: 12px;">
+            💡 <em>Mẹo: Giáo viên có thể click trực tiếp vào ô Lời Nhắn của từng dòng dưới đây để chỉnh sửa nhận xét riêng cho lượt làm đó!</em>
+          </p>
+
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Tên bài thi</th>
+                <th>Điểm số</th>
+                <th>Thời gian</th>
+                <th>Số câu đúng</th>
+                <th>Lời Nhắn Từ Giáo Viên</th>
+              </tr>
+            </thead>
+            <tbody id="student-history-table-body">
+              <tr>
+                <td>Bài kiểm tra Tuần 1</td>
+                <td><span class="score-badge-10">10 / 10</span></td>
+                <td>09:29:51 4/8/2026</td>
+                <td>5/5 câu</td>
+                <td>
+                  <span class="teacher-comment-italic">
+                    "Con làm bài tuyệt vời! Tiếp tục phát huy nhé 🌟"
+                    <br><strong style="font-size: 0.85rem; color: #0284c7;">(Lời nhắn từ <span class="teacher-sign-name">Cô Mai</span>)</strong>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
     </div>
 
-    <!-- GIAO DIỆN GIÁO VIÊN / ADMIN -->
+    <!-- ============================================================
+         GIAO DIỆN GIÁO VIÊN & ADMIN (TEACHER / ADMIN DASHBOARD)
+         ============================================================ -->
     <div class="teacher-view-container" id="teacher-view-container" style="display: none;">
-      <h2>🏫 Báo Cáo Quản Lý Hệ Thống</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.8rem; font-weight: 900;">🏫 Báo Cáo Quản Lý Hệ Thống - <span id="teacher-view-title-name">Cô Mai</span></h2>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border-radius: 20px; font-weight: 800;" onclick="goToHomeTab()">
+            🏠 Quay lại Trang Chủ & Nhiệm Vụ
+          </button>
+          <button class="btn btn-primary" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 20px; font-weight: 800;" onclick="nhapNhanXetGiaoVien()">
+            ✏️ Ghi Nhận Xét Bài Thi
+          </button>
+          <button class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 20px; font-weight: 800;" onclick="openTeacherLoginModal()">
+            🔄 Đổi Tài Khoản / Admin
+          </button>
+          <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800;" id="logout-teacher-btn">
+            👦 Đăng xuất (Về Học sinh)
+          </button>
+        </div>
+      </div>
+
+      <!-- THÔNG BÁO TÀI KHOẢN CHƯA ĐƯỢC PHÂN LỚP -->
+      <div id="teacher-unassigned-warning" style="display: none; background: #fef2f2; border: 2px solid #fca5a5; padding: 16px; border-radius: 14px; color: #991b1b; font-weight: 800; margin-bottom: 20px; text-align: center;">
+        ⚠️ Tài khoản của bạn chưa được phân công lớp. Vui lòng liên hệ Quản trị viên (Admin).
+      </div>
+
+      <!-- MÔ-ĐỦN QUẢN TRỊ HỆ THỐNG (CHỈ ADMIN THẤY) -->
+      <div id="admin-system-control-module" style="display: none; margin-bottom: 24px; background: #ffffff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 2px solid #8b5cf6;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <h3 style="margin: 0; color: #5b21b6; font-size: 20px; font-weight: 900; display: flex; align-items: center; gap: 8px;">
+            ⚙️ QUẢN TRỊ HỆ THỐNG (ADMIN) - QUẢN LÝ TÀI KHOẢN GIÁO VIÊN
+          </h3>
+          <button onclick="openAddTeacherModal()" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 10px 18px; border-radius: 12px; cursor: pointer; font-weight: 900; font-size: 14px; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
+            ➕ Thêm Giáo Viên Mới
+          </button>
+        </div>
+
+        <!-- BẢNG TÀI KHOẢN GIÁO VIÊN -->
+        <div style="overflow-x: auto; margin-bottom: 20px;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
+            <thead>
+              <tr style="background: #f5f3ff; color: #5b21b6; border-bottom: 2px solid #ddd6fe;">
+                <th style="padding: 12px;">GIÁO VIÊN</th>
+                <th style="padding: 12px;">TÀI KHOẢN</th>
+                <th style="padding: 12px;">LỚP PHỤ TRÁCH</th>
+                <th style="padding: 12px;">TRẠNG THÁI</th>
+                <th style="padding: 12px; text-align: center;">THAO TÁC ADMIN</th>
+              </tr>
+            </thead>
+            <tbody id="admin-teacher-table-body"></tbody>
+          </table>
+        </div>
+
+        <!-- BẢNG QUẢN LÝ LỚP HỌC CHO ADMIN -->
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 2px dashed #cbd5e1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 800;">🏫 Quản Lý Danh Sách Lớp Học Hệ Thống</h4>
+            <button onclick="addNewClass()" style="background: #3b82f6; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer;">
+              ➕ Thêm Lớp Mới
+            </button>
+          </div>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <thead>
+                <tr style="background: #f8fafc; color: #334155;">
+                  <th style="padding: 10px;">MÃ LỚP</th>
+                  <th style="padding: 10px;">TÊN LỚP</th>
+                  <th style="padding: 10px;">GIÁO VIÊN PHỤ TRÁCH</th>
+                  <th style="padding: 10px;">SỐ HỌC SINH</th>
+                  <th style="padding: 10px; text-align: center;">THAO TÁC</th>
+                </tr>
+              </thead>
+              <tbody id="admin-class-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-overview-grid">
+        <div class="teacher-stat-card">
+          <div class="teacher-stat-icon green">👨‍🎓</div>
+          <div class="teacher-stat-info">
+            <h3 id="stat-total-students">1</h3>
+            <p>Học sinh đăng ký</p>
+          </div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="teacher-stat-icon blue">📝</div>
+          <div class="teacher-stat-info">
+            <h3 id="stat-total-submissions">2</h3>
+            <p>Bài nộp (<span class="current-grade-tag">Lớp 2</span>)</p>
+          </div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="teacher-stat-icon amber">⭐</div>
+          <div class="teacher-stat-info">
+            <h3 id="stat-avg-score">10.0/10</h3>
+            <p>Điểm trung bình</p>
+          </div>
+        </div>
+        <div class="teacher-stat-card">
+          <div class="teacher-stat-icon red">🛡️</div>
+          <div class="teacher-stat-info">
+            <h3 id="stat-total-warnings">0</h3>
+            <p>Cảnh báo gian lận</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-analytics-card">
+        <div class="ai-analytics-header">
+          <span style="font-size: 2.2rem;">🧠</span>
+          <div>
+            <h3>Mô-đun Phân Tích Lỗ Hổng Kiến Thức AI - <span class="current-grade-tag">Lớp 2</span></h3>
+          </div>
+        </div>
+        <div class="weakness-list" id="ai-knowledge-gap-container"></div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3>👨‍🎓 Báo Cáo Tiến Độ Học Sinh & Lịch Sử Nộp Bài (<span class="current-grade-tag">Lớp 2</span>)</h3>
+        </div>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Học Sinh</th>
+              <th>Cấp Độ & XP</th>
+              <th>Điểm Bài Mới Nhất</th>
+              <th>Trạng Thái Chống Gian Lận</th>
+              <th>Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="teacher-student-table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- KHU VỰC QUẢN LÝ BẢNG XẾP HẠNG ĐỘC LẬP CHO GIÁO VIÊN -->
+      <div id="teacher-ranking-manager-module" style="margin-top: 24px; background: #ffffff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); font-family: sans-serif;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <h3 style="margin: 0; color: #1e293b; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+            🏆 Quản Lý Xếp Hạng Lớp Học (<span id="current-class-label" style="color: #2563eb;">Tất cả các lớp</span>)
+          </h3>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button onclick="addNewClass()" style="background: #10b981; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 2px 6px rgba(16,185,129,0.3);">
+              ➕ Thêm Lớp/Nhóm Mới
+            </button>
+            <button onclick="resetSelectedCategoryRanking()" style="background: #ef4444; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 2px 6px rgba(239,68,68,0.3);">
+              🔄 Đặt lại (Reset) Bảng đang chọn
+            </button>
+          </div>
+        </div>
+
+        <!-- THẺ CÁC LỚP/NHÓM QUẢN LÝ CHO GIÁO VIÊN -->
+        <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" id="class-management-tags"></div>
+
+        <!-- BẢNG 1: XẾP HẠNG TRÒ CHƠI & NHIỆM VỤ -->
+        <div style="margin-bottom: 32px; background: #fafafa; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+            <h4 style="color: #ea580c; margin: 0; font-size: 16px; display: flex; align-items: center; gap: 6px;">
+              🎮 1. Xếp Hạng Trò Chơi & Nhiệm Vụ Hằng Ngày
+            </h4>
+            <div>
+              <label for="teacher-select-game-task" style="font-size: 13px; font-weight: bold; color: #475569;">Chọn danh mục: </label>
+              <select id="teacher-select-game-task" onchange="renderGameTaskTable()" style="padding: 6px 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; background: #fff;">
+                <optgroup label="🎮 Đấu Trường Trò Chơi (6 Game)">
+                  <option value="game-pika">Pika-Chung Cự</option>
+                  <option value="game-dua-xe">Đua Xe Phép Tính</option>
+                  <option value="game-xay-thap">Xây Tháp Số</option>
+                  <option value="game-vuon-thu">Vườn Thú Toán Học</option>
+                  <option value="game-kho-bau">Kho Báu Thời Gian</option>
+                  <option value="game-phan-so">Khu Rừng Phân Số</option>
+                </optgroup>
+                <optgroup label="📋 Nhiệm Vụ Hằng Ngày (6 Nhiệm vụ)">
+                  <option value="task-rung-xanh">Thám hiểm Rừng Xanh</option>
+                  <option value="task-tinh-nham">Luyện tập Tính Nhẩm</option>
+                  <option value="task-chuoi-hoc">Chuỗi Học Tập Chăm Chỉ</option>
+                  <option value="task-dau-truong">Thử Thách Đấu Trường</option>
+                  <option value="task-diem-so">Điểm Số Hoàn Hảo</option>
+                  <option value="task-ong-ai">Hỏi Bài Bạn Ong AI</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; background: #fff; border-radius: 8px; overflow: hidden;">
+              <thead>
+                <tr style="background: #fff7ed; color: #c2410c; border-bottom: 2px solid #ffedd5;">
+                  <th style="padding: 10px;">HẠNG</th>
+                  <th style="padding: 10px;">HỌC SINH</th>
+                  <th style="padding: 10px;">LỚP</th>
+                  <th style="padding: 10px;">ĐIỂM / XP</th>
+                  <th style="padding: 10px; text-align: center;">THAO TÁC GIÁO VIÊN</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-game-task-ranking"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BẢNG 2: XẾP HẠNG BÀI KIỂM TRA HÀNG TUẦN -->
+        <div style="background: #fafafa; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9;">
+          <h4 style="color: #0284c7; margin: 0 0 12px 0; font-size: 16px; display: flex; align-items: center; gap: 6px;">
+            📝 2. Xếp Hạng Bài Kiểm Tra Hàng Tuần
+          </h4>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; background: #fff; border-radius: 8px; overflow: hidden;">
+              <thead>
+                <tr style="background: #f0f9ff; color: #0369a1; border-bottom: 2px solid #e0f2fe;">
+                  <th style="padding: 10px;">HẠNG</th>
+                  <th style="padding: 10px;">HỌC SINH</th>
+                  <th style="padding: 10px;">LỚP</th>
+                  <th style="padding: 10px;">ĐIỂM BÀI THI</th>
+                  <th style="padding: 10px;">THỜI GIAN LÀM BÀI</th>
+                  <th style="padding: 10px; text-align: center;">THAO TÁC GIÁO VIÊN</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-exam-ranking"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </div>
 
   </main>
 
-  <!-- ============================================================
-       POPUP MODAL BẢNG XẾP HẠNG HỌC SINH (ĐỘC LẬP & CHẮC CHẮN HIỆN)
-       ============================================================ -->
-  <div class="leaderboard-modal" id="leaderboard-modal">
-    <div class="leaderboard-content" style="position: relative;">
-      <button onclick="closeLeaderboardModal()" style="position: absolute; right: 16px; top: 16px; background: none; border: none; font-size: 24px; font-weight: bold; cursor: pointer; color: #64748b;">✕</button>
+  <!-- FLOATING AI MASCOT BUTTON -->
+  <div class="floating-mascot-btn" onclick="openAITutorDialog()" title="Hỏi Ong AI giải toán">
+    <img src="assets/images/mascot_bee.jpg" alt="Ong AI Floating Widget" />
+  </div>
+
+  <!-- POPUP MODAL ĐĂNG NHẬP GIÁO VIÊN & ADMIN (CẢI TIẾN RIÊNG PHẦN ADMIN) -->
+  <div class="modal-backdrop" id="teacher-login-modal">
+    <div class="teacher-login-modal-box" id="login-modal-box">
+      <button class="modal-close" onclick="closeModal('teacher-login-modal')">✕</button>
       
+      <!-- Chuyển đổi Vai Trò Đăng Nhập: Giáo Viên vs Admin -->
+      <div class="login-role-tabs">
+        <button type="button" class="login-role-tab active" id="tab-login-teacher" onclick="switchLoginMode('teacher')">
+          👩‍🏫 Giáo Viên
+        </button>
+        <button type="button" class="login-role-tab" id="tab-login-admin" onclick="switchLoginMode('admin')">
+          👑 Quản Trị (Admin)
+        </button>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 16px;">
+        <span id="login-icon-header" style="font-size: 3rem;">🏫</span>
+        <h3 id="login-title-header" style="font-size: 1.45rem; font-weight: 900; margin-top: 4px;">Đăng Nhập Giáo Viên</h3>
+        <p id="login-subtitle-header" style="font-size: 0.86rem; color: var(--neutral-gray); font-weight: 700; margin-top: 4px;">
+          Đăng nhập bằng tài khoản Giáo viên được cấp.
+        </p>
+      </div>
+
+      <form id="form-login-teacher">
+        <div class="form-group">
+          <label style="font-weight: 800; font-size: 0.9rem;" id="label-username-input">Tên giáo viên / Tài khoản:</label>
+          <input type="text" id="teacher-name" class="form-control" placeholder="Ví dụ: cohuong, thayhung, colan..." required />
+        </div>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label style="font-weight: 800; font-size: 0.9rem;">Mật khẩu:</label>
+          <div class="pwd-input-wrapper">
+            <input type="password" id="teacher-password-input" class="form-control" placeholder="Nhập mật khẩu..." required style="padding-right: 40px;" />
+            <button type="button" class="pwd-toggle-btn" onclick="togglePasswordVisibility('teacher-password-input', this)" title="Ẩn/Hiện mật khẩu">👁️</button>
+          </div>
+        </div>
+
+        <div id="teacher-login-error" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-top: 10px; min-height: 22px; text-align: center;"></div>
+
+        <div style="display: flex; gap: 10px; margin-top: 14px;">
+          <button type="submit" id="btn-submit-login" class="btn btn-primary" style="flex: 1; padding: 12px; border-radius: 25px; font-weight: 900; background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+            🔑 Đăng Nhập
+          </button>
+          <button type="button" id="btn-demo-login" class="btn btn-secondary" style="padding: 12px 16px; border-radius: 25px; font-weight: 800;" onclick="handleGuestTeacherDemoLogin()">
+            👤 Demo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL THÊM / SỬA TÀI KHOẢN GIÁO VIÊN (ADMIN) -->
+  <div class="modal-backdrop" id="modal-admin-teacher-form">
+    <div class="modal-card" style="max-width: 520px;">
+      <button class="modal-close" onclick="closeModal('modal-admin-teacher-form')">✕</button>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-size: 3rem;">👩‍🏫</span>
+        <h3 id="admin-teacher-form-title" style="font-size: 1.4rem; font-weight: 900; color: #1e293b;">Thêm Tài Khoản Giáo Viên Mới</h3>
+        <p style="font-size: 0.88rem; color: #64748b; font-weight: 700;">Nhập thông tin tài khoản và phân quyền lớp phụ trách cho Giáo viên.</p>
+      </div>
+
+      <input type="hidden" id="input-admin-teacher-id" value="" />
+
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label style="font-weight: 800; font-size: 0.9rem;">Họ tên Giáo viên:</label>
+        <input type="text" id="input-admin-teacher-displayname" class="form-control" placeholder="Ví dụ: Cô Hương, Thầy Hùng..." required />
+      </div>
+
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label style="font-weight: 800; font-size: 0.9rem;">Tên tài khoản (Username):</label>
+        <input type="text" id="input-admin-teacher-username" class="form-control" placeholder="Ví dụ: cohuong, thayhung..." required />
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label style="font-weight: 800; font-size: 0.9rem;">Mật khẩu:</label>
+        <input type="password" id="input-admin-teacher-password" class="form-control" placeholder="Nhập mật khẩu..." required />
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="font-weight: 800; font-size: 0.9rem; display: block; margin-bottom: 6px;">Phân công Lớp phụ trách:</label>
+        <div id="admin-teacher-class-checkboxes" style="display: flex; flex-wrap: wrap; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;"></div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-primary" style="flex: 1; padding: 12px; border-radius: 20px; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669);" onclick="saveAdminTeacherForm()">
+          💾 Lưu Tài Khoản Giáo Viên
+        </button>
+        <button type="button" class="btn btn-secondary" style="padding: 12px 18px; border-radius: 20px; font-weight: 800;" onclick="closeModal('modal-admin-teacher-form')">
+          ✕ Hủy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP MODAL GHI NHẬN XÉT GIÁO VIÊN -->
+  <div class="modal-backdrop" id="teacher-comment-modal">
+    <div class="modal-card" style="max-width: 480px;">
+      <button class="modal-close" onclick="closeModal('teacher-comment-modal')">✕</button>
+      <div style="text-align: center; margin-bottom: 16px;">
+        <span style="font-size: 3rem;">✏️</span>
+        <h3 style="font-size: 1.4rem; font-weight: 900;">Nhập Lời Nhắn Cho Học Sinh</h3>
+        <p style="font-size: 0.88rem; color: #64748b; font-weight: 700;">Bài kiểm tra Tuần 1</p>
+      </div>
+      <div class="form-group">
+        <label style="font-weight: 800; font-size: 0.92rem;">Lời nhắn nhận xét từ Giáo viên:</label>
+        <textarea id="input-teacher-comment-text" class="form-control" rows="3" placeholder="Nhập lời nhận xét cho bé..."></textarea>
+      </div>
+      <button class="btn btn-primary" style="width: 100%; margin-top: 14px; border-radius: 25px; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669);" onclick="saveTeacherCommentFromModal()">
+        💾 Lưu Nhận Xét
+      </button>
+    </div>
+  </div>
+
+  <!-- POPUP MINI-GAME ANIMATED HTML HOÀN CHỈNH CHO CẢ 6 TRÒ CHƠI TƯƠNG TÁC -->
+  <div class="custom-game-backdrop" id="custom-game-backdrop">
+    <div class="custom-game-modal">
+      <div class="sparkle-toast" id="sparkle-toast-reward">🎉 +50 XP +20 Xu ✨</div>
+
+      <div class="game-modal-header-bar">
+        <button class="btn-modal-nav-home" id="go-home-game-btn" onclick="goToHomeTab()">
+          🏠 Về Trang Chủ
+        </button>
+        <h3 id="custom-game-title-text" class="game-modal-header-title">
+          🕒 Kho Báu Thời Gian
+        </h3>
+        <button class="btn-modal-nav-close" id="close-custom-game-btn" onclick="closeCustomGameModal()" title="Đóng cửa sổ">
+          ✕
+        </button>
+      </div>
+
+      <div style="margin: 8px 0 12px 0;">
+        <span style="background: #e0f2fe; color: #0284c7; font-weight: 800; font-size: 0.88rem; padding: 5px 16px; border-radius: 16px; border: 1.5px solid #bae6fd;">
+          ⭐ Thưởng Màn Chơi: +50 XP & +20 Xu
+        </span>
+      </div>
+
+      <div class="game-modal-body-container" id="question-container">
+        <div class="game-anim-stage" id="game-anim-stage-container"></div>
+
+        <div class="stage-progress-wrapper">
+          <span>🏁 Tiến trình màn chơi: <span id="game-step-counter">1/3</span></span>
+          <span style="color: #059669;">Cố lên bé ơi!</span>
+        </div>
+        <div class="stage-progress-bar">
+          <div class="stage-progress-fill" id="game-stage-progress-fill"></div>
+        </div>
+
+        <div style="background: #ffffff; border: 2px solid #bae6fd; border-radius: 20px; padding: 14px 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.03); margin: 10px 0;">
+          <h4 id="custom-game-qtext" style="font-size: 1.2rem; font-weight: 900; color: var(--neutral-dark); line-height: 1.4; margin: 0;">
+            Đồng hồ chỉ mấy giờ?
+          </h4>
+        </div>
+
+        <div id="custom-game-feedback" style="min-height: 24px; font-weight: 900; font-size: 1rem; margin-bottom: 6px;"></div>
+
+        <div class="game-options-grid-4col" id="custom-game-options-box">
+          <!-- Các nút A, B, C, D render động bằng JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTHER MODALS -->
+  <div class="modal-backdrop" id="ai-chat-modal">
+    <div class="modal-card" style="max-width: 520px; padding: 0; overflow: hidden; border-radius: 28px;">
+      <button class="modal-close" style="z-index: 10;" onclick="closeModal('ai-chat-modal')">✕</button>
+      <div class="ai-tutor-header-img17">
+        <div class="ai-avatar-circle">
+          <img src="assets/images/mascot_bee.jpg" alt="Ong AI" class="ai-avatar-img" />
+        </div>
+        <div>
+          <h4 style="font-size:1.1rem; color:var(--neutral-dark);">Trợ Lý Toán AI Ong Mascot</h4>
+          <p style="font-size:0.82rem; color:var(--neutral-gray);">Hướng dẫn từng bước Socratic</p>
+        </div>
+      </div>
+
+      <div class="ai-chat-body-img17" id="ai-chat-messages-body" style="height: 380px;">
+        <div class="chat-bubble-wrapper">
+          <img src="assets/images/mascot_bee.jpg" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" />
+          <div class="chat-bubble-img17">
+            Chào <strong class="student-name-text">Bé Nam</strong>! Cùng tớ khám phá bí mật của những con số nhé! 🐾
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-input-bar-img17">
+        <input type="text" id="ai-chat-input-field" class="ai-input-field" placeholder="Hỏi Ong AI về bài toán..." />
+        <button class="mic-btn-blue" id="ai-mic-btn" onclick="toggleVoiceAIInput()" title="Bấm để nói qua Micro">🎙️</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="edit-profile-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 480px;">
+      <button class="modal-close" onclick="closeModal('edit-profile-modal')">✕</button>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-size: 3rem;">✏️</span>
+        <h3>Nhập Tên Học Sinh</h3>
+      </div>
+      <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+        <label style="font-weight: bold; font-size: 0.92rem; display: block; margin-bottom: 6px;">Họ và Tên Học Sinh:</label>
+        <input type="text" id="input-student-fullname" class="form-control" value="Bé Nam" placeholder="Nhập tên của bé..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+      </div>
+      <div class="form-group" style="margin-top: 14px; text-align: left;">
+        <label style="font-weight: bold; font-size: 0.92rem; display: block; margin-bottom: 6px;">Lớp / Nhóm Học:</label>
+        <select id="student-class-input" class="form-control" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box; background: white;">
+          <!-- JavaScript tự động đổ danh sách lớp -->
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width: 100%; margin-top: 16px; padding: 12px; border-radius: 12px; font-weight: bold; background: #fde047; border: none; color: #854d0e; cursor: pointer;" onclick="saveStudentProfileFromModal()">💾 Lưu Lại</button>
+  </div>
+
+  <!-- POPUP MODAL BẢNG XẾP HẠNG HỌC SINH -->
+  <div class="leaderboard-modal modal-backdrop" id="leaderboard-modal" style="display: none;">
+    <div class="leaderboard-content modal-card" style="max-width: 480px; width: 90%; position: relative;">
+      <button class="modal-close" onclick="closeLeaderboardModal()">✕</button>
       <div style="text-align: center; margin-bottom: 16px;">
         <span style="font-size: 3rem;">🏆</span>
         <h3 style="font-size: 1.45rem; font-weight: 900; color: #1e293b; margin: 4px 0 0 0;">Bảng Xếp Hạng Học Sinh</h3>
         <p style="font-size: 0.86rem; color: #64748b; font-weight: 700; margin-top: 4px;">Vinh danh thành tích học tập toàn hệ thống</p>
       </div>
 
-      <div class="leaderboard-list-container" id="leaderboard-list">
-        <!-- Dữ liệu xếp hạng đổ tự động bằng JS -->
+      <div class="leaderboard-list-container" id="leaderboard-list" style="max-height: 340px; overflow-y: auto; padding-right: 4px;">
+        <!-- Danh sách học sinh sẽ tự động đổ bằng JS -->
       </div>
 
-      <button onclick="closeLeaderboardModal()" style="width: 100%; margin-top: 16px; padding: 12px; border-radius: 12px; font-weight: 900; background: linear-gradient(135deg, #ff7d29, #ea580c); border: none; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);">Đóng Bảng Xếp Hạng ✕</button>
-    </div>
-  </div>
-
-  <!-- WIDGET TRỢ LÝ AI CHÚ ONG (ĐẢM BẢO HOẠT ĐỘNG 100%) -->
-  <div id="bee-ai-widget" style="position: fixed; bottom: 25px; right: 25px; z-index: 99999; font-family: 'Nunito', sans-serif;">
-    
-    <!-- Cửa sổ Chat popup -->
-    <div id="bee-chat-box" style="display: none; width: 340px; background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; margin-bottom: 15px; border: 3px solid #facc15;">
-      
-      <div style="background: linear-gradient(135deg, #facc15, #eab308); color: #713f12; padding: 12px 15px; font-weight: bold; display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 24px;">🐝</span>
-          <span>Trợ Lý Ong Chăm Chỉ (Giải Toán)</span>
-        </div>
-        <button onclick="toggleBeeChat()" style="background: none; border: none; color: #713f12; font-size: 18px; font-weight: bold; cursor: pointer;">✕</button>
-      </div>
-      
-      <div id="bee-chat-messages" style="height: 240px; padding: 12px; overflow-y: auto; background: #fefce8; font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
-        <div style="background: #ffffff; padding: 10px 12px; border-radius: 12px; border: 1px solid #fef08a; color: #422006; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
-          👋 Chào bé! Bạn Ong Chăm Chỉ đây. Bé gửi phép tính (vd: 7 + 4, 15 - 8, 6 x 3...) để Ong giải giúp nhé!
-        </div>
-      </div>
-      
-      <div style="padding: 10px; background: #ffffff; border-top: 1px solid #fef08a; display: flex; gap: 8px;">
-        <input type="text" id="bee-input" placeholder="Nhập phép tính (ví dụ: 12 + 5)..." style="flex: 1; padding: 8px 12px; border: 1px solid #fde047; border-radius: 20px; outline: none; font-size: 13px;" onkeypress="if(event.key==='Enter') sendBeeMessage()">
-        <button onclick="sendBeeMessage()" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 13px;">Gửi</button>
-      </div>
-    </div>
-
-    <!-- Nút bấm hình chú Ong nổi tròn -->
-    <div onclick="toggleBeeChat()" style="width: 72px; height: 72px; background: linear-gradient(135deg, #fff066, #facc15); border: 4px solid #ffffff; border-radius: 50%; box-shadow: 0 8px 20px rgba(234, 179, 8, 0.5); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-      <span style="font-size: 40px;">🐝</span>
+      <button class="btn btn-primary" style="width: 100%; margin-top: 16px; padding: 12px; border-radius: 12px; font-weight: 900; background: linear-gradient(135deg, #ff7d29, #ea580c); border: none; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);" onclick="closeLeaderboardModal()">Đóng Bảng Xếp Hạng ✕</button>
     </div>
   </div>
 
@@ -667,155 +1491,2319 @@
   <script src="assets/js/app.js"></script>
 
   <!-- ============================================================
-       LOGIC JAVASCRIPT XỬ LÝ CHÚ ONG & BẢNG XẾP HẠNG (CHỐNG XUNG ĐỘT)
-       ============================================================ -->
+        MÃ SCRIPT GIÁO VIÊN & ADMIN & NÚT BANNER LIÊN KẾT
+        ============================================================ -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // 1. Gắn các hàm xử lý Bảng Xếp Hạng vào window
-      window.openLeaderboardModal = function (btnEl) {
-        const navBtns = document.querySelectorAll('.tab-nav-btn');
-        if (navBtns) {
-          navBtns.forEach(btn => btn.classList.remove('active'));
+    // Hàm toggle ẩn/hiện mật khẩu
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        if (input.type === "password") {
+          input.type = "text";
+          btn.textContent = "🙈";
+        } else {
+          input.type = "password";
+          btn.textContent = "👁️";
+        }
+      }
+    }
+
+    // Hàm chuyển chế độ Đăng nhập (Giáo viên / Admin)
+    let currentLoginMode = 'teacher';
+    function switchLoginMode(mode) {
+      currentLoginMode = mode;
+      const modalBox = document.getElementById("login-modal-box");
+      const teacherTab = document.getElementById("tab-login-teacher");
+      const adminTab = document.getElementById("tab-login-admin");
+      const iconHeader = document.getElementById("login-icon-header");
+      const titleHeader = document.getElementById("login-title-header");
+      const subtitleHeader = document.getElementById("login-subtitle-header");
+      const labelUsername = document.getElementById("label-username-input");
+      const inputUsername = document.getElementById("teacher-name");
+      const inputPassword = document.getElementById("teacher-password-input");
+      const btnSubmit = document.getElementById("btn-submit-login");
+      const btnDemo = document.getElementById("btn-demo-login");
+      const errBox = document.getElementById("teacher-login-error");
+
+      if (errBox) errBox.textContent = "";
+
+      if (mode === 'admin') {
+        if (modalBox) modalBox.classList.add("admin-mode");
+        if (teacherTab) teacherTab.className = "login-role-tab";
+        if (adminTab) adminTab.className = "login-role-tab active admin-tab";
+        if (iconHeader) iconHeader.textContent = "👑";
+        if (titleHeader) titleHeader.textContent = "Đăng Nhập Admin";
+        if (subtitleHeader) subtitleHeader.textContent = "Đăng nhập quyền Quản trị viên hệ thống";
+        if (labelUsername) labelUsername.textContent = "Tài khoản Admin:";
+        if (inputUsername) inputUsername.placeholder = "Nhập tài khoản admin (admin)...";
+        if (btnSubmit) {
+          btnSubmit.style.background = "linear-gradient(135deg, #8b5cf6, #6d28d9)";
+          btnSubmit.innerHTML = "🔑 Đăng Nhập Admin";
+        }
+        if (btnDemo) btnDemo.style.display = "none";
+      } else {
+        if (modalBox) modalBox.classList.remove("admin-mode");
+        if (teacherTab) teacherTab.className = "login-role-tab active";
+        if (adminTab) adminTab.className = "login-role-tab";
+        if (iconHeader) iconHeader.textContent = "🏫";
+        if (titleHeader) titleHeader.textContent = "Đăng Nhập Giáo Viên";
+        if (subtitleHeader) subtitleHeader.textContent = "Đăng nhập bằng tài khoản Giáo viên được cấp.";
+        if (labelUsername) labelUsername.textContent = "Tên giáo viên / Tài khoản:";
+        if (inputUsername) inputUsername.placeholder = "Ví dụ: cohuong, thayhung, colan...";
+        if (btnSubmit) {
+          btnSubmit.style.background = "linear-gradient(135deg, #2563eb, #1d4ed8)";
+          btnSubmit.innerHTML = "🔑 Đăng Nhập";
+        }
+        if (btnDemo) btnDemo.style.display = "inline-block";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+      let activeCommentStorageKey = 'teacher_comment_week1';
+      let activeCommentCell = null;
+
+      // HÀM CHUYỂN TAB CƠ BẢN
+      window.activatePanel = function(panelId, btnEl) {
+        document.querySelectorAll('.tab-content-panel').forEach(panel => {
+          panel.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-nav-btn, .nav-tab').forEach(btn => {
+          btn.classList.remove('active');
+        });
+
+        const targetPanel = document.getElementById(panelId);
+        if (targetPanel) {
+          targetPanel.classList.add('active');
         }
 
-        if (btnEl && btnEl.classList) {
+        if (btnEl) {
           btnEl.classList.add('active');
         } else {
-          const rBtn = document.getElementById("tab-btn-ranking");
-          if (rBtn) rBtn.classList.add('active');
+          const matchingBtn = document.querySelector(`.tab-nav-btn[id="tab-btn-${panelId.replace('tab-', '').split('-')[0]}"]`);
+          if (matchingBtn) matchingBtn.classList.add('active');
+        }
+      };
+
+      // Gắn sự kiện click cho 4 TAB chính
+      const homeTabBtn = document.getElementById("tab-btn-home");
+      const gamesTabBtn = document.getElementById("tab-btn-games");
+      const examTabBtn = document.getElementById("tab-btn-exam");
+      const historyTabBtn = document.getElementById("tab-btn-history");
+
+      if (homeTabBtn) homeTabBtn.onclick = function() { activatePanel("tab-home-tasks", this); };
+      if (gamesTabBtn) gamesTabBtn.onclick = function() { activatePanel("tab-game-arena", this); };
+      if (examTabBtn) examTabBtn.onclick = function() { activatePanel("tab-weekly-exam", this); };
+      if (historyTabBtn) historyTabBtn.onclick = function() { activatePanel("tab-history-feedback", this); };
+
+      // HÀM XỬ LÝ CLICK NÚT BANNER (LÀM BÀI NGAY)
+      window.handleBannerButtonClick = function (e) {
+        if (e) e.preventDefault();
+
+        // 1. Đảm bảo hiển thị giao diện Học sinh nếu đang ở giao diện Giáo viên
+        const studentView = document.getElementById("student-view-container");
+        const teacherView = document.getElementById("teacher-view-container");
+        if (studentView && teacherView) {
+          teacherView.style.display = "none";
+          studentView.style.display = "block";
         }
 
-        const modal = document.getElementById("leaderboard-modal");
+        // 2. Chuyển sang Tab "Bài Thi Hằng Tuần"
+        const tabExamBtn = document.getElementById("tab-btn-exam");
+        if (typeof activatePanel === "function") {
+          activatePanel("tab-weekly-exam", tabExamBtn);
+        }
+
+        // 3. Cuộn mượt trực tiếp đến khu vực bộ chọn tuần bài thi
+        const weekSelectContainer = document.getElementById('week-selector-container') || document.getElementById('select-week') || document.querySelector('.exam-container');
+
+        if (weekSelectContainer) {
+          setTimeout(() => {
+            weekSelectContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            weekSelectContainer.style.transition = "transform 0.3s ease, box-shadow 0.3s ease";
+            weekSelectContainer.style.transform = "scale(1.08)";
+            weekSelectContainer.style.boxShadow = "0 0 22px rgba(59, 130, 246, 0.6)";
+
+            setTimeout(() => {
+              weekSelectContainer.style.transform = "scale(1)";
+              weekSelectContainer.style.boxShadow = "none";
+            }, 600);
+          }, 50);
+        }
+      };
+
+      // MAP ĐỀ THI VÀ CÂU HỎI THEO TUẦN
+      const weekQuestionsMap = {
+        week_1: {
+          title: "Bài kiểm tra Tuần 1",
+          questions: [
+            { title: "Câu 1: Bé Nam có 15 viên bi. An cho Nam thêm 8 viên bi nữa. Hỏi Nam có tất cả bao nhiêu viên bi?", options: ["A. 21 viên bi", "B. 22 viên bi", "C. 23 viên bi", "D. 24 viên bi"], correctIdx: 2 },
+            { title: "Câu 2: Kết quả của phép tính 47 + 28 = ?", options: ["A. 65", "B. 75", "C. 73", "D. 85"], correctIdx: 1 },
+            { title: "Câu 3: Mỗi hũ có 5 viên kẹo. Hỏi 7 hũ như thế có tất cả bao nhiêu viên kẹo?", options: ["A. 30 viên kẹo", "B. 35 viên kẹo", "C. 40 viên kẹo", "D. 25 viên kẹo"], correctIdx: 1 },
+            { title: "Câu 4: Kim ngắn chỉ số 8, kim dài chỉ đúng số 12. Hỏi đồng hồ đang chỉ mấy giờ?", options: ["A. 8 giờ đúng", "B. 12 giờ đúng", "C. 7 giờ đúng", "D. 9 giờ đúng"], correctIdx: 0 },
+            { title: "Câu 5: Phép tính 62 - 27 cho kết quả là bao nhiêu?", options: ["A. 35", "B. 45", "C. 37", "D. 42"], correctIdx: 0 }
+          ]
+        },
+        week_2: {
+          title: "Bài kiểm tra Tuần 2",
+          questions: [
+            { title: "Câu 1: Phép nhân 2 x 8 cho kết quả bằng bao nhiêu?", options: ["A. 14", "B. 16", "C. 18", "D. 12"], correctIdx: 1 },
+            { title: "Câu 2: Phép tính 45 + 37 = ?", options: ["A. 82", "B. 80", "C. 81", "D. 85"], correctIdx: 0 },
+            { title: "Câu 3: Mỗi con thỏ có 2 cái tai. Hỏi 6 con thỏ có tất cả bao nhiêu cái tai?", options: ["A. 10 cái tai", "B. 12 cái tai", "C. 14 cái tai", "D. 8 cái tai"], correctIdx: 1 },
+            { title: "Câu 4: So sánh hai số: 85 và 79. Điền dấu thích hợp vào chỗ trống (85 ... 79)", options: ["A. >", "B. <", "C. =", "D. Không so sánh được"], correctIdx: 0 },
+            { title: "Câu 5: Phép tính 90 - 45 = ?", options: ["A. 40", "B. 45", "C. 55", "D. 35"], correctIdx: 1 }
+          ]
+        },
+        week_3: {
+          title: "Bài kiểm tra Tuần 3",
+          questions: [
+            { title: "Câu 1: Tìm X biết: X + 18 = 45", options: ["A. X = 27", "B. X = 37", "C. X = 25", "D. X = 33"], correctIdx: 0 },
+            { title: "Câu 2: Phép nhân 5 x 9 = ?", options: ["A. 40", "B. 45", "C. 50", "D. 35"], correctIdx: 1 },
+            { title: "Câu 3: Một lớp học có 32 học sinh, trong đó có 15 học sinh nữ. Hỏi lớp đó có bao nhiêu học sinh nam?", options: ["A. 17 học sinh nam", "B. 18 học sinh nam", "C. 16 học sinh nam", "D. 19 học sinh nam"], correctIdx: 0 },
+            { title: "Câu 4: Phép tính 72 - 38 = ?", options: ["A. 34", "B. 44", "C. 36", "D. 35"], correctIdx: 0 },
+            { title: "Câu 5: Tìm một phần tư (1/4) của 20 chiếc bánh:", options: ["A. 4 chiếc bánh", "B. 5 chiếc bánh", "C. 6 chiếc bánh", "D. 10 chiếc bánh"], correctIdx: 1 }
+          ]
+        },
+        week_4: {
+          title: "Bài kiểm tra Tuần 4",
+          questions: [
+            { title: "Câu 1: Phép nhân 5 x 10 = ?", options: ["A. 45", "B. 50", "C. 55", "D. 60"], correctIdx: 1 },
+            { title: "Câu 2: Kim ngắn nằm giữa số 10 và 11, kim dài chỉ đúng số 6. Hỏi đồng hồ chỉ mấy giờ?", options: ["A. 10 giờ 30 phút", "B. 11 giờ 30 phút", "C. 10 giờ đúng", "D. 6 giờ 10 phút"], correctIdx: 0 },
+            { title: "Câu 3: Phép tính 83 - 29 = ?", options: ["A. 54", "B. 64", "C. 52", "D. 56"], correctIdx: 0 },
+            { title: "Câu 4: Phép tính 64 + 27 = ?", options: ["A. 91", "B. 81", "C. 93", "D. 87"], correctIdx: 0 },
+            { title: "Câu 5: Một phần năm (1/5) của 35 quả cam là bao nhiêu quả?", options: ["A. 7 quả cam", "B. 5 quả cam", "C. 6 quả cam", "D. 8 quả cam"], correctIdx: 0 }
+          ]
+        }
+      };
+
+      const selectWeekEl = document.getElementById("select-week");
+      if (selectWeekEl) {
+        selectWeekEl.addEventListener("change", function () {
+          const weekKey = selectWeekEl.value;
+          const wData = weekQuestionsMap[weekKey] || weekQuestionsMap.week_1;
+          const titleEl = document.getElementById("current-selected-exam-title");
+          if (titleEl) titleEl.textContent = wData.title.toUpperCase();
+        });
+      }
+
+      // TỰ ĐỘNG GẮN SỰ KIỆN CLICK TRỰC TIẾP VÀO CỘT LỜI NHẮN
+      window.setupRowCommentClick = function () {
+        const historyTable = document.querySelector('#student-history-table-body');
+        if (!historyTable) return;
+
+        const rows = historyTable.querySelectorAll('tr');
+        rows.forEach((row, index) => {
+          const cells = row.querySelectorAll('td');
+          if (cells.length >= 5) {
+            const timeCell = cells[2];
+            const timeKey = timeCell ? timeCell.textContent.trim() : `row_${index}`;
+            const storageKey = `comment_record_${timeKey}`;
+
+            const savedData = localStorage.getItem(storageKey) || localStorage.getItem('teacher_comment_week1');
+            const commentCell = cells[4];
+
+            if (commentCell) {
+              if (savedData) {
+                try {
+                  const parsed = JSON.parse(savedData);
+                  commentCell.innerHTML = `
+                    <span style="color: #059669; font-weight: 700; font-style: italic;">"${parsed.text}"</span><br>
+                    <small style="color: #0284c7; font-weight: 800;">(Lời nhắn từ ${parsed.teacher})</small>
+                  `;
+                } catch(e) {
+                  commentCell.innerHTML = `
+                    <span style="color: #059669; font-weight: 700; font-style: italic;">"${savedData}"</span><br>
+                    <small style="color: #0284c7; font-weight: 800;">(Lời nhắn từ Cô Mai)</small>
+                  `;
+                }
+              }
+
+              commentCell.style.cursor = 'pointer';
+              commentCell.title = 'Bấm vào đây để sửa nhận xét cho lượt làm này';
+              
+              commentCell.onclick = function() {
+                openCommentModalForRow(storageKey, timeKey, commentCell);
+              };
+            }
+          }
+        });
+      };
+
+      // MỞ HỘP THOẠI NHẬP NHẬN XÉT
+      window.openCommentModalForRow = function (storageKey, timeKey, commentCell) {
+        activeCommentStorageKey = storageKey;
+        activeCommentCell = commentCell;
+
+        const teacherName = localStorage.getItem('teacherName') || localStorage.getItem('currentTeacher') || 'Cô Mai';
+        const currentCommentRaw = localStorage.getItem(storageKey) || localStorage.getItem('teacher_comment_week1');
+        let defaultText = "Con làm bài tốt lắm! Tiếp tục cố gắng nhé 🌟";
+
+        if (currentCommentRaw) {
+          try {
+            defaultText = JSON.parse(currentCommentRaw).text;
+          } catch(e) {
+            defaultText = currentCommentRaw;
+          }
+        }
+
+        const commentInput = document.getElementById("input-teacher-comment-text");
+        if (commentInput) commentInput.value = defaultText;
+
+        const modal = document.getElementById("teacher-comment-modal");
         if (modal) {
           modal.classList.add("active");
+        } else {
+          const newComment = prompt(`[${teacherName}] Nhập nhận xét cho bài làm lúc (${timeKey}):`, defaultText);
+          if (newComment !== null && newComment.trim() !== "") {
+            const commentData = {
+              text: newComment.trim(),
+              teacher: teacherName
+            };
+            localStorage.setItem(storageKey, JSON.stringify(commentData));
+            if (commentCell) {
+              commentCell.innerHTML = `
+                <span style="color: #059669; font-weight: 700; font-style: italic;">"${commentData.text}"</span><br>
+                <small style="color: #0284c7; font-weight: 800;">(Lời nhắn từ ${commentData.teacher})</small>
+              `;
+            }
+          }
+        }
+      };
+
+      window.displayTeacherComment = function () {
+        setupRowCommentClick();
+      };
+
+      window.nhapNhanXetGiaoVien = function () {
+        const rows = document.querySelectorAll('#student-history-table-body tr');
+        if (rows.length > 0) {
+          const firstRowCells = rows[0].querySelectorAll('td');
+          if (firstRowCells.length >= 5) {
+            const timeKey = firstRowCells[2].textContent.trim();
+            openCommentModalForRow(`comment_record_${timeKey}`, timeKey, firstRowCells[4]);
+            return;
+          }
+        }
+        openCommentModalForRow('teacher_comment_week1', 'Lượt làm Tuần 1', null);
+      };
+
+      window.saveTeacherCommentFromModal = function () {
+        const teacherName = localStorage.getItem('teacherName') || localStorage.getItem('currentTeacher') || 'Cô Mai';
+        const commentInput = document.getElementById("input-teacher-comment-text");
+        if (!commentInput) return;
+        
+        const text = commentInput.value.trim() || "Con làm bài tuyệt vời! Tiếp tục phát huy nhé 🌟";
+        const commentData = {
+          text: text,
+          teacher: teacherName
+        };
+        localStorage.setItem(activeCommentStorageKey, JSON.stringify(commentData));
+
+        if (activeCommentCell) {
+          activeCommentCell.innerHTML = `
+            <span style="color: #059669; font-weight: 700; font-style: italic;">"${commentData.text}"</span><br>
+            <small style="color: #0284c7; font-weight: 800;">(Lời nhắn từ ${commentData.teacher})</small>
+          `;
+        }
+
+        setupRowCommentClick();
+        closeModal('teacher-comment-modal');
+      };
+
+      setupRowCommentClick();
+
+      // KHÔI PHỤC VÀ ĐỒNG BỘ TÊN DÙNG CHUNG
+      window.updateAllUserNames = function () {
+        let studentName = localStorage.getItem("studentName") || "Bé Nam";
+        
+        const userNameDisplay = document.getElementById("user-name-display");
+        if (userNameDisplay) userNameDisplay.textContent = studentName;
+
+        document.querySelectorAll(".student-name-text").forEach(el => {
+          el.textContent = studentName;
+        });
+
+        const speechNameEl = document.getElementById("hero-speech-student-name");
+        if (speechNameEl) speechNameEl.textContent = studentName;
+
+        const aiSpeechNameEl = document.getElementById("ai-speech-student-name");
+        if (aiSpeechNameEl) aiSpeechNameEl.textContent = studentName;
+
+        const studentInput = document.getElementById("input-student-fullname");
+        if (studentInput && document.activeElement !== studentInput) {
+          studentInput.value = studentName;
+        }
+
+        const role = localStorage.getItem("currentUserRole");
+        const teacher = typeof getCurrentTeacher === "function" ? getCurrentTeacher() : null;
+        const teacherNameSpan = document.getElementById("teacher-name-display");
+        const teacherTitleName = document.getElementById("teacher-view-title-name");
+
+        let activeTeacherStr = "Cô Mai";
+        if (role === "admin") {
+          activeTeacherStr = "Admin Quản Trị Hệ Thống";
+          if (teacherNameSpan) teacherNameSpan.textContent = "Admin";
+          if (teacherTitleName) teacherTitleName.textContent = "Admin Quản Trị Hệ Thống";
+        } else if (teacher) {
+          activeTeacherStr = teacher.displayName;
+          if (teacherNameSpan) teacherNameSpan.textContent = teacher.displayName;
+          if (teacherTitleName) teacherTitleName.textContent = teacher.displayName;
+        } else {
+          if (teacherNameSpan) teacherNameSpan.textContent = "Đăng nhập";
+          if (teacherTitleName) teacherTitleName.textContent = "Cô Mai";
+        }
+
+        document.querySelectorAll(".teacher-sign-name").forEach(el => {
+          el.textContent = activeTeacherStr;
+        });
+
+        setupRowCommentClick();
+      };
+
+      window.openTeacherLoginModal = function () {
+        const modal = document.getElementById("teacher-login-modal");
+        const inputName = document.getElementById("teacher-name");
+        const inputPass = document.getElementById("teacher-password-input");
+        const err = document.getElementById("teacher-login-error");
+
+        if (inputName) inputName.value = "";
+        if (inputPass) inputPass.value = "";
+        if (err) err.textContent = "";
+
+        // Mặc định chọn chế độ Đăng nhập Giáo viên khi mở
+        switchLoginMode('teacher');
+
+        if (modal) {
           modal.style.display = "flex";
-          renderLeaderboardDataList();
+          modal.classList.add("active");
+        }
+      };
+
+      window.closeModal = function (modalId) {
+        const targetId = modalId || 'teacher-login-modal';
+        const modal = document.getElementById(targetId);
+        if (modal) modal.classList.remove('active');
+      };
+
+      // SỐ XU VÀ XP BAN ĐẦU
+      const coinsEl = document.getElementById("user-coins-display");
+      const xpEl = document.getElementById("user-xp-display");
+
+      let savedCoins = localStorage.getItem("userXu") || "1250";
+      let savedXp = localStorage.getItem("userXP") || "450";
+
+      if (coinsEl) coinsEl.textContent = savedCoins;
+      if (xpEl) xpEl.textContent = savedXp + " XP";
+
+      // NÂNG CẤP BẮT EVENT SUBMIT FORM ĐĂNG NHẬP GIÁO VIÊN & ADMIN
+      const teacherForm = document.querySelector('#form-login-teacher');
+      if (teacherForm) {
+        teacherForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          const teacherInputEl = document.querySelector('#teacher-name');
+          const teacherPassEl = document.querySelector('#teacher-password-input');
+          const err = document.getElementById("teacher-login-error");
+          const modalBox = document.getElementById("login-modal-box");
+
+          const usernameVal = teacherInputEl ? teacherInputEl.value.trim() : '';
+          const passVal = teacherPassEl ? teacherPassEl.value.trim() : '';
+
+          if (!usernameVal || !passVal) {
+            if (err) err.textContent = '⚠️ Vui lòng nhập đầy đủ tài khoản và mật khẩu!';
+            if (modalBox) {
+              modalBox.classList.add("modal-shake");
+              setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+            }
+            return;
+          }
+
+          // 1. DĂNG NHẬP ADMIN (TÙY CHỌN HOẶC TỰ ĐỘNG PHÁT HIỆN "admin")
+          if (currentLoginMode === 'admin' || usernameVal.toLowerCase() === "admin") {
+            if (usernameVal.toLowerCase() === "admin" && passVal === "admin123") {
+              localStorage.setItem("currentUserRole", "admin");
+              localStorage.setItem("currentTeacherId", "admin");
+              localStorage.setItem("teacherName", "Admin Quản Trị Hệ Thống");
+              localStorage.setItem('currentUser', JSON.stringify({ id: "admin", name: "Admin Quản Trị Hệ Thống", role: "admin" }));
+
+              if (err) err.textContent = '';
+              closeModal('teacher-login-modal');
+              switchTeacherDashboardView();
+              return;
+            } else {
+              if (err) err.textContent = '❌ Mật khẩu Admin không đúng! (Mặc định: admin123)';
+              if (modalBox) {
+                modalBox.classList.add("modal-shake");
+                setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+              }
+              return;
+            }
+          }
+
+          // 2. ĐĂNG NHẬP GIÁO VIÊN
+          const foundTeacher = (typeof teacherAccounts !== "undefined")
+            ? teacherAccounts.find(t => t.username.toLowerCase() === usernameVal.toLowerCase())
+            : null;
+
+          if (!foundTeacher || foundTeacher.password !== passVal) {
+            if (err) err.textContent = '❌ Tên đăng nhập hoặc mật khẩu không đúng!';
+            if (modalBox) {
+              modalBox.classList.add("modal-shake");
+              setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+            }
+            return;
+          }
+
+          if (foundTeacher.active === false) {
+            if (err) err.textContent = '🔒 Tài khoản giáo viên này đã bị khóa!';
+            if (modalBox) {
+              modalBox.classList.add("modal-shake");
+              setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+            }
+            return;
+          }
+
+          localStorage.setItem("currentUserRole", "teacher");
+          localStorage.setItem('currentTeacherId', foundTeacher.id);
+          localStorage.setItem('teacherName', foundTeacher.displayName);
+          localStorage.setItem('currentUser', JSON.stringify({ id: foundTeacher.id, name: foundTeacher.displayName, role: 'teacher' }));
+
+          if (err) err.textContent = '';
+          closeModal('teacher-login-modal');
+          switchTeacherDashboardView();
+        });
+      }
+
+      window.updateUI = function() {
+        updateAllUserNames();
+        const studentView = document.getElementById("student-view-container");
+        const teacherView = document.getElementById("teacher-view-container");
+        if (studentView && teacherView) {
+          studentView.style.display = "none";
+          teacherView.style.display = "block";
+        }
+        
+        if (typeof renderClassOptions === "function") renderClassOptions();
+        if (typeof renderTeacherStudentTable === "function") renderTeacherStudentTable();
+        if (typeof renderGameTaskTable === "function") renderGameTaskTable();
+        if (typeof renderExamTable === "function") renderExamTable();
+
+        if (window.TeacherDashboard) {
+          window.TeacherDashboard.render();
+        }
+      };
+
+      window.handleGuestTeacherDemoLogin = function () {
+        const demoTeacher = (typeof teacherAccounts !== "undefined") 
+          ? (teacherAccounts.find(t => t.username === 'demo') || teacherAccounts[0])
+          : { id: "gv003", displayName: "Giáo viên Demo", classes: ["2A"] };
+
+        localStorage.setItem("currentUserRole", "teacher");
+        localStorage.setItem("currentTeacherId", demoTeacher.id);
+        localStorage.setItem("teacherName", demoTeacher.displayName);
+        localStorage.setItem('currentUser', JSON.stringify({ id: demoTeacher.id, name: demoTeacher.displayName, role: 'teacher' }));
+
+        const err = document.getElementById("teacher-login-error");
+        if (err) err.textContent = "";
+        closeModal("teacher-login-modal");
+        switchTeacherDashboardView();
+      };
+
+      const logoutBtn = document.getElementById("logout-teacher-btn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", function() {
+          localStorage.removeItem("currentUserRole");
+          localStorage.removeItem("currentTeacherId");
+          localStorage.removeItem("teacherName");
+          localStorage.removeItem("currentUser");
+
+          updateAllUserNames();
+          if (typeof renderClassOptions === "function") renderClassOptions();
+
+          const studentView = document.getElementById("student-view-container");
+          const teacherView = document.getElementById("teacher-view-container");
+          if (studentView && teacherView) {
+            teacherView.style.display = "none";
+            studentView.style.display = "block";
+          }
+          alert("👋 Bạn đã đăng xuất khỏi tài khoản Giáo viên / Admin!");
+        });
+      }
+
+      // ENGINE 6 MINI-GAME TƯƠNG TÁC
+      const customModal = document.getElementById("custom-game-backdrop");
+      const gameTitleEl = document.getElementById("custom-game-title-text");
+      const animStageEl = document.getElementById("game-anim-stage-container");
+      const stepCounterEl = document.getElementById("game-step-counter");
+      const progressFillEl = document.getElementById("game-stage-progress-fill");
+      const gameQtextEl = document.getElementById("custom-game-qtext");
+      const feedbackEl = document.getElementById("custom-game-feedback");
+      const optionsBoxEl = document.getElementById("custom-game-options-box");
+      const rewardToastEl = document.getElementById("sparkle-toast-reward");
+
+      let currentGameKey = "clock";
+      let currentStep = 1;
+      const totalSteps = 3;
+      let activeCorrectAns = "";
+      let isAnswered = false;
+
+      window.closeCustomGameModal = function() {
+        if (customModal) customModal.classList.remove('active');
+      };
+
+      function renderStageByGameType(gameType) {
+        switch (gameType) {
+          case 'clock':
+            const hourDegree = (currentStep === 1 ? 210 : (currentStep === 2 ? 300 : 90));
+            animStageEl.innerHTML = `
+              <div class="stage-clock-bg">
+                <div style="position: absolute; top: 10px; left: 16px; font-weight: 900; color: #ffffff; font-size: 0.95rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                  🕒 Thám Hiểm Tháp Big Ben (Thử Thách ${currentStep}/3)
+                </div>
+                <div class="analog-clock-dial">
+                  <div class="clock-hand-hour" style="transform: rotate(${hourDegree}deg);"></div>
+                  <div class="clock-hand-minute" style="transform: rotate(0deg);"></div>
+                </div>
+                <img src="assets/images/game_clock.jpg" class="bigben-tower-img" />
+              </div>
+            `;
+            break;
+
+          case 'fraction':
+            animStageEl.innerHTML = `
+              <div class="stage-pizza-bg game-header-class" id="game-header">
+                <div class="header-item-right">
+                  <span style="font-size: 1.5rem;">🎂</span>
+                  <span style="font-weight: 800; font-size: 0.82rem; color: #c2410c;">Có quà bé ơi</span>
+                </div>
+                <div class="header-item-center">
+                  <span style="background: #ffedd5; color: #c2410c; font-weight: 900; font-size: 0.88rem; padding: 5px 14px; border-radius: 16px; border: 1.5px solid #fed7aa;">
+                    ⭐ Thưởng Màn Chơi: +50 XP & +20 Xu
+                  </span>
+                  <img id="pizza-sprite-img" src="assets/images/game_pizza.jpg" class="pizza-sprite" alt="Pizza" />
+                </div>
+              </div>
+            `;
+            break;
+
+          case 'pika':
+            const pikaBottomOffset = 10 + (currentStep - 1) * 48;
+            animStageEl.innerHTML = `
+              <div class="stage-pika-bg">
+                <div style="position: absolute; top: 10px; left: 16px; font-weight: 900; color: #0369a1; font-size: 0.92rem;">🏢 Tầng 3 (Ban Công Đỉnh)</div>
+                <div style="position: absolute; top: 60px; left: 16px; font-weight: 800; color: #0369a1; font-size: 0.9rem;">🏢 Tầng 2</div>
+                <div style="position: absolute; bottom: 12px; left: 16px; font-weight: 800; color: #0369a1; font-size: 0.9rem;">🏢 Tầng 1</div>
+                <img id="pika-mascot-img" src="assets/images/game_pika.jpg" class="pika-sprite" style="bottom: ${pikaBottomOffset}px;" />
+              </div>
+            `;
+            break;
+
+          case 'speed':
+            const carLeftOffset = 30 + (currentStep - 1) * 160;
+            animStageEl.innerHTML = `
+              <div class="stage-road-bg">
+                <div class="road-dashed-line"></div>
+                <img id="race-car-img" src="assets/images/game_race_car.jpg" class="race-car-sprite" style="left: ${carLeftOffset}px;" />
+                <div style="position: absolute; right: 30px; bottom: 20px; font-size: 2.2rem;">🚩</div>
+              </div>
+            `;
+            break;
+
+          case 'zoo':
+            const animalLeftPos = 20 + (currentStep - 1) * 160;
+            animStageEl.innerHTML = `
+              <div class="stage-zoo-bg">
+                <div style="position: absolute; top: 10px; left: 16px; font-weight: 900; color: #15803d; font-size: 0.95rem;">🌲 Rừng Xanh Vườn Thú (Trạm ${currentStep}/3)</div>
+                <div class="zoo-animal-sprite" id="zoo-animal-sprite-img" style="left: ${animalLeftPos}px;">
+                  ${currentStep === 1 ? '🦁' : (currentStep === 2 ? '🐯' : '🐰')}
+                </div>
+                <div style="position: absolute; right: 25px; bottom: 18px; font-size: 2.2rem;">🏁</div>
+              </div>
+            `;
+            break;
+
+          case 'tower':
+          default:
+            let legoBlocksHTML = "";
+            for (let i = 0; i < currentStep; i++) {
+              legoBlocksHTML += `<div class="lego-block-item">${i === 0 ? '85' : (i === 1 ? '92' : '100')}</div>`;
+            }
+            animStageEl.innerHTML = `
+              <div class="stage-lego-bg">
+                <div style="position: absolute; top: 10px; right: 16px; font-weight: 900; color: #b45309; font-size: 0.92rem;">🏰 Độ Cao Tháp Lego: ${currentStep} Tầng</div>
+                <div class="lego-stack-container" id="lego-stack-box">
+                  ${legoBlocksHTML}
+                </div>
+              </div>
+            `;
+            break;
+        }
+      }
+
+      function generateQuestionByGameType(gameType) {
+        let qText = "", correct = "", options = [];
+        
+        switch (gameType) {
+          case 'clock':
+            if (currentStep === 1) {
+              correct = "7 giờ đúng";
+              qText = `🕒 Kho Báu Thời Gian: Kim ngắn chỉ số 7, kim dài chỉ số 12. Hỏi đồng hồ chỉ mấy giờ?`;
+              options = ["7 giờ đúng", "8 giờ đúng", "6 giờ đúng", "12 giờ đúng"];
+            } else if (currentStep === 2) {
+              correct = "10 giờ đúng";
+              qText = `🕒 Kho Báu Thời Gian: Kim ngắn chỉ số 10, kim dài chỉ số 12. Hỏi mấy giờ?`;
+              options = ["10 giờ đúng", "9 giờ đúng", "11 giờ đúng", "12 giờ đúng"];
+            } else {
+              correct = "3 giờ đúng";
+              qText = `🕒 Kho Báu Thời Gian: Kim ngắn chỉ số 3, kim dài chỉ số 12. Kho báu mở lúc mấy giờ?`;
+              options = ["3 giờ đúng", "2 giờ đúng", "4 giờ đúng", "12 giờ đúng"];
+            }
+            break;
+
+          case 'fraction':
+            if (currentStep === 1) {
+              correct = "3/4";
+              qText = `🍕 Khu Rừng Phân Số: Chiếc bánh Pizza chia 4 phần bằng nhau. Bé ăn 3 phần. Phân số là?`;
+              options = ["3/4", "1/4", "2/4", "4/4"];
+            } else if (currentStep === 2) {
+              correct = "5/8";
+              qText = `🍕 Chiếc bánh Pizza chia 8 miếng. Bé ăn 5 miếng. Phân số chỉ phần bánh đã ăn là?`;
+              options = ["5/8", "3/8", "1/2", "6/8"];
+            } else {
+              correct = "2/6";
+              qText = `🍕 Bánh Pizza chia 6 miếng, bé Nam ăn 2 miếng. Phân số là bao nhiêu?`;
+              options = ["2/6", "4/6", "1/6", "3/6"];
+            }
+            break;
+
+          case 'pika':
+            if (currentStep === 1) {
+              correct = "43";
+              qText = `⚡ Pikachu Nhảy Ban Công Tầng 1: Tính phép cộng ${28} + ${15} = ?`;
+              options = ["43", "42", "40", "45"];
+            } else if (currentStep === 2) {
+              correct = "61";
+              qText = `⚡ Pikachu Nhảy Ban Công Tầng 2: Tính phép cộng ${36} + ${25} = ?`;
+              options = ["61", "59", "60", "65"];
+            } else {
+              correct = "82";
+              qText = `⚡ Pikachu Chinh Phục Tầng 3 Đỉnh Tháp: ${47} + ${35} = ?`;
+              options = ["82", "80", "81", "85"];
+            }
+            break;
+
+          case 'speed':
+            if (currentStep === 1) {
+              correct = "10";
+              qText = `🏎️ Đua Xe Phép Tính (Bảng 2): Xe vọt tốc ${2} x ${5} = ?`;
+              options = ["10", "12", "8", "15"];
+            } else if (currentStep === 2) {
+              correct = "30";
+              qText = `🏎️ Đua Xe Phép Tính (Bảng 5): Xe vọt tốc ${5} x ${6} = ?`;
+              options = ["30", "25", "35", "20"];
+            } else {
+              correct = "45";
+              qText = `🏎️ Đua Xe Phép Tính Cán Đích: ${5} x ${9} = ?`;
+              options = ["45", "40", "50", "35"];
+            }
+            break;
+
+          case 'zoo':
+            if (currentStep === 1) {
+              correct = "14 con";
+              qText = `🦁 Vườn Thú Toán Học: Vườn có 8 con Sư tử và 6 con Thỏ. Hỏi có tất cả bao nhiêu con vật?`;
+              options = ["14 con", "12 con", "15 con", "16 con"];
+            } else if (currentStep === 2) {
+              correct = "15 con";
+              qText = `🐯 Vườn Thú Toán Học: Vườn có 9 con Hổ, thêm 6 con Hổ con nữa. Tất cả là bao nhiêu?`;
+              options = ["15 con", "14 con", "16 con", "18 con"];
+            } else {
+              correct = "18 con";
+              qText = `🐰 Vườn Thú Toán Học: Vườn có 10 con Thỏ trắng và 8 con Chó. Có tất cả bao nhiêu con?`;
+              options = ["18 con", "17 con", "19 con", "20 con"];
+            }
+            break;
+
+          case 'tower':
+          default:
+            if (currentStep === 1) {
+              correct = "85";
+              qText = `🏰 Xây Tháp Lego Tầng 1: Số nào LỚN HƠN trong hai số 85 và 79?`;
+              options = ["85", "79", "Bằng nhau", "90"];
+            } else if (currentStep === 2) {
+              correct = "92";
+              qText = `🏰 Xây Tháp Lego Tầng 2: Số nào LỚN HƠN trong hai số 68 và 92?`;
+              options = ["92", "68", "Bằng nhau", "80"];
+            } else {
+              correct = "100";
+              qText = `🏰 Xây Tháp Lego Đỉnh Tháp: Số nào LỚN HƠN trong hai số 99 và 100?`;
+              options = ["100", "99", "Bằng nhau", "90"];
+            }
+            break;
+        }
+
+        options = options.sort(() => Math.random() - 0.5);
+        return { qText, correct, options };
+      }
+
+      function loadCurrentStepQuestion() {
+        isAnswered = false;
+        if (feedbackEl) feedbackEl.innerHTML = "";
+
+        if (stepCounterEl) stepCounterEl.textContent = `${currentStep}/${totalSteps}`;
+        if (progressFillEl) progressFillEl.style.width = `${(currentStep / totalSteps) * 100}%`;
+
+        renderStageByGameType(currentGameKey);
+
+        const qData = generateQuestionByGameType(currentGameKey);
+        activeCorrectAns = qData.correct;
+        if (gameQtextEl) gameQtextEl.textContent = qData.qText;
+
+        const colors = ['btn-opt-pink', 'btn-opt-green', 'btn-opt-blue', 'btn-opt-yellow'];
+        const prefix = ['A', 'B', 'C', 'D'];
+
+        optionsBoxEl.innerHTML = qData.options.map((opt, i) => `
+          <button class="btn-opt-color ${colors[i]}" data-val="${opt}">
+            ${prefix[i]}. ${opt}
+          </button>
+        `).join('');
+
+        optionsBoxEl.querySelectorAll('.btn-opt-color').forEach(btn => {
+          btn.addEventListener('click', function () {
+            if (isAnswered) return;
+            const chosen = btn.getAttribute('data-val');
+
+            if (chosen === activeCorrectAns) {
+              isAnswered = true;
+              btn.classList.add('correct-glow');
+
+              triggerStepAnimation(currentGameKey);
+
+              if (currentStep < totalSteps) {
+                if (feedbackEl) feedbackEl.innerHTML = `<span style="color: #10b981;">🎉 CHÍNH XÁC! Tiến lên thử thách ${currentStep + 1}!</span>`;
+                currentStep++;
+                setTimeout(() => {
+                  loadCurrentStepQuestion();
+                }, 1200);
+              } else {
+                if (feedbackEl) feedbackEl.innerHTML = '<span style="color: #10b981;">🏁 HOÀN THÀNH MÀN CHƠI! BÉ ĐÃ CHIẾN THẮNG XUẤT SẮC!</span>';
+                if (rewardToastEl) rewardToastEl.style.display = "block";
+
+                let curCoins = parseInt(localStorage.getItem("userXu")) || 1250;
+                let curXP = parseInt(localStorage.getItem("userXP")) || 450;
+                curCoins += 20;
+                curXP += 50;
+
+                localStorage.setItem("userXu", curCoins.toString());
+                localStorage.setItem("userXP", curXP.toString());
+
+                if (coinsEl) coinsEl.textContent = curCoins;
+                if (xpEl) xpEl.textContent = curXP + " XP";
+
+                setTimeout(() => {
+                  if (customModal) customModal.classList.remove('active');
+                }, 2000);
+              }
+            } else {
+              btn.classList.add('wrong-shake');
+              if (feedbackEl) feedbackEl.innerHTML = '<span style="color: #ef4444;">❌ Chưa đúng rồi, bé chọn lại nhé!</span>';
+              setTimeout(() => {
+                btn.classList.remove('wrong-shake');
+              }, 500);
+            }
+          });
+        });
+      }
+
+      function triggerStepAnimation(key) {
+        if (key === 'fraction') {
+          const pizzaImg = document.getElementById("pizza-sprite-img");
+          if (pizzaImg) pizzaImg.classList.add("slice-bounce");
+        } else if (key === 'speed') {
+          const carImg = document.getElementById("race-car-img");
+          if (carImg) carImg.classList.add("nitro-boost");
+        } else if (key === 'pika') {
+          const pikaImg = document.getElementById("pika-mascot-img");
+          if (pikaImg) pikaImg.classList.add("jump-up");
+        } else if (key === 'zoo') {
+          const animalImg = document.getElementById("zoo-animal-sprite-img");
+          if (animalImg) animalImg.classList.add("walk-forward");
+        }
+      }
+
+      window.openCustomGameModal = function(key, title) {
+        currentGameKey = key || 'clock';
+        currentStep = 1;
+        if (rewardToastEl) rewardToastEl.style.display = "none";
+        if (gameTitleEl) gameTitleEl.textContent = title || "🎮 Mini-Game Hoạt Hình";
+
+        loadCurrentStepQuestion();
+        if (customModal) customModal.classList.add('active');
+      };
+
+      document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.custom-game-trigger, .btn-play-img17, .btn-complete-mission');
+        if (btn) {
+          e.preventDefault();
+          const key = btn.getAttribute('data-game-key') || 'clock';
+          const title = btn.getAttribute('data-game-title') || 'Mini-Game Hoạt Hình';
+          openCustomGameModal(key, title);
+        }
+      });
+
+      // ENGINE BÀI THI HẰNG TUẦN
+      let examTimerInterval = null;
+      let examSecondsRemaining = 300;
+      let currentExamQuestionIndex = 0;
+      let userExamAnswers = {};
+      let cheatCount = 0;
+      let currentActiveExamQuestions = weekQuestionsMap.week_1.questions;
+
+      window.addEventListener("visibilitychange", function () {
+        const workingScreen = document.getElementById("exam-working-screen");
+        if (workingScreen && !workingScreen.classList.contains("hidden")) {
+          if (document.hidden) {
+            cheatCount++;
+            const cheatCountSpan = document.getElementById("cheat-count");
+            if (cheatCountSpan) cheatCountSpan.textContent = cheatCount;
+
+            if (cheatCount >= 3) {
+              alert("⚠️ CẢNH BÁO GIAN LẬN: Bạn đã chuyển tab quá 3 lần! Hệ thống tự động nộp bài thi ngay.");
+              submitExamNow();
+            } else {
+              alert(`⚠️ CẢNH BÁO GIAN LẬN: Hệ thống phát hiện bạn vừa chuyển tab (Lần ${cheatCount}/3)! Vui lòng tập trung làm bài.`);
+            }
+          }
+        }
+      });
+
+      window.startRealWeeklyExam = function () {
+        const tabExamBtn = document.getElementById("tab-btn-exam");
+        activatePanel("tab-weekly-exam", tabExamBtn);
+
+        const selectEl = document.getElementById("select-week");
+        const selectedWeekKey = selectEl ? selectEl.value : 'week_1';
+        const weekData = weekQuestionsMap[selectedWeekKey] || weekQuestionsMap.week_1;
+
+        currentActiveExamQuestions = weekData.questions;
+
+        const startScreen = document.getElementById('exam-start-screen');
+        const workingScreen = document.getElementById('exam-working-screen');
+        const resultScreen = document.getElementById('exam-result-screen');
+
+        if (startScreen) startScreen.classList.add('hidden');
+        if (resultScreen) resultScreen.classList.add('hidden');
+        if (workingScreen) workingScreen.classList.remove('hidden');
+
+        currentExamQuestionIndex = 0;
+        userExamAnswers = {};
+        examSecondsRemaining = 300;
+        cheatCount = 0;
+
+        const cheatCountSpan = document.getElementById("cheat-count");
+        if (cheatCountSpan) cheatCountSpan.textContent = "0";
+
+        startExamTimerCountdown();
+        renderExamQuestionByIndex(0);
+      };
+
+      function startExamTimerCountdown() {
+        if (examTimerInterval) clearInterval(examTimerInterval);
+
+        const timerDisplay = document.getElementById("timer");
+
+        examTimerInterval = setInterval(function () {
+          examSecondsRemaining--;
+          
+          if (examSecondsRemaining <= 0) {
+            clearInterval(examTimerInterval);
+            if (timerDisplay) timerDisplay.textContent = "00:00";
+            alert("⏰ Đã hết thời gian 5 phút làm bài! Hệ thống tự động nộp bài thi.");
+            submitExamNow();
+            return;
+          }
+
+          const mins = Math.floor(examSecondsRemaining / 60);
+          const secs = Math.floor(examSecondsRemaining % 60);
+          const formattedMins = mins < 10 ? "0" + mins : mins;
+          const formattedSecs = secs < 10 ? "0" + secs : secs;
+
+          if (timerDisplay) {
+            timerDisplay.textContent = `${formattedMins}:${formattedSecs}`;
+            if (examSecondsRemaining <= 60) {
+              timerDisplay.style.color = "#ef4444";
+            } else {
+              timerDisplay.style.color = "#facc15";
+            }
+          }
+        }, 1000);
+      }
+
+      function renderExamQuestionByIndex(idx) {
+        const qData = currentActiveExamQuestions[idx];
+        if (!qData) return;
+
+        const titleText = document.getElementById("question-title");
+        const optionsBox = document.getElementById("options-container");
+        const nextBtn = document.getElementById("btn-next-question");
+        const submitBtn = document.getElementById("btn-submit-exam");
+
+        if (titleText) titleText.textContent = qData.title;
+
+        if (optionsBox) {
+          optionsBox.innerHTML = qData.options.map((optText, i) => {
+            const isSelected = (userExamAnswers[idx] === i);
+            return `
+              <button class="quiz-opt-btn-custom ${isSelected ? 'selected-choice' : ''}" onclick="selectExamAnswerOption(${idx}, ${i})">
+                <span>${optText}</span>
+                ${isSelected ? '<span>✅</span>' : ''}
+              </button>
+            `;
+          }).join('');
+        }
+
+        if (idx === currentActiveExamQuestions.length - 1) {
+          if (nextBtn) nextBtn.style.display = "none";
+          if (submitBtn) submitBtn.classList.remove("hidden");
+        } else {
+          if (nextBtn) nextBtn.style.display = "inline-block";
+          if (submitBtn) submitBtn.classList.add("hidden");
+        }
+      }
+
+      window.selectExamAnswerOption = function (qIdx, optIdx) {
+        userExamAnswers[qIdx] = optIdx;
+        renderExamQuestionByIndex(qIdx);
+      };
+
+      window.nextExamQuestion = function () {
+        if (currentExamQuestionIndex < currentActiveExamQuestions.length - 1) {
+          currentExamQuestionIndex++;
+          renderExamQuestionByIndex(currentExamQuestionIndex);
+        }
+      };
+
+      window.submitExamNow = function () {
+        if (examTimerInterval) clearInterval(examTimerInterval);
+
+        const selectEl = document.getElementById("select-week");
+        const selectedWeekKey = selectEl ? selectEl.value : 'week_1';
+        const weekData = weekQuestionsMap[selectedWeekKey] || weekQuestionsMap.week_1;
+        const currentExamName = weekData.title;
+
+        let correctCount = 0;
+        currentActiveExamQuestions.forEach((q, idx) => {
+          if (userExamAnswers[idx] === q.correctIdx) {
+            correctCount++;
+          }
+        });
+
+        const totalQ = currentActiveExamQuestions.length;
+        const scoreTenScale = ((correctCount / totalQ) * 10).toFixed(1);
+
+        const rewardXP = correctCount * 20;
+        const rewardXu = correctCount * 8;
+
+        let curCoins = parseInt(localStorage.getItem("userXu")) || 1250;
+        let curXP = parseInt(localStorage.getItem("userXP")) || 450;
+        curCoins += rewardXu;
+        curXP += rewardXP;
+
+        localStorage.setItem("userXu", curCoins.toString());
+        localStorage.setItem("userXP", curXP.toString());
+
+        if (coinsEl) coinsEl.textContent = curCoins;
+        if (xpEl) xpEl.textContent = curXP + " XP";
+
+        let activeTeacherName = localStorage.getItem("teacherName") || "Cô Mai";
+
+        const historyTableBody = document.getElementById("student-history-table-body");
+        if (historyTableBody) {
+          const nowStr = new Date().toLocaleTimeString('vi-VN') + " " + new Date().toLocaleDateString('vi-VN');
+          const commentText = correctCount >= 4 ? '"Con làm bài xuất sắc! Đạt danh hiệu Dũng sĩ Toán 🌟"' : '"Con làm khá tốt! Cố gắng luyện tập thêm nhé 👏"';
+          
+          const newRowHTML = `
+            <tr>
+              <td>${currentExamName}</td>
+              <td><span class="score-badge-10" style="color: ${correctCount >= 4 ? '#059669' : '#0284c7'};">${scoreTenScale} / 10</span></td>
+              <td>${nowStr}</td>
+              <td>${correctCount}/${totalQ} câu</td>
+              <td>
+                <span class="teacher-comment-italic">
+                  ${commentText}
+                  <br><strong style="font-size: 0.85rem; color: #0284c7;">(Lời nhắn từ <span class="teacher-sign-name">${activeTeacherName}</span>)</strong>
+                </span>
+              </td>
+            </tr>
+          `;
+          historyTableBody.insertAdjacentHTML('afterbegin', newRowHTML);
+
+          setupRowCommentClick();
+        }
+
+        const workingScreen = document.getElementById("exam-working-screen");
+        const resultScreen = document.getElementById("exam-result-screen");
+        const resultScore = document.getElementById("result-score");
+        const resultMsg = document.getElementById("result-msg");
+
+        if (workingScreen) workingScreen.classList.add("hidden");
+        if (resultScreen) resultScreen.classList.remove("hidden");
+
+        if (resultScore) resultScore.textContent = `Bạn đạt: ${correctCount}/${totalQ} câu đúng (${scoreTenScale} điểm)`;
+        if (resultMsg) {
+          if (correctCount === 5) {
+            resultMsg.textContent = `🌟 TAY NGHỀ XUẤT SẮC! Bé đã đạt điểm 10 tuyệt đối (${currentExamName}) (+100 XP, +40 Xu)!`;
+          } else {
+            resultMsg.textContent = `👏 Bé làm bài rất cố gắng! Nhận thưởng (+${rewardXP} XP, +${rewardXu} Xu).`;
+          }
+        }
+      };
+
+      window.goToHomeTab = function () {
+        if (customModal) customModal.classList.remove('active');
+
+        const studentView = document.getElementById("student-view-container");
+        const teacherView = document.getElementById("teacher-view-container");
+
+        if (studentView && teacherView) {
+          teacherView.style.display = "none";
+          studentView.style.display = "block";
+        }
+
+        const tabHome = document.getElementById("tab-btn-home");
+        if (typeof activatePanel === "function") {
+          activatePanel("tab-home-tasks", tabHome);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      // DỮ LIỆU ĐỒNG BỘ LỚP & XẾP HẠNG
+      let globalClasses = [
+        { id: "2AI", name: "Lớp 2 AI" },
+        { id: "2A", name: "Lớp 2A" },
+        { id: "2B", name: "Lớp 2B" },
+        { id: "2C", name: "Lớp 2C" }
+      ];
+
+      let globalStudents = [
+        { id: 101, name: "Vũ Bảo An", classId: "2AI" },
+        { id: 102, name: "Bé Nam (Con)", classId: "2AI" },
+        { id: 103, name: "Đỗ Hoàng Long", classId: "2AI" },
+        { id: 104, name: "Trần Tiến Đạt", classId: "2A" },
+        { id: 105, name: "Nguyen Văn A", classId: "2A" },
+        { id: 106, name: "Lê Thị B", classId: "2B" }
+      ];
+
+      let studentClassMap = {};
+      try {
+        const savedMap = localStorage.getItem("studentClassMap");
+        if (savedMap) studentClassMap = JSON.parse(savedMap);
+      } catch(e){}
+
+      try {
+        const savedStudents = localStorage.getItem("globalStudents");
+        if (savedStudents) {
+          const parsed = JSON.parse(savedStudents);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            globalStudents = parsed;
+          }
+        }
+      } catch(e){}
+
+      globalStudents.forEach(s => {
+        const key = s.name.toLowerCase();
+        if (studentClassMap[key]) {
+          s.classId = studentClassMap[key];
+        } else if (!s.classId) {
+          s.classId = "2AI";
+        }
+      });
+
+      let gameTaskScoreStore = {
+        "game-pika": [
+          { studentId: 101, xp: 2100 },
+          { studentId: 102, xp: 1900 },
+          { studentId: 103, xp: 1750 },
+          { studentId: 104, xp: 1500 },
+          { studentId: 106, xp: 1200 }
+        ],
+        "task-rung-xanh": [
+          { studentId: 101, xp: 50 },
+          { studentId: 104, xp: 50 }
+        ]
+      };
+
+      let examScoreStore = [
+        { studentId: 101, score: "10/10", time: "12 phút" },
+        { studentId: 102, score: "9.5/10", time: "14 phút" },
+        { studentId: 103, score: "8/10", time: "18 phút" },
+        { studentId: 104, score: "10/10", time: "10 phút" }
+      ];
+
+      let teacherAccounts = [
+        {
+          id: "gv001",
+          username: "comai",
+          password: "123456",
+          displayName: "Cô Mai",
+          assignedClasses: ["2A", "2B"],
+          classes: ["2A", "2B"],
+          active: true
+        },
+        {
+          id: "gv002",
+          username: "cohuong",
+          password: "123456",
+          displayName: "Cô Hương",
+          assignedClasses: ["2A"],
+          classes: ["2A"],
+          active: true
+        },
+        {
+          id: "gv003",
+          username: "thayhung",
+          password: "123456",
+          displayName: "Thầy Hùng",
+          assignedClasses: ["2B"],
+          classes: ["2B"],
+          active: true
+        },
+        {
+          id: "gv004",
+          username: "colan",
+          password: "123456",
+          displayName: "Cô Lan",
+          assignedClasses: ["2C"],
+          classes: ["2C"],
+          active: true
+        },
+        {
+          id: "gv005",
+          username: "demo",
+          password: "demo",
+          displayName: "Giáo viên Demo",
+          assignedClasses: ["2A"],
+          classes: ["2A"],
+          active: true
+        }
+      ];
+
+      const storedTeacherAccounts = localStorage.getItem("teacherAccounts");
+      if (storedTeacherAccounts) {
+        try {
+          const parsed = JSON.parse(storedTeacherAccounts);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            teacherAccounts = parsed;
+          }
+        } catch(e){}
+      } else {
+        localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
+      }
+
+      function isAdmin() {
+        return localStorage.getItem("currentUserRole") === "admin";
+      }
+
+      function isTeacher() {
+        return localStorage.getItem("currentUserRole") === "teacher";
+      }
+
+      function getCurrentTeacher() {
+        const role = localStorage.getItem("currentUserRole");
+        if (role === "admin") {
+          return {
+            id: "admin",
+            username: "admin",
+            displayName: "Admin Quản Trị Hệ Thống",
+            assignedClasses: globalClasses.map(c => c.id),
+            classes: globalClasses.map(c => c.id),
+            active: true
+          };
+        }
+        const storedTeacherId = localStorage.getItem("currentTeacherId");
+        if (storedTeacherId) {
+          const found = teacherAccounts.find(t => t.id === storedTeacherId);
+          if (found) return found;
+        }
+        return null;
+      }
+
+      function getCurrentTeacherClasses() {
+        const teacher = getCurrentTeacher();
+        if (!teacher) return globalClasses.map(c => c.id);
+        if (isAdmin()) return globalClasses.map(c => c.id);
+        return teacher.assignedClasses || teacher.classes || [];
+      }
+
+      function teacherCanAccessClass(classId) {
+        const allowed = getCurrentTeacherClasses();
+        if (classId === "ALL" || !classId) return true;
+        return allowed.includes(classId);
+      }
+
+      function getTeacherAllowedStudents() {
+        const allowedClasses = getCurrentTeacherClasses();
+        return globalStudents.filter(s => allowedClasses.includes(s.classId));
+      }
+
+      // Render Bảng Quản Lý Giáo Viên Cho Admin
+      window.renderAdminTeacherTable = function() {
+        const tbody = document.getElementById("admin-teacher-table-body");
+        if (!tbody) return;
+
+        tbody.innerHTML = teacherAccounts.map((t) => {
+          const assignedNames = (t.assignedClasses || t.classes || []).map(cId => {
+            const cls = globalClasses.find(c => c.id === cId);
+            return cls ? cls.name : cId;
+          }).join(', ');
+
+          const isLocked = t.active === false;
+
+          return `
+            <tr style="border-bottom:1px solid #e2e8f0; background:${isLocked ? '#fef2f2' : '#ffffff'};">
+              <td style="padding:10px; font-weight:bold; color:#1e293b;">${t.displayName}</td>
+              <td style="padding:10px; color:#475569;"><code>${t.username}</code></td>
+              <td style="padding:10px;"><span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">${assignedNames || 'Chưa phân lớp'}</span></td>
+              <td style="padding:10px;">${isLocked ? '<span style="color:#ef4444; font-weight:bold;">🔒 Đã khóa</span>' : '<span style="color:#10b981; font-weight:bold;">🟢 Hoạt động</span>'}</td>
+              <td style="padding:10px; text-align:center; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                <button onclick="openEditTeacherModal('${t.id}')" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">✏️ Sửa Lớp</button>
+                <button onclick="changeTeacherPassword('${t.id}')" style="background:#fef3c7; color:#d97706; border:1px solid #fde68a; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">🔑 Đổi Mật Khẩu</button>
+                <button onclick="toggleTeacherActive('${t.id}')" style="background:${isLocked ? '#dcfce7' : '#fee2e2'}; color:${isLocked ? '#15803d' : '#b91c1c'}; border:1px solid #cbd5e1; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">${isLocked ? '🔓 Mở khóa' : '🔒 Khóa'}</button>
+                <button onclick="deleteTeacherAccount('${t.id}')" style="background:#fef2f2; color:#ef4444; border:1px solid #fecaca; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">🗑️ Xóa</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        const classTbody = document.getElementById("admin-class-table-body");
+        if (classTbody) {
+          classTbody.innerHTML = globalClasses.map(c => {
+            const assignedTeachers = teacherAccounts.filter(t => (t.assignedClasses || t.classes || []).includes(c.id)).map(t => t.displayName).join(', ');
+            const studentCount = globalStudents.filter(s => s.classId === c.id).length;
+            return `
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 10px; font-weight:bold; color:#475569;">${c.id}</td>
+                <td style="padding:8px 10px; font-weight:bold; color:#0f172a;">${c.name}</td>
+                <td style="padding:8px 10px; color:#0284c7; font-weight:bold;">${assignedTeachers || 'Chưa phân công'}</td>
+                <td style="padding:8px 10px; color:#16a34a; font-weight:bold;">${studentCount} học sinh</td>
+                <td style="padding:8px 10px; text-align:center;">
+                  <button onclick="editClassName('${c.id}')" style="background:#f1f5f9; border:1px solid #cbd5e1; padding:3px 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">✏️ Sửa tên</button>
+                  <button onclick="deleteClass('${c.id}')" style="background:#fef2f2; color:#ef4444; border:1px solid #fecaca; padding:3px 8px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:bold;">🗑️ Xóa</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      };
+
+      window.openAddTeacherModal = function () {
+        document.getElementById("input-admin-teacher-id").value = "";
+        document.getElementById("input-admin-teacher-displayname").value = "";
+        document.getElementById("input-admin-teacher-username").value = "";
+        document.getElementById("input-admin-teacher-password").value = "123456";
+        document.getElementById("admin-teacher-form-title").textContent = "➕ Thêm Tài Khoản Giáo Viên Mới";
+
+        const container = document.getElementById("admin-teacher-class-checkboxes");
+        if (container) {
+          container.innerHTML = globalClasses.map(c => `
+            <label style="display:inline-flex; align-items:center; gap:6px; font-weight:bold; font-size:13px; cursor:pointer;">
+              <input type="checkbox" class="admin-class-cb" value="${c.id}" /> ${c.name}
+            </label>
+          `).join('');
+        }
+
+        const modal = document.getElementById("modal-admin-teacher-form");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+        }
+      };
+
+      window.openEditTeacherModal = function (tId) {
+        const teacher = teacherAccounts.find(t => t.id === tId);
+        if (!teacher) return;
+
+        document.getElementById("input-admin-teacher-id").value = teacher.id;
+        document.getElementById("input-admin-teacher-displayname").value = teacher.displayName;
+        document.getElementById("input-admin-teacher-username").value = teacher.username;
+        document.getElementById("input-admin-teacher-password").value = teacher.password || "123456";
+        document.getElementById("admin-teacher-form-title").textContent = `✏️ Chỉnh Sửa Lớp Phụ Trách: ${teacher.displayName}`;
+
+        const assigned = teacher.assignedClasses || teacher.classes || [];
+
+        const container = document.getElementById("admin-teacher-class-checkboxes");
+        if (container) {
+          container.innerHTML = globalClasses.map(c => `
+            <label style="display:inline-flex; align-items:center; gap:6px; font-weight:bold; font-size:13px; cursor:pointer;">
+              <input type="checkbox" class="admin-class-cb" value="${c.id}" ${assigned.includes(c.id) ? 'checked' : ''} /> ${c.name}
+            </label>
+          `).join('');
+        }
+
+        const modal = document.getElementById("modal-admin-teacher-form");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+        }
+      };
+
+      window.saveAdminTeacherForm = function () {
+        const tId = document.getElementById("input-admin-teacher-id").value;
+        const displayName = document.getElementById("input-admin-teacher-displayname").value.trim();
+        const username = document.getElementById("input-admin-teacher-username").value.trim();
+        const password = document.getElementById("input-admin-teacher-password").value.trim();
+
+        if (!displayName || !username || !password) {
+          alert("Vui lòng điền đầy đủ họ tên, tên tài khoản và mật khẩu!");
+          return;
+        }
+
+        const checkedClasses = Array.from(document.querySelectorAll(".admin-class-cb:checked")).map(cb => cb.value);
+
+        if (tId) {
+          const teacher = teacherAccounts.find(t => t.id === tId);
+          if (teacher) {
+            teacher.displayName = displayName;
+            teacher.username = username;
+            teacher.password = password;
+            teacher.assignedClasses = checkedClasses;
+            teacher.classes = checkedClasses;
+          }
+        } else {
+          if (teacherAccounts.some(t => t.username.toLowerCase() === username.toLowerCase())) {
+            alert("Tên tài khoản này đã tồn tại! Vui lòng chọn tên khác.");
+            return;
+          }
+
+          teacherAccounts.push({
+            id: "teacher_" + Date.now(),
+            username: username,
+            password: password,
+            displayName: displayName,
+            assignedClasses: checkedClasses,
+            classes: checkedClasses,
+            active: true
+          });
+        }
+
+        localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
+        closeModal("modal-admin-teacher-form");
+        renderAdminTeacherTable();
+        renderClassOptions();
+        if (typeof handleClassChange === "function") {
+          handleClassChange(document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL");
+        }
+      };
+
+      window.changeTeacherPassword = function(tId) {
+        const teacher = teacherAccounts.find(t => t.id === tId);
+        if (!teacher) return;
+        const newPass = prompt(`Nhập mật khẩu mới cho ${teacher.displayName} (${teacher.username}):`, teacher.password || "123456");
+        if (newPass && newPass.trim() !== "") {
+          teacher.password = newPass.trim();
+          localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
+          alert(`Đã cập nhật mật khẩu mới cho ${teacher.displayName}!`);
+          renderAdminTeacherTable();
+        }
+      };
+
+      window.toggleTeacherActive = function(tId) {
+        const teacher = teacherAccounts.find(t => t.id === tId);
+        if (!teacher) return;
+        teacher.active = (teacher.active === false) ? true : false;
+        localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
+        renderAdminTeacherTable();
+      };
+
+      window.deleteTeacherAccount = function(tId) {
+        const teacher = teacherAccounts.find(t => t.id === tId);
+        if (!teacher) return;
+        if (confirm(`Bạn có chắc muốn xóa tài khoản giáo viên "${teacher.displayName}"?`)) {
+          teacherAccounts = teacherAccounts.filter(t => t.id !== tId);
+          localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
+          renderAdminTeacherTable();
+          renderClassOptions();
+        }
+      };
+
+      window.switchTeacherDashboardView = function() {
+        const studentView = document.getElementById("student-view-container");
+        const teacherView = document.getElementById("teacher-view-container");
+
+        if (studentView && teacherView) {
+          studentView.style.display = "none";
+          teacherView.style.display = "block";
+        }
+
+        const role = localStorage.getItem("currentUserRole") || "teacher";
+        const teacher = getCurrentTeacher();
+
+        const adminModule = document.getElementById("admin-system-control-module");
+        if (adminModule) {
+          adminModule.style.display = (role === "admin") ? "block" : "none";
+        }
+
+        const teacherTitleName = document.getElementById("teacher-view-title-name");
+        const teacherNameDisplay = document.getElementById("teacher-name-display");
+
+        if (role === "admin") {
+          if (teacherTitleName) teacherTitleName.textContent = "Admin Quản Trị Hệ Thống";
+          if (teacherNameDisplay) teacherNameDisplay.textContent = "Admin";
+        } else if (teacher) {
+          if (teacherTitleName) teacherTitleName.textContent = teacher.displayName;
+          if (teacherNameDisplay) teacherNameDisplay.textContent = teacher.displayName;
+        }
+
+        const warningBanner = document.getElementById("teacher-unassigned-warning");
+        const allowedClasses = getCurrentTeacherClasses();
+        if (role === "teacher" && allowedClasses.length === 0) {
+          if (warningBanner) warningBanner.style.display = "block";
+        } else {
+          if (warningBanner) warningBanner.style.display = "none";
+        }
+
+        renderClassOptions();
+        renderAdminTeacherTable();
+        if (typeof handleClassChange === "function") {
+          const globalSelect = document.getElementById("global-class-select");
+          handleClassChange(globalSelect ? globalSelect.value : "ALL");
+        }
+      };
+
+      // QUẢN LÝ LỚP / NHÓM
+      window.renderClassOptions = function () {
+        const globalSelect = document.getElementById("global-class-select");
+        const teacher = getCurrentTeacher();
+
+        if (globalSelect) {
+          const currentVal = globalSelect.value || "ALL";
+          
+          let allowedClasses = globalClasses;
+          if (teacher && teacher.classes) {
+            allowedClasses = globalClasses.filter(c => teacher.classes.includes(c.id));
+          }
+
+          globalSelect.innerHTML = `<option value="ALL">🌐 Tất cả các lớp</option>` +
+            allowedClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+          
+          if (teacher && teacher.classes && teacher.classes.length === 1) {
+            globalSelect.value = teacher.classes[0];
+          } else if (allowedClasses.some(c => c.id === currentVal) || currentVal === "ALL") {
+            globalSelect.value = currentVal;
+          } else {
+            globalSelect.value = "ALL";
+          }
+        }
+
+        const studentClassInput = document.getElementById("student-class-input");
+        if (studentClassInput) {
+          studentClassInput.innerHTML = globalClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
+        const tagsContainer = document.getElementById("class-management-tags");
+        if (tagsContainer) {
+          if (teacher && teacher.classes) {
+            const currentSelected = globalSelect ? globalSelect.value : "ALL";
+            tagsContainer.innerHTML = `
+              <div style="font-weight:bold; color:#0284c7; margin-bottom:6px; font-size:13px;">
+                👩‍🏫 ${teacher.displayName} | 📚 Lớp quản lý:
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <button onclick="selectTeacherClassTag('ALL')" style="background:${currentSelected === 'ALL' ? '#0284c7' : '#f1f5f9'}; color:${currentSelected === 'ALL' ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
+                  🌐 Tất cả (${teacher.classes.join(', ')})
+                </button>
+                ${teacher.classes.map(cId => {
+                  const cls = globalClasses.find(c => c.id === cId);
+                  const cName = cls ? cls.name : cId;
+                  const isSel = currentSelected === cId;
+                  return `
+                    <button onclick="selectTeacherClassTag('${cId}')" style="background:${isSel ? '#0284c7' : '#f1f5f9'}; color:${isSel ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
+                      🏫 ${cName}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            `;
+          } else {
+            tagsContainer.innerHTML = globalClasses.map(c => `
+              <div style="background:#f1f5f9; padding:6px 12px; border-radius:20px; font-size:13px; display:inline-flex; align-items:center; gap:6px; border:1px solid #cbd5e1;">
+                <span style="font-weight:bold; color:#334155;">${c.name}</span>
+                <button onclick="editClassName('${c.id}')" title="Sửa tên" style="background:none; border:none; cursor:pointer; font-size:12px;">✏️</button>
+                <button onclick="deleteClass('${c.id}')" title="Xóa lớp" style="background:none; border:none; cursor:pointer; font-size:12px; color:#ef4444;">🗑️</button>
+              </div>
+            `).join('');
+          }
+        }
+      };
+
+      window.selectTeacherClassTag = function (classId) {
+        const globalSelect = document.getElementById("global-class-select");
+        if (globalSelect) {
+          globalSelect.value = classId;
+          handleClassChange(classId);
+          renderClassOptions();
+        }
+      };
+
+      window.forceHideAllModals = function () {
+        const loginModal = document.getElementById("edit-profile-modal") || document.getElementById("student-login-modal");
+        const rankModal = document.getElementById("leaderboard-modal");
+
+        if (loginModal) {
+          loginModal.style.display = "none";
+          loginModal.classList.remove("active");
+        }
+        if (rankModal) {
+          rankModal.style.display = "none";
+          rankModal.classList.remove("active");
+        }
+      };
+      window.closeAllModals = window.forceHideAllModals;
+
+      window.closeModal = function (modalId) {
+        if (modalId) {
+          const modal = document.getElementById(modalId);
+          if (modal) {
+            modal.style.display = "none";
+            modal.classList.remove("active");
+            return;
+          }
+        }
+        forceHideAllModals();
+      };
+
+      // ĐĂNG NHẬP HỌC SINH
+      window.openStudentLoginModal = function () {
+        forceHideAllModals();
+
+        const modal = document.getElementById("edit-profile-modal") || document.getElementById("student-login-modal");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+        }
+
+        const nameInput = document.getElementById("input-student-fullname") || document.getElementById("student-name-input");
+        const currentNameDisplay = document.getElementById("user-name-display");
+        const savedName = localStorage.getItem("studentName") || (currentNameDisplay ? currentNameDisplay.textContent.trim() : "Bé Nam");
+        if (nameInput) {
+          nameInput.value = savedName;
+        }
+
+        const classSelect = document.getElementById("student-class-input");
+        if (classSelect) {
+          classSelect.innerHTML = globalClasses
+            .map(c => `<option value="${c.id}">${c.name}</option>`)
+            .join("");
+
+          const lowerName = savedName.toLowerCase();
+          let currentStudent = globalStudents.find(s => s.name.toLowerCase() === lowerName);
+          const savedClass = studentClassMap[lowerName] || (currentStudent ? currentStudent.classId : (localStorage.getItem("studentClass") || "2AI"));
+
+          if (savedClass) {
+            classSelect.value = savedClass;
+          }
+        }
+
+        if (nameInput && classSelect && !nameInput.dataset.classAutoSyncAttached) {
+          nameInput.dataset.classAutoSyncAttached = "true";
+          const autoSyncClass = function () {
+            const typedName = nameInput.value.trim().toLowerCase();
+            const matchedStudent = globalStudents.find(s => s.name.toLowerCase() === typedName);
+            const matchedClass = studentClassMap[typedName] || (matchedStudent ? matchedStudent.classId : null);
+            if (matchedClass) {
+              classSelect.value = matchedClass;
+            }
+          };
+          nameInput.addEventListener("input", autoSyncClass);
+          nameInput.addEventListener("change", autoSyncClass);
+        }
+      };
+
+      window.openStudentModal = window.openStudentLoginModal;
+      window.closeStudentLoginModal = function () {
+        closeModal("edit-profile-modal");
+      };
+
+      window.saveStudentProfileFromModal = function () {
+        const nameInput = document.getElementById("input-student-fullname") || document.getElementById("student-name-input");
+        const classSelect = document.getElementById("student-class-input");
+
+        const newName = nameInput ? nameInput.value.trim() : "";
+        const newClass = classSelect ? classSelect.value : "2AI";
+
+        if (!newName) {
+          alert("Vui lòng nhập họ và tên học sinh!");
+          return;
+        }
+
+        localStorage.setItem("studentName", newName);
+        localStorage.setItem("studentClass", newClass);
+
+        const lowerName = newName.toLowerCase();
+        studentClassMap[lowerName] = newClass;
+        localStorage.setItem("studentClassMap", JSON.stringify(studentClassMap));
+
+        let student = globalStudents.find(
+          s => s.name.toLowerCase() === lowerName
+        );
+
+        if (student) {
+          student.classId = newClass;
+        } else {
+          globalStudents.push({
+            id: Date.now(),
+            name: newName,
+            classId: newClass
+          });
+        }
+
+        localStorage.setItem("globalStudents", JSON.stringify(globalStudents));
+
+        const userNameDisplay = document.getElementById("user-name-display");
+        if (userNameDisplay) {
+          userNameDisplay.textContent = newName;
+        }
+
+        const studentBtn = document.getElementById("btn-student-login") || Array.from(document.querySelectorAll("button, div")).find(el => el.textContent.includes("Học sinh:"));
+        if (studentBtn) {
+          studentBtn.innerHTML = `👶 Học sinh: <span id="user-name-display">${newName}</span>`;
+        }
+
+        closeModal("edit-profile-modal");
+
+        const globalSelect = document.getElementById("global-class-select");
+        if (globalSelect) {
+          globalSelect.value = newClass;
+        }
+
+        if (typeof handleClassChange === "function") {
+          handleClassChange(newClass);
+        }
+      };
+
+      window.saveStudentProfile = window.saveStudentProfileFromModal;
+
+      // HÀM XỬ LÝ CHÚ ONG AI TUTOR
+      window.openAITutorDialog = function () {
+        forceHideAllModals();
+        const modal = document.getElementById("ai-chat-modal");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+        }
+      };
+
+      window.toggleBeeChat = function () {
+        const chatModal = document.getElementById("ai-chat-modal");
+        const beeWidgetBox = document.getElementById("bee-chat-box");
+
+        if (chatModal) {
+          if (chatModal.style.display === "flex" || chatModal.classList.contains("active")) {
+            chatModal.style.display = "none";
+            chatModal.classList.remove("active");
+          } else {
+            forceHideAllModals();
+            chatModal.style.display = "flex";
+            chatModal.classList.add("active");
+          }
+        } else if (beeWidgetBox) {
+          beeWidgetBox.style.display = (beeWidgetBox.style.display === "none" || beeWidgetBox.style.display === "") ? "block" : "none";
+        } else {
+          openAITutorDialog();
+        }
+      };
+
+      window.sendBeeMessage = function () {
+        const inputField = document.getElementById("ai-chat-input-field") || document.getElementById("bee-input");
+        const chatMessagesBody = document.getElementById("ai-chat-messages-body") || document.getElementById("bee-chat-messages");
+
+        if (!inputField || !chatMessagesBody) return;
+
+        const text = inputField.value.trim();
+        if (!text) return;
+
+        const userMsg = document.createElement("div");
+        userMsg.style.cssText = "background: #eab308; color: white; padding: 10px 14px; border-radius: 16px 16px 4px 16px; margin-left: auto; max-width: 80%; word-break: break-word; font-weight: bold; margin-bottom: 10px;";
+        userMsg.textContent = text;
+        chatMessagesBody.appendChild(userMsg);
+
+        inputField.value = "";
+        chatMessagesBody.scrollTop = chatMessagesBody.scrollHeight;
+
+        setTimeout(() => {
+          const beeMsg = document.createElement("div");
+          beeMsg.style.cssText = "background: #ffffff; padding: 12px 16px; border-radius: 16px 16px 16px 4px; border: 2px solid #fef08a; color: #422006; margin-right: auto; max-width: 85%; box-shadow: 0 2px 8px rgba(0,0,0,0.05); line-height: 1.5; margin-bottom: 10px;";
+
+          let answer = window.aiTutorService ? window.aiTutorService.generateResponse(text) : ("🐝 " + text);
+          beeMsg.innerHTML = "🐝 " + answer.replace(/\n/g, "<br>");
+
+          if (chatMessagesBody) {
+            chatMessagesBody.appendChild(beeMsg);
+            chatMessagesBody.scrollTop = chatMessagesBody.scrollHeight;
+          }
+        }, 300);
+      };
+
+      window.toggleVoiceAIInput = function () {
+        if (window.aiTutorService) {
+          window.aiTutorService.toggleVoiceInput();
+        }
+      };
+
+      const aiInputElem = document.getElementById("ai-chat-input-field");
+      if (aiInputElem) {
+        aiInputElem.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            sendBeeMessage();
+          }
+        });
+      }
+
+      window.openLeaderboardModal = function (btnEl) {
+        forceHideAllModals();
+
+        // 1. Kích hoạt chuyển nút/tab Bảng Xếp Hạng sang trạng thái màu cam (active)
+        document.querySelectorAll('.tab-nav-btn, .nav-tab').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        const rankTabBtn = document.getElementById("tab-btn-ranking") || (btnEl && btnEl.classList && btnEl.classList.contains("tab-nav-btn") ? btnEl : null);
+        if (rankTabBtn) {
+          rankTabBtn.classList.add("active");
+        }
+
+        // 2. Mở popup modal Bảng Xếp Hạng
+        const modal = document.getElementById("leaderboard-modal");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+          updateStudentModalView();
         }
       };
 
       window.closeLeaderboardModal = function () {
         const modal = document.getElementById("leaderboard-modal");
         if (modal) {
-          modal.classList.remove("active");
           modal.style.display = "none";
+          modal.classList.remove("active");
         }
       };
 
-      function renderLeaderboardDataList() {
+      window.updateStudentModalView = function () {
         const listContainer = document.getElementById("leaderboard-list");
         if (!listContainer) return;
 
-        let sampleList = [
-          { name: "Vũ Bảo An", className: "Lớp 2 AI", xp: 2100 },
-          { name: "Bé Nam (Con)", className: "Lớp 2 AI", xp: 1950 },
-          { name: "Đỗ Hoàng Long", className: "Lớp 2 AI", xp: 1750 },
-          { name: "Trần Tiến Đạt", className: "Lớp 2A", xp: 1500 },
-          { name: "Nguyễn Văn A", className: "Lớp 2A", xp: 1200 }
-        ];
+        // 1. Lấy toàn bộ danh sách tất cả học sinh tham gia hệ thống (không bị giới hạn/lọc thiếu)
+        let studentsList = [...globalStudents];
 
+        // Đồng bộ học sinh hiện tại từ localStorage
+        const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
+        const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
+        const currentStudentXP = parseInt(localStorage.getItem("userXP")) || 450;
+
+        let currentStudentObj = studentsList.find(s => s.name.toLowerCase() === currentStudentName.toLowerCase());
+        if (!currentStudentObj) {
+          currentStudentObj = {
+            id: 102,
+            name: currentStudentName,
+            classId: currentStudentClass
+          };
+          studentsList.push(currentStudentObj);
+        } else {
+          currentStudentObj.classId = currentStudentClass;
+        }
+
+        // 2. Tổng hợp điểm XP đầy đủ cho từng học sinh
+        let mergedData = studentsList.map(student => {
+          let studentXP = 0;
+
+          if (student.name.toLowerCase() === currentStudentName.toLowerCase()) {
+            studentXP = currentStudentXP;
+          } else {
+            for (let catKey in gameTaskScoreStore) {
+              const items = gameTaskScoreStore[catKey] || [];
+              const found = items.find(i => i.studentId === student.id || (i.name && i.name.toLowerCase() === student.name.toLowerCase()));
+              if (found && found.xp > studentXP) {
+                studentXP = found.xp;
+              }
+            }
+            if (studentXP === 0) {
+              const defaultXPMap = { 101: 2100, 102: 1900, 103: 1750, 104: 1500, 105: 1350, 106: 1200 };
+              studentXP = defaultXPMap[student.id] || 1000;
+            }
+          }
+
+          let classObj = globalClasses.find(c => c.id === student.classId);
+          let className = classObj ? classObj.name : (student.classId || "Lớp 2 AI");
+
+          return {
+            id: student.id,
+            name: student.name,
+            className: className,
+            xp: studentXP
+          };
+        });
+
+        // 3. Sắp xếp danh sách học sinh theo điểm XP giảm dần
+        mergedData.sort((a, b) => b.xp - a.xp);
+
+        // 4. Render danh sách đầy đủ tất cả học sinh
         const badges = ["🥇", "🥈", "🥉"];
-        listContainer.innerHTML = sampleList.map((item, index) => {
-          const badgeIcon = badges[index] || `#${index + 1}`;
+        listContainer.innerHTML = mergedData.map((item, index) => {
+          const badgeIcon = badges[index] || `<span style="display:inline-block; width:22px; text-align:center; color:#64748b; font-weight:bold;">#${index + 1}</span>`;
+          const isCurrentUser = item.name.toLowerCase() === currentStudentName.toLowerCase();
+          
           return `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:8px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:8px; background:${isCurrentUser ? '#fef3c7' : '#f8fafc'}; border-radius:12px; border:1px solid ${isCurrentUser ? '#fde047' : '#e2e8f0'}; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:1.15rem; font-weight:900;">${badgeIcon}</span>
-                <span style="font-weight:900; color:#1e293b; font-size:0.95rem;">${item.name}</span>
+                <span style="font-weight:900; color:${isCurrentUser ? '#92400e' : '#1e293b'}; font-size:0.95rem;">${item.name} ${isCurrentUser ? '🌟 (Bạn)' : ''}</span>
                 <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-weight:bold;">${item.className}</span>
               </div>
               <span style="color:#ea580c; font-weight:900; font-size:0.95rem;">${item.xp} XP</span>
             </div>
           `;
         }).join('');
+      };
+
+      window.updateLeaderboardData = function () {
+        updateStudentModalView();
+      };
+
+      window.handleClassChange = function (selectedClass) {
+        if (selectedClass && selectedClass !== "ALL") {
+          localStorage.setItem("studentClass", selectedClass);
+        }
+
+        const currentClassLabel = document.getElementById("current-class-label");
+        if (currentClassLabel) {
+          const cls = globalClasses.find(c => c.id === selectedClass);
+          currentClassLabel.textContent = cls ? cls.name : (selectedClass === "ALL" ? "Tất cả các lớp" : selectedClass);
+        }
+
+        document.querySelectorAll(".current-grade-tag").forEach(el => {
+          const cls = globalClasses.find(c => c.id === selectedClass);
+          el.textContent = cls ? cls.name : (selectedClass === "ALL" ? "Tất cả các lớp" : selectedClass);
+        });
+
+        updateStudentModalView();
+        if (typeof renderGameTaskTable === "function") renderGameTaskTable();
+        if (typeof renderExamTable === "function") renderExamTable();
+        if (typeof renderTeacherStudentTable === "function") renderTeacherStudentTable();
+      };
+
+      // KHỞI TẠO TỰ ĐỘNG
+      forceHideAllModals();
+      renderClassOptions();
+      updateAllUserNames();
+
+      const currentRole = localStorage.getItem("currentUserRole");
+      if (currentRole === "teacher" || currentRole === "admin") {
+        switchTeacherDashboardView();
       }
 
-      // 2. Gắn các hàm xử lý Trợ lý Chú Ong AI vào window
-      window.toggleBeeChat = function() {
-        const chatBox = document.getElementById('bee-chat-box');
-        if (chatBox) {
-          chatBox.style.display = (chatBox.style.display === 'none' || chatBox.style.display === '') ? 'block' : 'none';
+      const savedName = localStorage.getItem("studentName");
+      if (savedName) {
+        const userNameDisplay = document.getElementById("user-name-display");
+        if (userNameDisplay) userNameDisplay.textContent = savedName;
+      }
+
+      const studentBtn = document.getElementById("btn-student-login") || Array.from(document.querySelectorAll("button, div")).find(el => el.textContent.includes("Học sinh:"));
+      if (studentBtn) {
+        studentBtn.onclick = openStudentLoginModal;
+      }
+
+      const rankBtn = Array.from(document.querySelectorAll("button, a")).find(el => el.textContent.includes("Bảng Xếp Hạng"));
+      if (rankBtn) {
+        rankBtn.onclick = openLeaderboardModal;
+      }
+
+      // Thêm Lớp/Nhóm mới
+      window.addNewClass = function () {
+        const className = prompt("Nhập tên Lớp hoặc Nhóm mới (Ví dụ: Lớp 2C, Nhóm Tăng Cường...):");
+        if (className && className.trim() !== "") {
+          const newId = "CLASS_" + Date.now();
+          globalClasses.push({ id: newId, name: className.trim() });
+          renderClassOptions();
+          handleClassChange(document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL");
         }
       };
 
-      window.sendBeeMessage = function() {
-        const input = document.getElementById('bee-input');
-        const msgContainer = document.getElementById('bee-chat-messages');
-        if (!input || !msgContainer) return;
+      // Sửa tên Lớp/Nhóm
+      window.editClassName = function (classId) {
+        const cls = globalClasses.find(c => c.id === classId);
+        if (!cls) return;
 
-        const text = input.value.trim();
-        if (!text) return;
+        const newName = prompt("Nhập tên mới cho lớp/nhóm này:", cls.name);
+        if (newName && newName.trim() !== "") {
+          cls.name = newName.trim();
+          renderClassOptions();
+          handleClassChange(document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL");
+        }
+      };
 
-        const userMsg = document.createElement('div');
-        userMsg.style.cssText = 'background: #eab308; color: white; padding: 8px 12px; border-radius: 12px; align-self: flex-end; max-width: 80%; word-break: break-word;';
-        userMsg.textContent = text;
-        msgContainer.appendChild(userMsg);
+      // Xóa Lớp/Nhóm
+      window.deleteClass = function (classId) {
+        if (confirm("Bạn có chắc muốn xóa Lớp/Nhóm này?")) {
+          globalClasses = globalClasses.filter(c => c.id !== classId);
+          renderClassOptions();
+          handleClassChange("ALL");
+        }
+      };
 
-        input.value = '';
-        msgContainer.scrollTop = msgContainer.scrollHeight;
+      // Render Bảng Trò chơi & Nhiệm vụ
+      window.renderGameTaskTable = function () {
+        const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+        const selectedCategory = document.getElementById("teacher-select-game-task") ? document.getElementById("teacher-select-game-task").value : "game-pika";
+        const tbody = document.getElementById("tbody-game-task-ranking");
+        
+        if (!tbody) return;
 
-        setTimeout(() => {
-          const beeMsg = document.createElement('div');
-          beeMsg.style.cssText = 'background: #ffffff; padding: 10px 12px; border-radius: 12px; border: 1px solid #fef08a; color: #422006; align-self: flex-start; max-width: 85%; box-shadow: 0 2px 4px rgba(0,0,0,0.03); line-height: 1.4;';
+        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
+        let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
+
+        let filteredStudents = selectedClass === "ALL" 
+          ? availableStudents 
+          : availableStudents.filter(s => s.classId === selectedClass);
+
+        const rawScores = gameTaskScoreStore[selectedCategory] || [];
+
+        let mergedData = filteredStudents.map(student => {
+          let scoreObj = rawScores.find(item => item.studentId === student.id);
+          let classObj = globalClasses.find(c => c.id === student.classId);
+          return {
+            studentId: student.id,
+            name: student.name,
+            className: classObj ? classObj.name : student.classId,
+            xp: scoreObj ? scoreObj.xp : 0
+          };
+        }).sort((a, b) => b.xp - a.xp);
+
+        if (mergedData.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8; font-weight:bold;">Không có học sinh trong danh mục này.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = mergedData.map((item, index) => `
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding:10px; font-weight:bold; color:#64748b;">#${index + 1}</td>
+            <td style="padding:10px; font-weight:500; color:#1e293b;">${item.name}</td>
+            <td style="padding:10px;"><span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:bold;">${item.className}</span></td>
+            <td style="padding:10px; color:#ea580c; font-weight:bold;">${item.xp} XP</td>
+            <td style="padding:10px; text-align:center;">
+              <button onclick="editStudentXP('${selectedCategory}', ${item.studentId})" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px; margin-right:4px; font-weight:bold;">✏️ Sửa điểm</button>
+              <button onclick="removeStudentFromRanking('${selectedCategory}', ${item.studentId})" style="background:#fef2f2; color:#ef4444; border:1px solid #fecaca; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">🗑️ Xóa</button>
+            </td>
+          </tr>
+        `).join('');
+      };
+
+      // Render Bảng Bài kiểm tra
+      window.renderExamTable = function () {
+        const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+        const tbody = document.getElementById("tbody-exam-ranking");
+
+        if (!tbody) return;
+
+        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
+        let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
+
+        let filteredStudents = selectedClass === "ALL" 
+          ? availableStudents 
+          : availableStudents.filter(s => s.classId === selectedClass);
+
+        let mergedData = filteredStudents.map(student => {
+          let examObj = examScoreStore.find(item => item.studentId === student.id);
+          let classObj = globalClasses.find(c => c.id === student.classId);
+          return {
+            studentId: student.id,
+            name: student.name,
+            className: classObj ? classObj.name : student.classId,
+            score: examObj ? examObj.score : "Chưa làm",
+            time: examObj ? examObj.time : "--"
+          };
+        });
+
+        if (mergedData.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:12px; color:#94a3b8; font-weight:bold;">Không có bài kiểm tra nào trong danh mục này.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = mergedData.map((item, index) => `
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding:10px; font-weight:bold; color:#64748b;">#${index + 1}</td>
+            <td style="padding:10px; font-weight:500; color:#1e293b;">${item.name}</td>
+            <td style="padding:10px;"><span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:bold;">${item.className}</span></td>
+            <td style="padding:10px; color:#0284c7; font-weight:bold;">${item.score}</td>
+            <td style="padding:10px; color:#64748b;">${item.time}</td>
+            <td style="padding:10px; text-align:center;">
+              <button onclick="alert('Xem chi tiết bài thi của ${item.name}')" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">📄 Xem bài làm</button>
+            </td>
+          </tr>
+        `).join('');
+      };
+
+      // Render Bảng Tiến Độ Học Sinh
+      window.renderTeacherStudentTable = function () {
+        const tableBody = document.getElementById("teacher-student-table-body");
+        if (!tableBody) return;
+
+        const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
+        let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
+
+        let filteredStudents = selectedClass === "ALL"
+          ? availableStudents
+          : availableStudents.filter(s => s.classId === selectedClass);
+
+        const statTotalStudents = document.getElementById("stat-total-students");
+        if (statTotalStudents) statTotalStudents.textContent = filteredStudents.length;
+
+        const statSubmissions = document.getElementById("stat-total-submissions");
+        if (statSubmissions) {
+          const completedCount = filteredStudents.filter(st => examScoreStore.some(e => e.studentId === st.id)).length;
+          statSubmissions.textContent = completedCount;
+        }
+
+        if (filteredStudents.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Không có học sinh trong danh sách.</td></tr>`;
+          return;
+        }
+
+        tableBody.innerHTML = filteredStudents.map(st => {
+          let examObj = examScoreStore.find(e => e.studentId === st.id);
+          let scoreDisplay = examObj ? `${examObj.score}` : "Chưa làm bài";
+          let classObj = globalClasses.find(c => c.id === st.classId);
+          let className = classObj ? classObj.name : st.classId;
+
+          return `
+            <tr>
+              <td style="padding:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:1.4rem;">👦</span>
+                  <div>
+                    <strong>${st.name}</strong><br>
+                    <small style="color:#64748b;">${className}</small>
+                  </div>
+                </div>
+              </td>
+              <td style="padding:12px;">
+                <span style="font-weight:800; color:#d97706;">Cấp 1</span>
+              </td>
+              <td style="padding:12px;"><strong>${scoreDisplay}</strong></td>
+              <td style="padding:12px;"><span class="cheat-tag clean" style="background:#ecfdf5; color:#047857; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:12px;">✅ Trung thực</span></td>
+              <td style="padding:12px;">
+                <button class="btn btn-outline" style="padding:6px 14px; font-size:0.85rem; border-radius:12px;" onclick="alert('Xem chi tiết bài thi & nhận xét của ${st.name}')">
+                  🔍 Xem Bài & Nhận Xét
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      };
+
+      // Sửa điểm & Xóa
+      window.editStudentXP = function (categoryKey, studentId) {
+        let list = gameTaskScoreStore[categoryKey] || [];
+        let item = list.find(i => i.studentId === studentId);
+        let currentXP = item ? item.xp : 0;
+
+        let newXP = prompt("Nhập số XP mới cho học sinh:", currentXP);
+        if (newXP !== null && !isNaN(newXP) && newXP.trim() !== "") {
+          if (item) {
+            item.xp = parseInt(newXP, 10);
+          } else {
+            list.push({ studentId: studentId, xp: parseInt(newXP, 10) });
+            gameTaskScoreStore[categoryKey] = list;
+          }
+          renderGameTaskTable();
+          updateStudentModalView();
+        }
+      };
+
+      window.removeStudentFromRanking = function (categoryKey, studentId) {
+        if (confirm("Xóa học sinh này khỏi bảng xếp hạng đã chọn?")) {
+          if (gameTaskScoreStore[categoryKey]) {
+            gameTaskScoreStore[categoryKey] = gameTaskScoreStore[categoryKey].filter(i => i.studentId !== studentId);
+            renderGameTaskTable();
+            updateStudentModalView();
+          }
+        }
+      };
+
+      window.resetSelectedCategoryRanking = function () {
+        const selectCatEl = document.getElementById("teacher-select-game-task");
+        let selectedCategory = selectCatEl ? selectCatEl.value : "game-pika";
+        if (confirm("Xác nhận reset toàn bộ điểm của danh mục này về 0?")) {
+          gameTaskScoreStore[selectedCategory] = [];
+          renderGameTaskTable();
+          updateStudentModalView();
+        }
+      };
+
+      window.updateLeaderboardData = function (val) {
+        updateStudentModalView();
+      };
+      window.filterLeaderboard = function () {
+        updateStudentModalView();
+      };
+
+    });
+  </script>
+
+  <!-- Popup Bảng xếp hạng -->
+  <div id="leaderboard-modal" class="leaderboard-modal modal custom-modal-overlay" style="display: none;">
+    <div class="leaderboard-content modal-content" style="position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.25); border: 3px solid #facc15; animation: popUp 0.3s ease;">
+      <span class="close-btn" onclick="closeLeaderboardModal()" style="position: absolute; right: 20px; top: 16px; font-size: 28px; font-weight: bold; cursor: pointer; color: #78350f;">&times;</span>
+      <h2 style="margin-top: 0; color: #78350f; font-size: 1.4rem; font-weight: 900; display: flex; align-items: center; gap: 8px;">🏆 Bảng Xếp Hạng Trò Chơi</h2>
+      
+      <!-- Bộ lọc theo từng trò chơi, nhiệm vụ -->
+      <div class="leaderboard-select-box" style="margin: 15px 0;">
+        <label for="game-task-select" style="font-weight: bold; font-size: 13px; color: #475569; display: block; margin-bottom: 6px;">Chọn trò chơi, nhiệm vụ:</label>
+        <select id="game-task-select" onchange="updateLeaderboardData(this.value)" style="width: 100%; padding: 10px 14px; border-radius: 12px; border: 2px solid #fde047; font-weight: bold; font-size: 14px; outline: none; background: #fffbe6; color: #713f12; cursor: pointer;">
           
-          let answer = solveMathQueryLocally(text);
+          <optgroup label="🎮 Đấu Trường Trò Chơi">
+            <option value="game-pika">Pika-Chung Cự</option>
+            <option value="game-dua-xe">Đua Xe Phép Tính</option>
+            <option value="game-xay-thap">Xây Tháp Số</option>
+            <option value="game-vuon-thu">Vườn Thú Toán Học</option>
+            <option value="game-kho-bau">Kho Báu Thời Gian</option>
+            <option value="game-phong-phan-so">Khu Rừng Phân Số</option>
+          </optgroup>
+
+          <optgroup label="📋 Nhiệm Vụ Hằng Ngày">
+            <option value="task-rung-xanh">Thám hiểm Rừng Xanh</option>
+            <option value="task-tinh-nham">Luyện tập Tính Nhẩm</option>
+            <option value="task-chuoi-hoc-tap">Chuỗi Học Tập Chăm Chỉ</option>
+            <option value="task-dau-truong">Thử Thách Đấu Trường</option>
+            <option value="task-diem-so">Điểm Số Hoàn Hảo</option>
+            <option value="task-ong-ai">Hỏi Bài Bạn Ong AI</option>
+          </optgroup>
+
+        </select>
+      </div>
+
+      <!-- Danh sách xếp hạng có thanh cuộn -->
+      <div class="leaderboard-list-container">
+        <ul id="leaderboard-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+          <li style="background: #fef9c3; padding: 12px 16px; border-radius: 14px; border: 1px solid #fde047; font-weight: bold; color: #713f12; display: flex; justify-content: space-between; align-items: center;"><span>🥇 Trần Tiến Đạt</span> <span style="color: #ca8a04; font-weight: 900;">1500 XP</span></li>
+          <li style="background: #f1f5f9; padding: 12px 16px; border-radius: 14px; font-weight: bold; color: #334155; display: flex; justify-content: space-between; align-items: center;"><span>🥈 Nguyễn Văn A</span> <span style="color: #64748b; font-weight: 900;">1200 XP</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Widget Trợ Lý AI Chú Ong -->
+  <div id="bee-ai-widget" style="position: fixed; bottom: 25px; right: 25px; z-index: 9999; font-family: 'Nunito', sans-serif;">
+    
+    <!-- Cửa sổ Chat popup -->
+    <div id="bee-chat-box" style="display: none; width: 340px; background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; margin-bottom: 15px; border: 3px solid #facc15; animation: popUp 0.3s ease;">
+      <!-- Header cửa sổ chat -->
+      <div style="background: linear-gradient(135deg, #facc15, #eab308); color: #713f12; padding: 12px 15px; font-weight: bold; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 24px;">🐝</span>
+          <span>Trợ Lý Ong Chăm Chỉ (Giải Toán)</span>
+        </div>
+        <button onclick="toggleBeeChat()" style="background: none; border: none; color: #713f12; font-size: 18px; font-weight: bold; cursor: pointer;">✕</button>
+      </div>
+      
+      <!-- Nội dung tin nhắn -->
+      <div id="bee-chat-messages" style="height: 240px; padding: 12px; overflow-y: auto; background: #fefce8; font-size: 13px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: #ffffff; padding: 10px 12px; border-radius: 12px; border: 1px solid #fef08a; color: #422006; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+          👋 Chào bé! Bạn Ong Chăm Chỉ đây. Bé gửi phép tính (vd: 7 + 4, 15 - 8, 6 x 3, 20 : 4) để Ong giải giúp nhé!
+        </div>
+      </div>
+      
+      <!-- Ô nhập tin nhắn -->
+      <div style="padding: 10px; background: #ffffff; border-top: 1px solid #fef08a; display: flex; gap: 8px;">
+        <input type="text" id="bee-input" placeholder="Nhập phép tính (ví dụ: 12 + 5)..." style="flex: 1; padding: 8px 12px; border: 1px solid #fde047; border-radius: 20px; outline: none; font-size: 13px;" onkeypress="if(event.key==='Enter') sendBeeMessage()">
+        <button onclick="sendBeeMessage()" style="background: #eab308; color: white; border: none; padding: 8px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 13px;">Gửi</button>
+      </div>
+    </div>
+
+    <!-- Nút bấm hình chú Ong nổi tròn -->
+    <div onclick="toggleBeeChat()" style="width: 72px; height: 72px; background: linear-gradient(135deg, #fff066, #facc15); border: 4px solid #ffffff; border-radius: 50%; box-shadow: 0 8px 20px rgba(234, 179, 8, 0.5); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+      <span style="font-size: 40px;">🐝</span>
+    </div>
+  </div>
+
+  <script>
+    function toggleBeeChat() {
+      const chatBox = document.getElementById('bee-chat-box');
+      chatBox.style.display = (chatBox.style.display === 'none' || chatBox.style.display === '') ? 'block' : 'none';
+    }
+
+    function solveMathQuery(str) {
+      let lower = str.toLowerCase().trim();
+
+      if (lower.includes('biết') || lower.includes('làm toán') || lower.includes('ai đó') || lower.includes('là ai')) {
+        if (lower.includes('lời văn') || lower.includes('toán lời văn')) {
+          return "Ong biết giải cả toán tính nhẩm lẫn toán có lời văn tiểu học đó! Bé cứ gửi đề bài cho Ong nhé! 🐝";
+        }
+        return "Ong biết làm tất cả các phép tính cộng, trừ, nhân, chia và giải toán tiểu học đó! Bé gửi phép tính qua đây nhé! 🐝";
+      }
+
+      let numbers = lower.match(/\d+/g);
+      if (numbers && numbers.length >= 2) {
+        let num1 = parseInt(numbers[0]);
+        let num2 = parseInt(numbers[1]);
+        if (lower.includes('thêm') || lower.includes('cho thêm') || lower.includes('nhiều hơn') || lower.includes('tổng') || lower.includes('cả hai')) {
+          return `Bài toán này dùng phép cộng: **${num1} + ${num2} = ${num1 + num2}**. Đáp số là **${num1 + num2}** bé nhé! ✨`;
+        }
+        if (lower.includes('bớt') || lower.includes('cho đi') || lower.includes('ít hơn') || lower.includes('còn lại')) {
+          return `Bài toán này dùng phép trừ: **${num1} - ${num2} = ${num1 - num2}**. Đáp số là **${num1 - num2}** bé nhé! ✨`;
+        }
+      }
+
+      let cleanStr = lower
+        .replace(/bằng bao nhiêu/g, '').replace(/bằng mấy/g, '').replace(/là bao nhiêu/g, '')
+        .replace(/giúp/g, '').replace(/tính/g, '').replace(/x/g, '*').replace(/:/g, '/').trim();
+
+      let match = cleanStr.match(/(\d+\s*[\+\-\*\/]\s*\d+)/);
+      if (match) {
+        try {
+          let expr = match[0];
+          let result = Function('"use strict"; return (' + expr + ')')();
+          let displayExpr = expr.replace(/\*/g, ' x ').replace(/\//g, ' : ');
+          return `Kết quả của **${displayExpr}** là **${result}** nhé! 🐝`;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      return null;
+    }
+
+    function sendBeeMessage() {
+      const input = document.getElementById('bee-input');
+      const msgContainer = document.getElementById('bee-chat-messages');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const userMsg = document.createElement('div');
+      userMsg.style.cssText = 'background: #eab308; color: white; padding: 8px 12px; border-radius: 12px; align-self: flex-end; max-width: 80%; word-break: break-word;';
+      userMsg.textContent = text;
+      msgContainer.appendChild(userMsg);
+
+      input.value = '';
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+
+      setTimeout(() => {
+        const beeMsg = document.createElement('div');
+        beeMsg.style.cssText = 'background: #ffffff; padding: 10px 12px; border-radius: 12px; border: 1px solid #fef08a; color: #422006; align-self: flex-start; max-width: 85%; box-shadow: 0 2px 4px rgba(0,0,0,0.03); line-height: 1.4;';
+        
+        let answer = solveMathQuery(text);
+        if (answer) {
           beeMsg.innerHTML = "🐝 " + answer;
-          
-          if (msgContainer) {
-            msgContainer.appendChild(beeMsg);
-            msgContainer.scrollTop = msgContainer.scrollHeight;
-          }
-        }, 400);
-      };
-
-      function solveMathQueryLocally(str) {
-        if (!str) return "Bạn Ong luôn sẵn sàng trợ giúp bé học toán! 🐝";
-        let lower = str.toLowerCase().trim();
-        let numbers = lower.match(/\d+/g);
-        if (numbers && numbers.length >= 2) {
-          let num1 = parseInt(numbers[0]);
-          let num2 = parseInt(numbers[1]);
-          if (lower.includes('thêm') || lower.includes('tổng') || lower.includes('+') || lower.includes('cộng')) {
-            return `Bài toán này kết quả là: **${num1} + ${num2} = ${num1 + num2}**. Bé nhớ ghi vào vở nhé! ✨`;
-          }
-          if (lower.includes('bớt') || lower.includes('trừ') || lower.includes('-') || lower.includes('còn lại')) {
-            return `Bài toán này kết quả là: **${num1} - ${num2} = ${num1 - num2}**. Bé xem kỹ lại nhé! ✨`;
-          }
-        }
-
-        let cleanStr = lower.replace(/x/g, '*').replace(/:/g, '/').replace(/[^0-9\+\-\*\/\(\)]/g, '');
-        if (cleanStr.length > 0) {
-          try {
-            let result = Function('"use strict"; return (' + cleanStr + ')')();
-            if (!isNaN(result)) {
-              return `Kết quả phép tính là **${result}** nhé bé ơi! 🐝`;
-            }
-          } catch (e) {}
-        }
-
-        return "Bạn Ong đã hiểu ý bé! Bé hãy luyện tập thêm thật nhiều bài toán để nhận thêm điểm thưởng XP và Xu nhé! 🌟";
-      }
-
-      // Kích hoạt panel chuyển tab giao diện
-      window.activatePanel = function(panelId, btnEl) {
-        const panels = document.querySelectorAll('.tab-content-panel');
-        if (panels) {
-          panels.forEach(panel => panel.classList.remove('active'));
+        } else {
+          beeMsg.textContent = "🐝 Bạn Ong chưa hiểu rõ ý bé lắm. Bé thử nhập phép tính (vd: 8 + 5) hoặc bài toán đơn giản xem sao nhé!";
         }
         
-        const navBtns = document.querySelectorAll('.tab-nav-btn');
-        if (navBtns) {
-          navBtns.forEach(btn => btn.classList.remove('active'));
-        }
-
-        const targetPanel = document.getElementById(panelId);
-        if (targetPanel) {
-          targetPanel.classList.add('active');
-        }
-        if (btnEl) {
-          btnEl.classList.add('active');
-        }
-      };
-    });
+        msgContainer.appendChild(beeMsg);
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+      }, 400);
+    }
   </script>
 </body>
 </html>
