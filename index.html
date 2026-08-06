@@ -311,7 +311,74 @@
     .btn-opt-color.correct-glow { background: linear-gradient(135deg, #10b981, #059669) !important; box-shadow: 0 5px 0 0 #047857, 0 0 25px #10b981 !important; transform: scale(1.06); }
     .sparkle-toast { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); background: #fef08a; color: #854d0e; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 1.1rem; padding: 8px 24px; border-radius: 30px; border: 3px solid #eab308; box-shadow: 0 10px 25px rgba(234, 179, 8, 0.4); display: none; z-index: 20; }
 
-    .teacher-login-modal-box { background: #ffffff; border-radius: 28px; padding: 32px 36px; max-width: 450px; width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.18); border: 4px solid #3b82f6; position: relative; }
+    /* NÂNG CẤP STYLES MODAL ĐĂNG NHẬP GIÁO VIÊN / ADMIN */
+    .teacher-login-modal-box { 
+      background: #ffffff; 
+      border-radius: 28px; 
+      padding: 32px 36px; 
+      max-width: 460px; 
+      width: 90%; 
+      box-shadow: 0 20px 50px rgba(0,0,0,0.22); 
+      border: 4px solid #3b82f6; 
+      position: relative; 
+      transition: all 0.3s ease;
+    }
+    .teacher-login-modal-box.admin-mode {
+      border-color: #8b5cf6;
+      background: linear-gradient(180deg, #ffffff 0%, #f5f3ff 100%);
+    }
+
+    .login-role-tabs {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 16px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .login-role-tab {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 900;
+      font-size: 0.92rem;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .login-role-tab.active {
+      background: #ffffff;
+      color: #2563eb;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .login-role-tab.active.admin-tab {
+      color: #7c3aed;
+    }
+
+    .pwd-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .pwd-toggle-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: #64748b;
+      padding: 4px;
+    }
+
+    .modal-shake {
+      animation: shake 0.4s ease;
+    }
 
     .quiz-opt-btn-custom {
       width: 100%;
@@ -516,7 +583,7 @@
         </button>
 
         <button class="header-teacher-btn" id="role-switch-btn" onclick="openTeacherLoginModal()" title="Nhấp để đăng nhập hoặc đổi tài khoản Giáo viên">
-          🏫 Giáo viên: <span id="teacher-name-display">Đăng nhập</span>
+          🏫 Giáo viên / Admin: <span id="teacher-name-display">Đăng nhập</span>
         </button>
       </div>
     </nav>
@@ -588,8 +655,8 @@
       </div>
 
       <!-- ============================================================
-           TAB 1: TRANG CHỦ & NHIỆM VỤ HÀNG NGÀY (5 NHIỆM VỤ CÓ TƯƠNG TÁC GAME)
-           ============================================================ -->
+            TAB 1: TRANG CHỦ & NHIỆM VỤ HÀNG NGÀY (5 NHIỆM VỤ CÓ TƯƠNG TÁC GAME)
+            ============================================================ -->
       <div class="tab-content-panel active" id="tab-home-tasks">
         <div class="home-tasks-grid">
           
@@ -756,8 +823,8 @@
       </div>
 
       <!-- ============================================================
-           TAB 2: ĐẤU TRƯỜNG TRÒ CHƠI (6 GAME TƯƠNG TÁC TẬP TRUNG)
-           ============================================================ -->
+            TAB 2: ĐẤU TRƯỜNG TRÒ CHƠI (6 GAME TƯƠNG TÁC TẬP TRUNG)
+            ============================================================ -->
       <div class="tab-content-panel" id="tab-game-arena">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h3 style="font-size: 1.45rem; font-weight: 900;">🎮 Đấu Trường Trò Chơi Toán Học (6 Game Tương Tác)</h3>
@@ -846,8 +913,8 @@
       </div>
 
       <!-- ============================================================
-           TAB 3: KHU VỰC BÀI THI HẰNG TUẦN (CÓ BỘ CHỌN TUẦN THI LINH HOẠT & ANTI-CHEAT)
-           ============================================================ -->
+            TAB 3: KHU VỰC BÀI THI HẰNG TUẦN (CÓ BỘ CHỌN TUẦN THI LINH HOẠT & ANTI-CHEAT)
+            ============================================================ -->
       <div class="tab-content-panel" id="tab-weekly-exam">
         <div class="exam-container">
 
@@ -903,8 +970,8 @@
       </div>
 
       <!-- ============================================================
-           TAB 4: LỊCH SỬ & NHẬN XÉT CỦA GIÁO VIÊN (CLICK TRỰC TIẾP TỪNG DÒNG)
-           ============================================================ -->
+            TAB 4: LỊCH SỬ & NHẬN XÉT CỦA GIÁO VIÊN (CLICK TRỰC TIẾP TỪNG DÒNG)
+            ============================================================ -->
       <div class="tab-content-panel" id="tab-history-feedback">
         <div class="history-table-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
@@ -949,11 +1016,11 @@
     </div>
 
     <!-- ============================================================
-         GIAO DIỆN GIÁO VIÊN (TEACHER DASHBOARD)
+         GIAO DIỆN GIÁO VIÊN & ADMIN (TEACHER / ADMIN DASHBOARD)
          ============================================================ -->
     <div class="teacher-view-container" id="teacher-view-container" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 1.8rem; font-weight: 900;">🏫 Báo Cáo Quản Lý Giáo Viên - <span id="teacher-view-title-name">Cô Mai</span></h2>
+        <h2 style="font-size: 1.8rem; font-weight: 900;">🏫 Báo Cáo Quản Lý Hệ Thống - <span id="teacher-view-title-name">Cô Mai</span></h2>
         
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
           <button class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border-radius: 20px; font-weight: 800;" onclick="goToHomeTab()">
@@ -962,23 +1029,25 @@
           <button class="btn btn-primary" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 20px; font-weight: 800;" onclick="nhapNhanXetGiaoVien()">
             ✏️ Ghi Nhận Xét Bài Thi
           </button>
-          <button class="btn btn-primary" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 20px; font-weight: 800;" onclick="openTeacherLoginModal()">
-            🔄 Đổi Tài Khoản
+          <button class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 20px; font-weight: 800;" onclick="openTeacherLoginModal()">
+            🔄 Đổi Tài Khoản / Admin
           </button>
           <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800;" id="logout-teacher-btn">
             👦 Đăng xuất (Về Học sinh)
           </button>
         </div>
+      </div>
+
       <!-- THÔNG BÁO TÀI KHOẢN CHƯA ĐƯỢC PHÂN LỚP -->
       <div id="teacher-unassigned-warning" style="display: none; background: #fef2f2; border: 2px solid #fca5a5; padding: 16px; border-radius: 14px; color: #991b1b; font-weight: 800; margin-bottom: 20px; text-align: center;">
-        ⚠️ Tài khoản của bạn chưa được phân công lớp. Vui lòng liên hệ Quản trị viên.
+        ⚠️ Tài khoản của bạn chưa được phân công lớp. Vui lòng liên hệ Quản trị viên (Admin).
       </div>
 
       <!-- MÔ-ĐỦN QUẢN TRỊ HỆ THỐNG (CHỈ ADMIN THẤY) -->
-      <div id="admin-system-control-module" style="display: none; margin-bottom: 24px; background: #ffffff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 2px solid #3b82f6;">
+      <div id="admin-system-control-module" style="display: none; margin-bottom: 24px; background: #ffffff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 2px solid #8b5cf6;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-          <h3 style="margin: 0; color: #1e3a8a; font-size: 20px; font-weight: 900; display: flex; align-items: center; gap: 8px;">
-            ⚙️ QUẢN TRỊ HỆ THỐNG - QUẢN LÝ TÀI KHOẢN GIÁO VIÊN
+          <h3 style="margin: 0; color: #5b21b6; font-size: 20px; font-weight: 900; display: flex; align-items: center; gap: 8px;">
+            ⚙️ QUẢN TRỊ HỆ THỐNG (ADMIN) - QUẢN LÝ TÀI KHOẢN GIÁO VIÊN
           </h3>
           <button onclick="openAddTeacherModal()" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 10px 18px; border-radius: 12px; cursor: pointer; font-weight: 900; font-size: 14px; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
             ➕ Thêm Giáo Viên Mới
@@ -989,7 +1058,7 @@
         <div style="overflow-x: auto; margin-bottom: 20px;">
           <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
             <thead>
-              <tr style="background: #eff6ff; color: #1e40af; border-bottom: 2px solid #bfdbfe;">
+              <tr style="background: #f5f3ff; color: #5b21b6; border-bottom: 2px solid #ddd6fe;">
                 <th style="padding: 12px;">GIÁO VIÊN</th>
                 <th style="padding: 12px;">TÀI KHOẢN</th>
                 <th style="padding: 12px;">LỚP PHỤ TRÁCH</th>
@@ -1082,6 +1151,9 @@
             </tr>
           </thead>
           <tbody id="teacher-student-table-body"></tbody>
+        </table>
+      </div>
+
       <!-- KHU VỰC QUẢN LÝ BẢNG XẾP HẠNG ĐỘC LẬP CHO GIÁO VIÊN -->
       <div id="teacher-ranking-manager-module" style="margin-top: 24px; background: #ffffff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); font-family: sans-serif;">
         
@@ -1174,40 +1246,56 @@
 
   </main>
 
-  <!-- FLOATING AI MASCOT BOTTON -->
+  <!-- FLOATING AI MASCOT BUTTON -->
   <div class="floating-mascot-btn" onclick="openAITutorDialog()" title="Hỏi Ong AI giải toán">
     <img src="assets/images/mascot_bee.jpg" alt="Ong AI Floating Widget" />
   </div>
 
-  <!-- POPUP MODAL ĐĂNG NHẬP GIÁO VIÊN -->
+  <!-- POPUP MODAL ĐĂNG NHẬP GIÁO VIÊN & ADMIN (CẢI TIẾN RIÊNG PHẦN ADMIN) -->
   <div class="modal-backdrop" id="teacher-login-modal">
-    <div class="teacher-login-modal-box">
+    <div class="teacher-login-modal-box" id="login-modal-box">
       <button class="modal-close" onclick="closeModal('teacher-login-modal')">✕</button>
-      <div style="text-align: center; margin-bottom: 20px;">
-        <span style="font-size: 3.2rem;">🏫</span>
-        <h3 style="font-size: 1.5rem; font-weight: 900;">Đăng Nhập Giáo Viên</h3>
-        <p style="font-size: 0.88rem; color: var(--neutral-gray); font-weight: 700; margin-top: 4px;">Đăng nhập bằng tài khoản và mật khẩu giáo viên được cấp.</p>
+      
+      <!-- Chuyển đổi Vai Trò Đăng Nhập: Giáo Viên vs Admin -->
+      <div class="login-role-tabs">
+        <button type="button" class="login-role-tab active" id="tab-login-teacher" onclick="switchLoginMode('teacher')">
+          👩‍🏫 Giáo Viên
+        </button>
+        <button type="button" class="login-role-tab" id="tab-login-admin" onclick="switchLoginMode('admin')">
+          👑 Quản Trị (Admin)
+        </button>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 16px;">
+        <span id="login-icon-header" style="font-size: 3rem;">🏫</span>
+        <h3 id="login-title-header" style="font-size: 1.45rem; font-weight: 900; margin-top: 4px;">Đăng Nhập Giáo Viên</h3>
+        <p id="login-subtitle-header" style="font-size: 0.86rem; color: var(--neutral-gray); font-weight: 700; margin-top: 4px;">
+          Đăng nhập bằng tài khoản Giáo viên được cấp.
+        </p>
       </div>
 
       <form id="form-login-teacher">
         <div class="form-group">
-          <label style="font-weight: 800; font-size: 0.92rem;">Tên giáo viên / Tài khoản:</label>
-          <input type="text" id="teacher-name" class="form-control" placeholder="Ví dụ: cohuong, thầyhung, colan..." required />
+          <label style="font-weight: 800; font-size: 0.9rem;" id="label-username-input">Tên giáo viên / Tài khoản:</label>
+          <input type="text" id="teacher-name" class="form-control" placeholder="Ví dụ: cohuong, thayhung, colan..." required />
         </div>
 
-        <div class="form-group" style="margin-top: 14px;">
-          <label style="font-weight: 800; font-size: 0.92rem;">Mật khẩu:</label>
-          <input type="password" id="teacher-password-input" class="form-control" placeholder="Nhập mật khẩu của giáo viên..." required />
+        <div class="form-group" style="margin-top: 12px;">
+          <label style="font-weight: 800; font-size: 0.9rem;">Mật khẩu:</label>
+          <div class="pwd-input-wrapper">
+            <input type="password" id="teacher-password-input" class="form-control" placeholder="Nhập mật khẩu..." required style="padding-right: 40px;" />
+            <button type="button" class="pwd-toggle-btn" onclick="togglePasswordVisibility('teacher-password-input', this)" title="Ẩn/Hiện mật khẩu">👁️</button>
+          </div>
         </div>
 
-        <div id="teacher-login-error" style="color: #ef4444; font-weight: 800; font-size: 0.9rem; margin-top: 10px; min-height: 20px;"></div>
+        <div id="teacher-login-error" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-top: 10px; min-height: 22px; text-align: center;"></div>
 
-        <div style="display: flex; gap: 10px; margin-top: 16px;">
-          <button type="submit" class="btn btn-primary" style="flex: 1; padding: 12px; border-radius: 25px; font-weight: 900; background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+        <div style="display: flex; gap: 10px; margin-top: 14px;">
+          <button type="submit" id="btn-submit-login" class="btn btn-primary" style="flex: 1; padding: 12px; border-radius: 25px; font-weight: 900; background: linear-gradient(135deg, #2563eb, #1d4ed8);">
             🔑 Đăng Nhập
           </button>
-          <button type="button" class="btn btn-secondary" style="padding: 12px 18px; border-radius: 25px; font-weight: 800;" onclick="handleGuestTeacherDemoLogin()">
-            👤 Dùng Thử (Demo)
+          <button type="button" id="btn-demo-login" class="btn btn-secondary" style="padding: 12px 16px; border-radius: 25px; font-weight: 800;" onclick="handleGuestTeacherDemoLogin()">
+            👤 Demo
           </button>
         </div>
       </form>
@@ -1386,15 +1474,79 @@
   <script src="assets/js/app.js"></script>
 
   <!-- ============================================================
-       MÃ SCRIPT GIÁO VIÊN & NÚT BANNER LIÊN KẾT CUỘN ĐẾN ĐỀ THI
-       ============================================================ -->
+        MÃ SCRIPT GIÁO VIÊN & ADMIN & NÚT BANNER LIÊN KẾT
+        ============================================================ -->
   <script>
+    // Hàm toggle ẩn/hiện mật khẩu
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        if (input.type === "password") {
+          input.type = "text";
+          btn.textContent = "🙈";
+        } else {
+          input.type = "password";
+          btn.textContent = "👁️";
+        }
+      }
+    }
+
+    // Hàm chuyển chế độ Đăng nhập (Giáo viên / Admin)
+    let currentLoginMode = 'teacher';
+    function switchLoginMode(mode) {
+      currentLoginMode = mode;
+      const modalBox = document.getElementById("login-modal-box");
+      const teacherTab = document.getElementById("tab-login-teacher");
+      const adminTab = document.getElementById("tab-login-admin");
+      const iconHeader = document.getElementById("login-icon-header");
+      const titleHeader = document.getElementById("login-title-header");
+      const subtitleHeader = document.getElementById("login-subtitle-header");
+      const labelUsername = document.getElementById("label-username-input");
+      const inputUsername = document.getElementById("teacher-name");
+      const inputPassword = document.getElementById("teacher-password-input");
+      const btnSubmit = document.getElementById("btn-submit-login");
+      const btnDemo = document.getElementById("btn-demo-login");
+      const errBox = document.getElementById("teacher-login-error");
+
+      if (errBox) errBox.textContent = "";
+
+      if (mode === 'admin') {
+        if (modalBox) modalBox.classList.add("admin-mode");
+        if (teacherTab) teacherTab.className = "login-role-tab";
+        if (adminTab) adminTab.className = "login-role-tab active admin-tab";
+        if (iconHeader) iconHeader.textContent = "👑";
+        if (titleHeader) titleHeader.textContent = "Đăng Nhập Admin";
+        if (subtitleHeader) subtitleHeader.textContent = "Đăng nhập quyền Quản trị viên hệ thống";
+        if (labelUsername) labelUsername.textContent = "Tài khoản Admin:";
+        if (inputUsername) inputUsername.placeholder = "Nhập tài khoản admin (admin)...";
+        if (btnSubmit) {
+          btnSubmit.style.background = "linear-gradient(135deg, #8b5cf6, #6d28d9)";
+          btnSubmit.innerHTML = "🔑 Đăng Nhập Admin";
+        }
+        if (btnDemo) btnDemo.style.display = "none";
+      } else {
+        if (modalBox) modalBox.classList.remove("admin-mode");
+        if (teacherTab) teacherTab.className = "login-role-tab active";
+        if (adminTab) adminTab.className = "login-role-tab";
+        if (iconHeader) iconHeader.textContent = "🏫";
+        if (titleHeader) titleHeader.textContent = "Đăng Nhập Giáo Viên";
+        if (subtitleHeader) subtitleHeader.textContent = "Đăng nhập bằng tài khoản Giáo viên được cấp.";
+        if (labelUsername) labelUsername.textContent = "Tên giáo viên / Tài khoản:";
+        if (inputUsername) inputUsername.placeholder = "Ví dụ: cohuong, thayhung, colan...";
+        if (btnSubmit) {
+          btnSubmit.style.background = "linear-gradient(135deg, #2563eb, #1d4ed8)";
+          btnSubmit.innerHTML = "🔑 Đăng Nhập";
+        }
+        if (btnDemo) btnDemo.style.display = "inline-block";
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
 
       let activeCommentStorageKey = 'teacher_comment_week1';
       let activeCommentCell = null;
 
-      // HÀM CHUYỂN TAB CƠ BẢN (TAB NAVIGATION COORDINATOR)
+      // HÀM CHUYỂN TAB CƠ BẢN
       window.activatePanel = function(panelId, btnEl) {
         document.querySelectorAll('.tab-content-panel').forEach(panel => {
           panel.classList.remove('active');
@@ -1427,7 +1579,7 @@
       if (examTabBtn) examTabBtn.onclick = function() { activatePanel("tab-weekly-exam", this); };
       if (historyTabBtn) historyTabBtn.onclick = function() { activatePanel("tab-history-feedback", this); };
 
-      // HÀM XỬ LÝ CLICK NÚT BANNER MÀU XANH TỰ ĐỘNG CUỘN ĐẾN Ô CHỌN TUẦN THI
+      // HÀM XỬ LÝ CLICK NÚT BANNER
       window.handleBannerButtonClick = function (e) {
         if (e) e.preventDefault();
 
@@ -1450,7 +1602,7 @@
         }
       };
 
-      // MAP ĐỀ THI VÀ CÂU HỎI THEO TUẦN LINH HOẠT
+      // MAP ĐỀ THI VÀ CÂU HỎI THEO TUẦN
       const weekQuestionsMap = {
         week_1: {
           title: "Bài kiểm tra Tuần 1",
@@ -1504,7 +1656,7 @@
         });
       }
 
-      // 1. TỰ ĐỘNG GẮN SỰ KIỆN CLICK TRỰC TIẾP VÀO CỘT LỜI NHẮN CỦA TỪNG DÒNG
+      // TỰ ĐỘNG GẮN SỰ KIỆN CLICK TRỰC TIẾP VÀO CỘT LỜI NHẮN
       window.setupRowCommentClick = function () {
         const historyTable = document.querySelector('#student-history-table-body');
         if (!historyTable) return;
@@ -1547,7 +1699,7 @@
         });
       };
 
-      // 2. MỞ HỘP THOẠI NHẬP NHẬN XÉT RIÊNG CHO DÒNG ĐƯỢC CHỌN
+      // MỞ HỘP THOẠI NHẬP NHẬN XÉT
       window.openCommentModalForRow = function (storageKey, timeKey, commentCell) {
         activeCommentStorageKey = storageKey;
         activeCommentCell = commentCell;
@@ -1630,7 +1782,7 @@
 
       setupRowCommentClick();
 
-      // A. KHÔI PHỤC VÀ ĐỒNG BỘ TÊN DÙNG CHUNG ACROSS ALL VIEWS
+      // KHÔI PHỤC VÀ ĐỒNG BỘ TÊN DÙNG CHUNG
       window.updateAllUserNames = function () {
         let studentName = localStorage.getItem("studentName") || "Bé Nam";
         
@@ -1652,13 +1804,18 @@
           studentInput.value = studentName;
         }
 
+        const role = localStorage.getItem("currentUserRole");
         const teacher = typeof getCurrentTeacher === "function" ? getCurrentTeacher() : null;
         const teacherNameSpan = document.getElementById("teacher-name-display");
         const teacherTitleName = document.getElementById("teacher-view-title-name");
 
-        const activeTeacherStr = teacher ? teacher.displayName : (localStorage.getItem("teacherName") || "Cô Mai");
-
-        if (teacher) {
+        let activeTeacherStr = "Cô Mai";
+        if (role === "admin") {
+          activeTeacherStr = "Admin Quản Trị Hệ Thống";
+          if (teacherNameSpan) teacherNameSpan.textContent = "Admin";
+          if (teacherTitleName) teacherTitleName.textContent = "Admin Quản Trị Hệ Thống";
+        } else if (teacher) {
+          activeTeacherStr = teacher.displayName;
           if (teacherNameSpan) teacherNameSpan.textContent = teacher.displayName;
           if (teacherTitleName) teacherTitleName.textContent = teacher.displayName;
         } else {
@@ -1683,6 +1840,9 @@
         if (inputPass) inputPass.value = "";
         if (err) err.textContent = "";
 
+        // Mặc định chọn chế độ Đăng nhập Giáo viên khi mở
+        switchLoginMode('teacher');
+
         if (modal) {
           modal.style.display = "flex";
           modal.classList.add("active");
@@ -1695,7 +1855,7 @@
         if (modal) modal.classList.remove('active');
       };
 
-      // B. SỐ XU VÀ XP BAN ĐẦU
+      // SỐ XU VÀ XP BAN ĐẦU
       const coinsEl = document.getElementById("user-coins-display");
       const xpEl = document.getElementById("user-xp-display");
 
@@ -1705,8 +1865,83 @@
       if (coinsEl) coinsEl.textContent = savedCoins;
       if (xpEl) xpEl.textContent = savedXp + " XP";
 
-      // C. BẮT EVENT SUBMIT FORM ĐĂNG NHẬP GIÁO VIÊN
-      
+      // NÂNG CẤP BẮT EVENT SUBMIT FORM ĐĂNG NHẬP GIÁO VIÊN & ADMIN
+      const teacherForm = document.querySelector('#form-login-teacher');
+      if (teacherForm) {
+        teacherForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          const teacherInputEl = document.querySelector('#teacher-name');
+          const teacherPassEl = document.querySelector('#teacher-password-input');
+          const err = document.getElementById("teacher-login-error");
+          const modalBox = document.getElementById("login-modal-box");
+
+          const usernameVal = teacherInputEl ? teacherInputEl.value.trim() : '';
+          const passVal = teacherPassEl ? teacherPassEl.value.trim() : '';
+
+          if (!usernameVal || !passVal) {
+            if (err) err.textContent = '⚠️ Vui lòng nhập đầy đủ tài khoản và mật khẩu!';
+            if (modalBox) {
+              modalBox.classList.add("modal-shake");
+              setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+            }
+            return;
+          }
+
+          // 1. DĂNG NHẬP ADMIN (TÙY CHỌN HOẶC TỰ ĐỘNG PHÁT HIỆN "admin")
+          if (currentLoginMode === 'admin' || usernameVal.toLowerCase() === "admin") {
+            if (usernameVal.toLowerCase() === "admin" && passVal === "admin123") {
+              localStorage.setItem("currentUserRole", "admin");
+              localStorage.setItem("currentTeacherId", "admin");
+              localStorage.setItem("teacherName", "Admin Quản Trị Hệ Thống");
+              localStorage.setItem('currentUser', JSON.stringify({ id: "admin", name: "Admin Quản Trị Hệ Thống", role: "admin" }));
+
+              if (err) err.textContent = '';
+              closeModal('teacher-login-modal');
+              switchTeacherDashboardView();
+              return;
+            } else {
+              if (err) err.textContent = '❌ Mật khẩu Admin không đúng! (Mặc định: admin123)';
+              if (modalBox) {
+                modalBox.classList.add("modal-shake");
+                setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+              }
+              return;
+            }
+          }
+
+          // 2. ĐĂNG NHẬP GIÁO VIÊN
+          const foundTeacher = (typeof teacherAccounts !== "undefined")
+            ? teacherAccounts.find(t => t.username.toLowerCase() === usernameVal.toLowerCase())
+            : null;
+
+          if (!foundTeacher || foundTeacher.password !== passVal) {
+            if (err) err.textContent = '❌ Tên đăng nhập hoặc mật khẩu không đúng!';
+            if (modalBox) {
+              modalBox.classList.add("modal-shake");
+              setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+            }
+            return;
+          }
+
+          if (foundTeacher.active === false) {
+            if (err) err.textContent = '🔒 Tài khoản giáo viên này đã bị khóa!';
+            if (modalBox) {
+              modalBox.classList.add("modal-shake");
+              setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+            }
+            return;
+          }
+
+          localStorage.setItem("currentUserRole", "teacher");
+          localStorage.setItem('currentTeacherId', foundTeacher.id);
+          localStorage.setItem('teacherName', foundTeacher.displayName);
+          localStorage.setItem('currentUser', JSON.stringify({ id: foundTeacher.id, name: foundTeacher.displayName, role: 'teacher' }));
+
+          if (err) err.textContent = '';
+          closeModal('teacher-login-modal');
+          switchTeacherDashboardView();
+        });
+      }
 
       window.updateUI = function() {
         updateAllUserNames();
@@ -1732,7 +1967,7 @@
           ? (teacherAccounts.find(t => t.username === 'demo') || teacherAccounts[0])
           : { id: "gv003", displayName: "Giáo viên Demo", classes: ["2A"] };
 
-        currentTeacher = demoTeacher;
+        localStorage.setItem("currentUserRole", "teacher");
         localStorage.setItem("currentTeacherId", demoTeacher.id);
         localStorage.setItem("teacherName", demoTeacher.displayName);
         localStorage.setItem('currentUser', JSON.stringify({ id: demoTeacher.id, name: demoTeacher.displayName, role: 'teacher' }));
@@ -1740,13 +1975,13 @@
         const err = document.getElementById("teacher-login-error");
         if (err) err.textContent = "";
         closeModal("teacher-login-modal");
-        updateUI();
+        switchTeacherDashboardView();
       };
 
       const logoutBtn = document.getElementById("logout-teacher-btn");
       if (logoutBtn) {
         logoutBtn.addEventListener("click", function() {
-          currentTeacher = null;
+          localStorage.removeItem("currentUserRole");
           localStorage.removeItem("currentTeacherId");
           localStorage.removeItem("teacherName");
           localStorage.removeItem("currentUser");
@@ -1760,13 +1995,11 @@
             teacherView.style.display = "none";
             studentView.style.display = "block";
           }
-          alert("👋 Bạn đã đăng xuất khỏi tài khoản Giáo viên!");
+          alert("👋 Bạn đã đăng xuất khỏi tài khoản Giáo viên / Admin!");
         });
       }
 
-      // ------------------------------------------------------------
-      // D. ĐỒNG CƠ 6 MINI-GAME TƯƠNG TÁC HOẠT HÌNH CHUYÊN BIỆT 100%
-      // ------------------------------------------------------------
+      // ENGINE 6 MINI-GAME TƯƠNG TÁC
       const customModal = document.getElementById("custom-game-backdrop");
       const gameTitleEl = document.getElementById("custom-game-title-text");
       const animStageEl = document.getElementById("game-anim-stage-container");
@@ -2087,9 +2320,7 @@
         }
       });
 
-      // ------------------------------------------------------------
-      // E. ENGINE BÀI THI HẰNG TUẦN 5 CÂU CÓ ANTI-CHEAT & ĐA TUẦN
-      // ------------------------------------------------------------
+      // ENGINE BÀI THI HẰNG TUẦN
       let examTimerInterval = null;
       let examSecondsRemaining = 300;
       let currentExamQuestionIndex = 0;
@@ -2297,8 +2528,6 @@
         }
       };
 
-
-
       window.goToHomeTab = function () {
         if (customModal) customModal.classList.remove('active');
 
@@ -2317,11 +2546,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       };
 
-      // ==========================================
-      // HỆ THỐNG DỮ LIỆU ĐỒNG BỘ LỚP & XẾP HẠNG
-      // ==========================================
-
-      // 1. Danh sách Lớp / Nhóm (Giáo viên có thể thêm/sửa/xóa)
+      // DỮ LIỆU ĐỒNG BỘ LỚP & XẾP HẠNG
       let globalClasses = [
         { id: "2AI", name: "Lớp 2 AI" },
         { id: "2A", name: "Lớp 2A" },
@@ -2329,7 +2554,6 @@
         { id: "2C", name: "Lớp 2C" }
       ];
 
-      // 2. Danh sách Học sinh
       let globalStudents = [
         { id: 101, name: "Vũ Bảo An", classId: "2AI" },
         { id: 102, name: "Bé Nam (Con)", classId: "2AI" },
@@ -2339,14 +2563,12 @@
         { id: 106, name: "Lê Thị B", classId: "2B" }
       ];
 
-      // Đọc Map Lớp từng học sinh từ localStorage
       let studentClassMap = {};
       try {
         const savedMap = localStorage.getItem("studentClassMap");
         if (savedMap) studentClassMap = JSON.parse(savedMap);
       } catch(e){}
 
-      // Nạp mảng học sinh từ localStorage nếu có
       try {
         const savedStudents = localStorage.getItem("globalStudents");
         if (savedStudents) {
@@ -2357,7 +2579,6 @@
         }
       } catch(e){}
 
-      // Đồng bộ fallback classId cho từng học sinh
       globalStudents.forEach(s => {
         const key = s.name.toLowerCase();
         if (studentClassMap[key]) {
@@ -2367,7 +2588,6 @@
         }
       });
 
-      // 3. Dữ liệu Trò chơi & Nhiệm vụ
       let gameTaskScoreStore = {
         "game-pika": [
           { studentId: 101, xp: 2100 },
@@ -2382,7 +2602,6 @@
         ]
       };
 
-      // 4. Dữ liệu Bài kiểm tra
       let examScoreStore = [
         { studentId: 101, score: "10/10", time: "12 phút" },
         { studentId: 102, score: "9.5/10", time: "14 phút" },
@@ -2390,19 +2609,7 @@
         { studentId: 104, score: "10/10", time: "10 phút" }
       ];
 
-
-
-      // 5. Cấu trúc Dữ liệu Giáo viên Tập trung (Centralized Teacher Accounts & Permissions)
       let teacherAccounts = [
-{
-    id: "admin",
-    username: "admin",
-    password: "admin123",
-    displayName: "Admin Quản Trị Hệ Thống",
-    assignedClasses: ["2AI", "2A", "2B", "2C"],
-    classes: ["2AI", "2A", "2B", "2C"],
-    active: true
-  },
         {
           id: "gv001",
           username: "comai",
@@ -2450,7 +2657,6 @@
         }
       ];
 
-      // Tự động nạp từ localStorage nếu có
       const storedTeacherAccounts = localStorage.getItem("teacherAccounts");
       if (storedTeacherAccounts) {
         try {
@@ -2733,11 +2939,7 @@
         }
       };
 
-      // ==========================================
-      // A. CÁC HÀM QUẢN LÝ LỚP / NHÓM (GIÁO VIÊN)
-      // ==========================================
-
-      // Render danh sách chọn Lớp ở Header & Thẻ Quản lý & Popup Nhập Tên
+      // QUẢN LÝ LỚP / NHÓM
       window.renderClassOptions = function () {
         const globalSelect = document.getElementById("global-class-select");
         const teacher = getCurrentTeacher();
@@ -2762,13 +2964,11 @@
           }
         }
 
-        // Render danh sách lớp cho popup Nhập Tên Học Sinh
         const studentClassInput = document.getElementById("student-class-input");
         if (studentClassInput) {
           studentClassInput.innerHTML = globalClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
 
-        // Render thẻ quản lý cho GV
         const tagsContainer = document.getElementById("class-management-tags");
         if (tagsContainer) {
           if (teacher && teacher.classes) {
@@ -2814,10 +3014,6 @@
         }
       };
 
-      // ==========================================
-      // 2. HÀM ĐÓNG / MỞ NÓI KHÔNG VỚI ĐÈ NHAU
-      // ==========================================
-
       window.forceHideAllModals = function () {
         const loginModal = document.getElementById("edit-profile-modal") || document.getElementById("student-login-modal");
         const rankModal = document.getElementById("leaderboard-modal");
@@ -2845,12 +3041,9 @@
         forceHideAllModals();
       };
 
-      // ==========================================
-      // 3. XỬ LÝ ĐĂNG NHẬP HỌC SINH (PHIÊN BẢN DUY NHẤT)
-      // ==========================================
-
+      // ĐĂNG NHẬP HỌC SINH
       window.openStudentLoginModal = function () {
-        forceHideAllModals(); // Đóng các modal khác trước
+        forceHideAllModals();
 
         const modal = document.getElementById("edit-profile-modal") || document.getElementById("student-login-modal");
         if (modal) {
@@ -2858,7 +3051,6 @@
           modal.classList.add("active");
         }
 
-        // Tự động nạp tên học sinh hiện tại vào ô nhập tên
         const nameInput = document.getElementById("input-student-fullname") || document.getElementById("student-name-input");
         const currentNameDisplay = document.getElementById("user-name-display");
         const savedName = localStorage.getItem("studentName") || (currentNameDisplay ? currentNameDisplay.textContent.trim() : "Bé Nam");
@@ -2866,7 +3058,6 @@
           nameInput.value = savedName;
         }
 
-        // Tự động đổ danh sách lớp từ globalClasses vào ô chọn lớp
         const classSelect = document.getElementById("student-class-input");
         if (classSelect) {
           classSelect.innerHTML = globalClasses
@@ -2882,7 +3073,6 @@
           }
         }
 
-        // Lắng nghe tự động đổi Lớp khi nhập/chọn Tên học sinh khác trong popup
         if (nameInput && classSelect && !nameInput.dataset.classAutoSyncAttached) {
           nameInput.dataset.classAutoSyncAttached = "true";
           const autoSyncClass = function () {
@@ -2915,16 +3105,13 @@
           return;
         }
 
-        // Lưu Tên + Lớp vào localStorage
         localStorage.setItem("studentName", newName);
         localStorage.setItem("studentClass", newClass);
 
-        // Lưu thông tin Lớp theo từng Học sinh riêng biệt
         const lowerName = newName.toLowerCase();
         studentClassMap[lowerName] = newClass;
         localStorage.setItem("studentClassMap", JSON.stringify(studentClassMap));
 
-        // Cập nhật mảng globalStudents (không tạo trùng)
         let student = globalStudents.find(
           s => s.name.toLowerCase() === lowerName
         );
@@ -2941,7 +3128,6 @@
 
         localStorage.setItem("globalStudents", JSON.stringify(globalStudents));
 
-        // Cập nhật hiển thị lên Header tại thẻ #user-name-display và nút #btn-student-login
         const userNameDisplay = document.getElementById("user-name-display");
         if (userNameDisplay) {
           userNameDisplay.textContent = newName;
@@ -2952,16 +3138,13 @@
           studentBtn.innerHTML = `👶 Học sinh: <span id="user-name-display">${newName}</span>`;
         }
 
-        // Đóng modal bằng closeModal('edit-profile-modal')
         closeModal("edit-profile-modal");
 
-        // Đồng bộ bộ lọc Bảng Xếp Hạng toàn hệ thống
         const globalSelect = document.getElementById("global-class-select");
         if (globalSelect) {
           globalSelect.value = newClass;
         }
 
-        // Kích hoạt handleClassChange(newClass)
         if (typeof handleClassChange === "function") {
           handleClassChange(newClass);
         }
@@ -3049,87 +3232,31 @@
         if (typeof renderTeacherStudentTable === "function") renderTeacherStudentTable();
       };
 
-      // ==========================================
-      // 3. KHỞI TẠO TỰ ĐỘNG
-      // ==========================================
+      // KHỞI TẠO TỰ ĐỘNG
+      forceHideAllModals();
+      renderClassOptions();
+      updateAllUserNames();
 
-      document.addEventListener("DOMContentLoaded", function() {
-        forceHideAllModals(); // Tắt hết modal khi tải trang
-        renderClassOptions();
-        updateAllUserNames();
-
-        const formLoginTeacher = document.getElementById("form-login-teacher");
-        if (formLoginTeacher) {
-          formLoginTeacher.onsubmit = function (e) {
-      e.preventDefault();
-      const usernameInput = document.getElementById("teacher-name");
-      const passwordInput = document.getElementById("teacher-password-input");
-      const errContainer = document.getElementById("teacher-login-error");
-
-      const username = usernameInput ? usernameInput.value.trim().toLowerCase() : "";
-      const password = passwordInput ? passwordInput.value.trim() : "";
-
-      if (errContainer) errContainer.textContent = "";
-
-      // 1. XỬ LÝ ĐĂNG NHẬP ADMIN
-      if (username === "admin" && password === "admin123") {
-        localStorage.setItem("currentUserRole", "admin");
-        localStorage.setItem("currentTeacherId", "admin");
-        localStorage.setItem("teacherName", "Admin Quản Trị Hệ Thống");
-
-        closeModal("teacher-login-modal");
+      const currentRole = localStorage.getItem("currentUserRole");
+      if (currentRole === "teacher" || currentRole === "admin") {
         switchTeacherDashboardView();
-        return;
       }
 
-      // 2. XỬ LÝ ĐĂNG NHẬP GIÁO VIÊN
-      const teacher = (typeof teacherAccounts !== "undefined")
-        ? teacherAccounts.find(t => t.username.toLowerCase() === username)
-        : null;
-
-      if (!teacher || teacher.password !== password) {
-        if (errContainer) errContainer.textContent = "❌ Tên đăng nhập hoặc mật khẩu không đúng.";
-        return;
+      const savedName = localStorage.getItem("studentName");
+      if (savedName) {
+        const userNameDisplay = document.getElementById("user-name-display");
+        if (userNameDisplay) userNameDisplay.textContent = savedName;
       }
 
-      if (teacher.active === false) {
-        if (errContainer) errContainer.textContent = "🔒 Tài khoản giáo viên đã bị khóa. Vui lòng liên hệ Quản trị viên.";
-        return;
+      const studentBtn = document.getElementById("btn-student-login") || Array.from(document.querySelectorAll("button, div")).find(el => el.textContent.includes("Học sinh:"));
+      if (studentBtn) {
+        studentBtn.onclick = openStudentLoginModal;
       }
 
-      // Đăng nhập Giáo viên thành công
-      localStorage.setItem("currentUserRole", "teacher");
-      localStorage.setItem("currentTeacherId", teacher.id);
-      localStorage.setItem("teacherName", teacher.displayName);
-
-      closeModal("teacher-login-modal");
-      switchTeacherDashboardView();
-    };
-        }
-
-        // Tự động khôi phục phiên đăng nhập Giáo viên/Admin nếu có
-        const currentRole = localStorage.getItem("currentUserRole");
-        if (currentRole === "teacher" || currentRole === "admin") {
-          switchTeacherDashboardView();
-        }
-
-        // Nạp tên học sinh từ localStorage nếu có
-        const savedName = localStorage.getItem("studentName");
-        if (savedName) {
-          const userNameDisplay = document.getElementById("user-name-display");
-          if (userNameDisplay) userNameDisplay.textContent = savedName;
-        }
-
-        const studentBtn = document.getElementById("btn-student-login") || Array.from(document.querySelectorAll("button, div")).find(el => el.textContent.includes("Học sinh:"));
-        if (studentBtn) {
-          studentBtn.onclick = openStudentLoginModal;
-        }
-
-        const rankBtn = Array.from(document.querySelectorAll("button, a")).find(el => el.textContent.includes("Bảng Xếp Hạng"));
-        if (rankBtn) {
-          rankBtn.onclick = openLeaderboardModal;
-        }
-      });
+      const rankBtn = Array.from(document.querySelectorAll("button, a")).find(el => el.textContent.includes("Bảng Xếp Hạng"));
+      if (rankBtn) {
+        rankBtn.onclick = openLeaderboardModal;
+      }
 
       // Thêm Lớp/Nhóm mới
       window.addNewClass = function () {
@@ -3164,11 +3291,7 @@
         }
       };
 
-      // ==========================================
-      // C. ĐỒNG BỘ GIÁO VIÊN & ĐỔI LỚP GLOBAL
-      // ==========================================
-
-      // Render Bảng Trò chơi & Nhiệm vụ (Giáo viên)
+      // Render Bảng Trò chơi & Nhiệm vụ
       window.renderGameTaskTable = function () {
         const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
         const selectedCategory = document.getElementById("teacher-select-game-task") ? document.getElementById("teacher-select-game-task").value : "game-pika";
@@ -3215,7 +3338,7 @@
         `).join('');
       };
 
-      // Render Bảng Bài kiểm tra (Giáo viên)
+      // Render Bảng Bài kiểm tra
       window.renderExamTable = function () {
         const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
         const tbody = document.getElementById("tbody-exam-ranking");
@@ -3260,7 +3383,7 @@
         `).join('');
       };
 
-      // Render Bảng Tiến Độ Học Sinh Cho Teacher Dashboard
+      // Render Bảng Tiến Độ Học Sinh
       window.renderTeacherStudentTable = function () {
         const tableBody = document.getElementById("teacher-student-table-body");
         if (!tableBody) return;
@@ -3319,7 +3442,7 @@
         }).join("");
       };
 
-      // Sửa điểm & Xóa học sinh khỏi xếp hạng
+      // Sửa điểm & Xóa
       window.editStudentXP = function (categoryKey, studentId) {
         let list = gameTaskScoreStore[categoryKey] || [];
         let item = list.find(i => i.studentId === studentId);
@@ -3400,32 +3523,18 @@
         </select>
       </div>
 
-      <!-- Thanh công cụ Quản lý dành riêng cho Giáo viên (Admin View) -->
-      <div id="leaderboard-admin-bar" style="display: none; background: #fef3c7; border: 1px dashed #f59e0b; padding: 10px 12px; border-radius: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;">
-        <div style="font-weight: bold; font-size: 12px; color: #92400e; display: flex; align-items: center; gap: 6px;">
-          <span>👑 Chế độ Quản Trị Giáo Viên</span>
-        </div>
-        <div style="display: flex; gap: 6px;">
-          <button onclick="addStudentToLeaderboard()" title="Thêm học sinh thủ công" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 10px; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(16,185,129,0.3);">
-            ➕ Thêm học sinh
-          </button>
-          <button onclick="resetLeaderboardCategory()" title="Đặt lại lượt chơi mới" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 10px; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(239,68,68,0.3);">
-            🔄 Đặt lại Bảng
-          </button>
-        </div>
-      </div>
-
       <!-- Danh sách xếp hạng có thanh cuộn -->
       <div class="leaderboard-list-container">
         <ul id="leaderboard-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
           <li style="background: #fef9c3; padding: 12px 16px; border-radius: 14px; border: 1px solid #fde047; font-weight: bold; color: #713f12; display: flex; justify-content: space-between; align-items: center;"><span>🥇 Trần Tiến Đạt</span> <span style="color: #ca8a04; font-weight: 900;">1500 XP</span></li>
           <li style="background: #f1f5f9; padding: 12px 16px; border-radius: 14px; font-weight: bold; color: #334155; display: flex; justify-content: space-between; align-items: center;"><span>🥈 Nguyễn Văn A</span> <span style="color: #64748b; font-weight: 900;">1200 XP</span></li>
         </ul>
+      </div>
     </div>
   </div>
 
 
-  <!-- Widget Trợ Lý AI Chú Ong (Đã nâng cấp Icon to & Giải toán tiểu học) -->
+  <!-- Widget Trợ Lý AI Chú Ong -->
   <div id="bee-ai-widget" style="position: fixed; bottom: 25px; right: 25px; z-index: 9999; font-family: 'Nunito', sans-serif;">
     
     <!-- Cửa sổ Chat popup -->
@@ -3453,7 +3562,7 @@
       </div>
     </div>
 
-    <!-- Nút bấm hình chú Ong nổi tròn (ĐÃ PHÓNG TO NỔI BẬT) -->
+    <!-- Nút bấm hình chú Ong nổi tròn -->
     <div onclick="toggleBeeChat()" style="width: 72px; height: 72px; background: linear-gradient(135deg, #fff066, #facc15); border: 4px solid #ffffff; border-radius: 50%; box-shadow: 0 8px 20px rgba(234, 179, 8, 0.5); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
       <span style="font-size: 40px;">🐝</span>
     </div>
@@ -3468,15 +3577,13 @@
     function solveMathQuery(str) {
       let lower = str.toLowerCase().trim();
 
-      // 1. Xử lý các câu hỏi giao tiếp / hỏi về khả năng
       if (lower.includes('biết') || lower.includes('làm toán') || lower.includes('ai đó') || lower.includes('là ai')) {
         if (lower.includes('lời văn') || lower.includes('toán lời văn')) {
-          return "Ong biết giải cả toán tính nhẩm lẫn toán có lời văn tiểu học đó! Bé cứ gửi đề bài (ví dụ: 'An có 5 kẹo, Bình cho 3 kẹo, hỏi An có mấy kẹo?') cho Ong nhé! 🐝";
+          return "Ong biết giải cả toán tính nhẩm lẫn toán có lời văn tiểu học đó! Bé cứ gửi đề bài cho Ong nhé! 🐝";
         }
-        return "Ong biết làm tất cả các phép tính cộng, trừ, nhân, chia và giải toán tiểu học đó! Bé gửi phép tính hoặc đề bài qua đây nhé! 🐝";
+        return "Ong biết làm tất cả các phép tính cộng, trừ, nhân, chia và giải toán tiểu học đó! Bé gửi phép tính qua đây nhé! 🐝";
       }
 
-      // 2. Xử lý bài toán có lời văn đơn giản (Thêm/Bớt, Cho/Nhận)
       let numbers = lower.match(/\d+/g);
       if (numbers && numbers.length >= 2) {
         let num1 = parseInt(numbers[0]);
@@ -3489,7 +3596,6 @@
         }
       }
 
-      // 3. Xử lý phép tính trực tiếp (+ - * / : x)
       let cleanStr = lower
         .replace(/bằng bao nhiêu/g, '').replace(/bằng mấy/g, '').replace(/là bao nhiêu/g, '')
         .replace(/giúp/g, '').replace(/tính/g, '').replace(/x/g, '*').replace(/:/g, '/').trim();
@@ -3515,7 +3621,6 @@
       const text = input.value.trim();
       if (!text) return;
 
-      // Hiển thị tin nhắn của bé
       const userMsg = document.createElement('div');
       userMsg.style.cssText = 'background: #eab308; color: white; padding: 8px 12px; border-radius: 12px; align-self: flex-end; max-width: 80%; word-break: break-word;';
       userMsg.textContent = text;
@@ -3524,7 +3629,6 @@
       input.value = '';
       msgContainer.scrollTop = msgContainer.scrollHeight;
 
-      // Trả lời thông minh
       setTimeout(() => {
         const beeMsg = document.createElement('div');
         beeMsg.style.cssText = 'background: #ffffff; padding: 10px 12px; border-radius: 12px; border: 1px solid #fef08a; color: #422006; align-self: flex-start; max-width: 85%; box-shadow: 0 2px 4px rgba(0,0,0,0.03); line-height: 1.4;';
