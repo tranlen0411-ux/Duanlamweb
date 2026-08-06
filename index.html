@@ -542,99 +542,6 @@
     }
     .tab-btn.active { background: #ff7d29; color: white; }
   </style>
-
-  <!-- DEFENSIVE GLOBAL EVENT HANDLERS (DIỆT SẠCH LỖI REFERENCEERROR) -->
-  <script>
-    window.activatePanel = function(panelId, btnEl) {
-      document.querySelectorAll('.tab-content-panel').forEach(function(panel) { panel.classList.remove('active'); });
-      document.querySelectorAll('.tab-nav-btn, .nav-tab').forEach(function(btn) { btn.classList.remove('active'); });
-      var target = document.getElementById(panelId);
-      if (target) target.classList.add('active');
-      if (btnEl) btnEl.classList.add('active');
-    };
-
-    window.handleBannerButtonClick = function(e) {
-      if (e && e.preventDefault) e.preventDefault();
-      var examBtn = document.getElementById('tab-btn-exam');
-      window.activatePanel('tab-weekly-exam', examBtn);
-      var weekContainer = document.getElementById('week-selector-container');
-      if (weekContainer) {
-        weekContainer.scrollIntoView({ behavior: 'smooth' });
-      }
-    };
-
-    window.openLeaderboardModal = function(btnEl) {
-      if (typeof window.forceHideAllModals === 'function') window.forceHideAllModals();
-      document.querySelectorAll('.tab-nav-btn, .nav-tab').forEach(function(btn) { btn.classList.remove('active'); });
-      var rankTabBtn = document.getElementById("tab-btn-ranking") || (btnEl && btnEl.classList && btnEl.classList.contains("tab-nav-btn") ? btnEl : null);
-      if (rankTabBtn) rankTabBtn.classList.add("active");
-      var modal = document.getElementById("leaderboard-modal");
-      if (modal) {
-        modal.style.display = "flex";
-        modal.classList.add("active");
-        if (typeof window.updateStudentModalView === 'function') window.updateStudentModalView();
-      }
-    };
-
-    window.closeLeaderboardModal = function() {
-      var modal = document.getElementById("leaderboard-modal");
-      if (modal) {
-        modal.style.display = "none";
-        modal.classList.remove("active");
-      }
-    };
-
-    window.toggleBeeChat = function() {
-      var chatBox = document.getElementById("bee-chat-box");
-      var aiModal = document.getElementById("ai-chat-modal");
-      if (aiModal) {
-        if (aiModal.style.display === "flex" || aiModal.classList.contains("active")) {
-          aiModal.style.display = "none";
-          aiModal.classList.remove("active");
-        } else {
-          aiModal.style.display = "flex";
-          aiModal.classList.add("active");
-        }
-      } else if (chatBox) {
-        chatBox.style.display = (chatBox.style.display === "none" || chatBox.style.display === "") ? "block" : "none";
-      }
-    };
-
-    window.sendBeeMessage = function() {
-      var input = document.getElementById("ai-chat-input-field") || document.getElementById("bee-input");
-      var msgContainer = document.getElementById("ai-chat-messages-body") || document.getElementById("bee-chat-messages");
-      if (!input || !msgContainer) return;
-      var text = input.value.trim();
-      if (!text) return;
-      var userMsg = document.createElement("div");
-      userMsg.style.cssText = "background: #eab308; color: white; padding: 10px 14px; border-radius: 16px 16px 4px 16px; margin-left: auto; max-width: 80%; word-break: break-word; font-weight: bold; margin-bottom: 10px;";
-      userMsg.textContent = text;
-      msgContainer.appendChild(userMsg);
-      input.value = "";
-      msgContainer.scrollTop = msgContainer.scrollHeight;
-      setTimeout(function() {
-        var beeMsg = document.createElement("div");
-        beeMsg.style.cssText = "background: #ffffff; padding: 12px 16px; border-radius: 16px 16px 16px 4px; border: 2px solid #fef08a; color: #422006; margin-right: auto; max-width: 85%; line-height: 1.5; margin-bottom: 10px;";
-        beeMsg.innerHTML = "🐝 Bạn Ong đã hiểu! Bé cố gắng luyện tập thật tốt nhé! 🌟";
-        msgContainer.appendChild(beeMsg);
-        msgContainer.scrollTop = msgContainer.scrollHeight;
-      }, 300);
-    };
-
-    window.openStudentLoginModal = function() {
-      var modal = document.getElementById("edit-profile-modal") || document.getElementById("student-login-modal");
-      if (modal) { modal.style.display = "flex"; modal.classList.add("active"); }
-    };
-
-    window.openTeacherLoginModal = function() {
-      var modal = document.getElementById("teacher-login-modal");
-      if (modal) { modal.style.display = "flex"; modal.classList.add("active"); }
-    };
-
-    window.handleClassChange = function(val) {
-      if (val && val !== "ALL") { localStorage.setItem("studentClass", val); }
-    };
-  </script>
 </head>
 <body>
 
@@ -735,8 +642,8 @@
         <button class="tab-nav-btn" id="tab-btn-games">
           🎮 Đấu Trường Trò Chơi
         </button>
-        <!-- Nút Bảng Xếp Hạng -->
-        <button class="tab-nav-btn" id="tab-btn-ranking" onclick="openLeaderboardModal(this)">
+        <!-- Đặt ngay sau nút Đấu Trường Trò Chơi -->
+        <button class="nav-btn tab-nav-btn" onclick="openLeaderboardModal()">
           🏆 Bảng Xếp Hạng
         </button>
         <button class="tab-nav-btn" id="tab-btn-exam">
@@ -1554,23 +1461,6 @@
         </select>
       </div>
       <button class="btn btn-primary" style="width: 100%; margin-top: 16px; padding: 12px; border-radius: 12px; font-weight: bold; background: #fde047; border: none; color: #854d0e; cursor: pointer;" onclick="saveStudentProfileFromModal()">💾 Lưu Lại</button>
-  </div>
-
-  <!-- POPUP MODAL BẢNG XẾP HẠNG HỌC SINH -->
-  <div class="leaderboard-modal modal-backdrop" id="leaderboard-modal" style="display: none;">
-    <div class="leaderboard-content modal-card" style="max-width: 480px; width: 90%; position: relative;">
-      <button class="modal-close" onclick="closeLeaderboardModal()">✕</button>
-      <div style="text-align: center; margin-bottom: 16px;">
-        <span style="font-size: 3rem;">🏆</span>
-        <h3 style="font-size: 1.45rem; font-weight: 900; color: #1e293b; margin: 4px 0 0 0;">Bảng Xếp Hạng Học Sinh</h3>
-        <p style="font-size: 0.86rem; color: #64748b; font-weight: 700; margin-top: 4px;">Vinh danh thành tích học tập toàn hệ thống</p>
-      </div>
-
-      <div class="leaderboard-list-container" id="leaderboard-list" style="max-height: 340px; overflow-y: auto; padding-right: 4px;">
-        <!-- Danh sách học sinh sẽ tự động đổ bằng JS -->
-      </div>
-
-      <button class="btn btn-primary" style="width: 100%; margin-top: 16px; padding: 12px; border-radius: 12px; font-weight: 900; background: linear-gradient(135deg, #ff7d29, #ea580c); border: none; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);" onclick="closeLeaderboardModal()">Đóng Bảng Xếp Hạng ✕</button>
     </div>
   </div>
 
@@ -1689,40 +1579,26 @@
       if (examTabBtn) examTabBtn.onclick = function() { activatePanel("tab-weekly-exam", this); };
       if (historyTabBtn) historyTabBtn.onclick = function() { activatePanel("tab-history-feedback", this); };
 
-      // HÀM XỬ LÝ CLICK NÚT BANNER (LÀM BÀI NGAY)
+      // HÀM XỬ LÝ CLICK NÚT BANNER
       window.handleBannerButtonClick = function (e) {
         if (e) e.preventDefault();
 
-        // 1. Đảm bảo hiển thị giao diện Học sinh nếu đang ở giao diện Giáo viên
-        const studentView = document.getElementById("student-view-container");
-        const teacherView = document.getElementById("teacher-view-container");
-        if (studentView && teacherView) {
-          teacherView.style.display = "none";
-          studentView.style.display = "block";
-        }
-
-        // 2. Chuyển sang Tab "Bài Thi Hằng Tuần"
         const tabExamBtn = document.getElementById("tab-btn-exam");
-        if (typeof activatePanel === "function") {
-          activatePanel("tab-weekly-exam", tabExamBtn);
-        }
+        activatePanel("tab-weekly-exam", tabExamBtn);
 
-        // 3. Cuộn mượt trực tiếp đến khu vực bộ chọn tuần bài thi
-        const weekSelectContainer = document.getElementById('week-selector-container') || document.getElementById('select-week') || document.querySelector('.exam-container');
+        const weekSelectContainer = document.getElementById('week-selector-container') || document.getElementById('select-week');
 
         if (weekSelectContainer) {
+          weekSelectContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          weekSelectContainer.style.transition = "transform 0.3s, box-shadow 0.3s";
+          weekSelectContainer.style.transform = "scale(1.08)";
+          weekSelectContainer.style.boxShadow = "0 0 20px rgba(59, 130, 246, 0.6)";
+
           setTimeout(() => {
-            weekSelectContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            weekSelectContainer.style.transition = "transform 0.3s ease, box-shadow 0.3s ease";
-            weekSelectContainer.style.transform = "scale(1.08)";
-            weekSelectContainer.style.boxShadow = "0 0 22px rgba(59, 130, 246, 0.6)";
-
-            setTimeout(() => {
-              weekSelectContainer.style.transform = "scale(1)";
-              weekSelectContainer.style.boxShadow = "none";
-            }, 600);
-          }, 50);
+            weekSelectContainer.style.transform = "scale(1)";
+            weekSelectContainer.style.boxShadow = "none";
+          }, 600);
         }
       };
 
@@ -3276,96 +3152,8 @@
 
       window.saveStudentProfile = window.saveStudentProfileFromModal;
 
-      // HÀM XỬ LÝ CHÚ ONG AI TUTOR
-      window.openAITutorDialog = function () {
+      window.openLeaderboardModal = function () {
         forceHideAllModals();
-        const modal = document.getElementById("ai-chat-modal");
-        if (modal) {
-          modal.style.display = "flex";
-          modal.classList.add("active");
-        }
-      };
-
-      window.toggleBeeChat = function () {
-        const chatModal = document.getElementById("ai-chat-modal");
-        const beeWidgetBox = document.getElementById("bee-chat-box");
-
-        if (chatModal) {
-          if (chatModal.style.display === "flex" || chatModal.classList.contains("active")) {
-            chatModal.style.display = "none";
-            chatModal.classList.remove("active");
-          } else {
-            forceHideAllModals();
-            chatModal.style.display = "flex";
-            chatModal.classList.add("active");
-          }
-        } else if (beeWidgetBox) {
-          beeWidgetBox.style.display = (beeWidgetBox.style.display === "none" || beeWidgetBox.style.display === "") ? "block" : "none";
-        } else {
-          openAITutorDialog();
-        }
-      };
-
-      window.sendBeeMessage = function () {
-        const inputField = document.getElementById("ai-chat-input-field") || document.getElementById("bee-input");
-        const chatMessagesBody = document.getElementById("ai-chat-messages-body") || document.getElementById("bee-chat-messages");
-
-        if (!inputField || !chatMessagesBody) return;
-
-        const text = inputField.value.trim();
-        if (!text) return;
-
-        const userMsg = document.createElement("div");
-        userMsg.style.cssText = "background: #eab308; color: white; padding: 10px 14px; border-radius: 16px 16px 4px 16px; margin-left: auto; max-width: 80%; word-break: break-word; font-weight: bold; margin-bottom: 10px;";
-        userMsg.textContent = text;
-        chatMessagesBody.appendChild(userMsg);
-
-        inputField.value = "";
-        chatMessagesBody.scrollTop = chatMessagesBody.scrollHeight;
-
-        setTimeout(() => {
-          const beeMsg = document.createElement("div");
-          beeMsg.style.cssText = "background: #ffffff; padding: 12px 16px; border-radius: 16px 16px 16px 4px; border: 2px solid #fef08a; color: #422006; margin-right: auto; max-width: 85%; box-shadow: 0 2px 8px rgba(0,0,0,0.05); line-height: 1.5; margin-bottom: 10px;";
-
-          let answer = window.aiTutorService ? window.aiTutorService.generateResponse(text) : ("🐝 " + text);
-          beeMsg.innerHTML = "🐝 " + answer.replace(/\n/g, "<br>");
-
-          if (chatMessagesBody) {
-            chatMessagesBody.appendChild(beeMsg);
-            chatMessagesBody.scrollTop = chatMessagesBody.scrollHeight;
-          }
-        }, 300);
-      };
-
-      window.toggleVoiceAIInput = function () {
-        if (window.aiTutorService) {
-          window.aiTutorService.toggleVoiceInput();
-        }
-      };
-
-      const aiInputElem = document.getElementById("ai-chat-input-field");
-      if (aiInputElem) {
-        aiInputElem.addEventListener("keypress", function (e) {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            sendBeeMessage();
-          }
-        });
-      }
-
-      window.openLeaderboardModal = function (btnEl) {
-        forceHideAllModals();
-
-        // 1. Kích hoạt chuyển nút/tab Bảng Xếp Hạng sang trạng thái màu cam (active)
-        document.querySelectorAll('.tab-nav-btn, .nav-tab').forEach(btn => {
-          btn.classList.remove('active');
-        });
-        const rankTabBtn = document.getElementById("tab-btn-ranking") || (btnEl && btnEl.classList && btnEl.classList.contains("tab-nav-btn") ? btnEl : null);
-        if (rankTabBtn) {
-          rankTabBtn.classList.add("active");
-        }
-
-        // 2. Mở popup modal Bảng Xếp Hạng
         const modal = document.getElementById("leaderboard-modal");
         if (modal) {
           modal.style.display = "flex";
@@ -3375,88 +3163,47 @@
       };
 
       window.closeLeaderboardModal = function () {
-        const modal = document.getElementById("leaderboard-modal");
-        if (modal) {
-          modal.style.display = "none";
-          modal.classList.remove("active");
-        }
+        forceHideAllModals();
       };
 
       window.updateStudentModalView = function () {
         const listContainer = document.getElementById("leaderboard-list");
         if (!listContainer) return;
 
-        // 1. Lấy toàn bộ danh sách tất cả học sinh tham gia hệ thống (không bị giới hạn/lọc thiếu)
-        let studentsList = [...globalStudents];
+        const globalSelect = document.getElementById("global-class-select");
+        const selectedClass = globalSelect ? globalSelect.value : "ALL";
 
-        // Đồng bộ học sinh hiện tại từ localStorage
-        const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
-        const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
-        const currentStudentXP = parseInt(localStorage.getItem("userXP")) || 450;
+        const filteredStudents = (selectedClass === "ALL" || !selectedClass) 
+          ? globalStudents 
+          : globalStudents.filter(s => s.classId === selectedClass);
 
-        let currentStudentObj = studentsList.find(s => s.name.toLowerCase() === currentStudentName.toLowerCase());
-        if (!currentStudentObj) {
-          currentStudentObj = {
-            id: 102,
-            name: currentStudentName,
-            classId: currentStudentClass
+        const rawScores = gameTaskScoreStore["game-pika"] || [];
+
+        let mergedData = filteredStudents.map(student => {
+          let scoreObj = rawScores.find(item => item.studentId === student.id);
+          let classObj = globalClasses.find(c => c.id === student.classId);
+          return {
+            name: student.name,
+            className: classObj ? classObj.name : student.classId,
+            xp: scoreObj ? scoreObj.xp : 0
           };
-          studentsList.push(currentStudentObj);
-        } else {
-          currentStudentObj.classId = currentStudentClass;
+        }).sort((a, b) => b.xp - a.xp);
+
+        if (mergedData.length === 0) {
+          listContainer.innerHTML = `<div style="text-align:center; padding:15px; color:#888;">Không có học sinh trong lớp này.</div>`;
+          return;
         }
 
-        // 2. Tổng hợp điểm XP đầy đủ cho từng học sinh
-        let mergedData = studentsList.map(student => {
-          let studentXP = 0;
-
-          if (student.name.toLowerCase() === currentStudentName.toLowerCase()) {
-            studentXP = currentStudentXP;
-          } else {
-            for (let catKey in gameTaskScoreStore) {
-              const items = gameTaskScoreStore[catKey] || [];
-              const found = items.find(i => i.studentId === student.id || (i.name && i.name.toLowerCase() === student.name.toLowerCase()));
-              if (found && found.xp > studentXP) {
-                studentXP = found.xp;
-              }
-            }
-            if (studentXP === 0) {
-              const defaultXPMap = { 101: 2100, 102: 1900, 103: 1750, 104: 1500, 105: 1350, 106: 1200 };
-              studentXP = defaultXPMap[student.id] || 1000;
-            }
-          }
-
-          let classObj = globalClasses.find(c => c.id === student.classId);
-          let className = classObj ? classObj.name : (student.classId || "Lớp 2 AI");
-
-          return {
-            id: student.id,
-            name: student.name,
-            className: className,
-            xp: studentXP
-          };
-        });
-
-        // 3. Sắp xếp danh sách học sinh theo điểm XP giảm dần
-        mergedData.sort((a, b) => b.xp - a.xp);
-
-        // 4. Render danh sách đầy đủ tất cả học sinh
         const badges = ["🥇", "🥈", "🥉"];
-        listContainer.innerHTML = mergedData.map((item, index) => {
-          const badgeIcon = badges[index] || `<span style="display:inline-block; width:22px; text-align:center; color:#64748b; font-weight:bold;">#${index + 1}</span>`;
-          const isCurrentUser = item.name.toLowerCase() === currentStudentName.toLowerCase();
-          
-          return `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:8px; background:${isCurrentUser ? '#fef3c7' : '#f8fafc'}; border-radius:12px; border:1px solid ${isCurrentUser ? '#fde047' : '#e2e8f0'}; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:1.15rem; font-weight:900;">${badgeIcon}</span>
-                <span style="font-weight:900; color:${isCurrentUser ? '#92400e' : '#1e293b'}; font-size:0.95rem;">${item.name} ${isCurrentUser ? '🌟 (Bạn)' : ''}</span>
-                <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-weight:bold;">${item.className}</span>
-              </div>
-              <span style="color:#ea580c; font-weight:900; font-size:0.95rem;">${item.xp} XP</span>
+        listContainer.innerHTML = mergedData.map((item, index) => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; margin-bottom:6px; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0;">
+            <div>
+              <span style="font-weight:bold;">${badges[index] || `#${index + 1}`} ${item.name}</span>
+              <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:8px; margin-left:6px;">${item.className}</span>
             </div>
-          `;
-        }).join('');
+            <span style="color:#ea580c; font-weight:bold;">${item.xp} XP</span>
+          </div>
+        `).join('');
       };
 
       window.updateLeaderboardData = function () {
