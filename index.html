@@ -722,7 +722,11 @@
         </button>
 
         <button class="header-teacher-btn" id="role-switch-btn" onclick="openTeacherLoginModal()" title="Nhấp để đăng nhập hoặc đổi tài khoản Giáo viên">
-          🏫 Giáo viên / Admin: <span id="teacher-name-display">Đăng nhập</span>
+          🏫 Đăng Nhập Giáo Viên / Admin: <span id="teacher-name-display">Đăng nhập</span>
+        </button>
+
+        <button class="header-register-btn btn" onclick="switchLoginMode('register'); openTeacherLoginModal();" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);">
+          📝 Đăng Ký
         </button>
       </div>
     </nav>
@@ -1411,18 +1415,21 @@
     <img src="assets/images/mascot_bee.jpg" alt="Ong AI Floating Widget" />
   </div>
 
-  <!-- POPUP MODAL ĐĂNG NHẬP GIÁO VIÊN & ADMIN (CẢI TIẾN RIÊNG PHẦN ADMIN) -->
+  <!-- POPUP MODAL ĐĂNG NHẬP / ĐĂNG KÝ HỆ THỐNG -->
   <div class="modal-backdrop" id="teacher-login-modal">
-    <div class="teacher-login-modal-box" id="login-modal-box">
+    <div class="teacher-login-modal-box" id="login-modal-box" style="max-width: 480px; position: relative;">
       <button class="modal-close" onclick="closeModal('teacher-login-modal')">✕</button>
       
-      <!-- Chuyển đổi Vai Trò Đăng Nhập: Giáo Viên vs Admin -->
-      <div class="login-role-tabs">
+      <!-- Chuyển đổi Vai Trò Đăng Nhập & Đăng Ký -->
+      <div class="login-role-tabs" style="display: flex; gap: 6px; margin-bottom: 16px;">
         <button type="button" class="login-role-tab active" id="tab-login-teacher" onclick="switchLoginMode('teacher')">
           👩‍🏫 Giáo Viên
         </button>
         <button type="button" class="login-role-tab" id="tab-login-admin" onclick="switchLoginMode('admin')">
-          👑 Quản Trị (Admin)
+          👑 Quản Trị
+        </button>
+        <button type="button" class="login-role-tab" id="tab-login-register" onclick="switchLoginMode('register')" style="background: #10b981; color: white; border-radius: 12px; font-weight: 800;">
+          📝 Đăng Ký
         </button>
       </div>
 
@@ -1434,6 +1441,7 @@
         </p>
       </div>
 
+      <!-- FORM ĐĂNG NHẬP -->
       <form id="form-login-teacher">
         <div class="form-group">
           <label style="font-weight: 800; font-size: 0.9rem;" id="label-username-input">Tên giáo viên / Tài khoản:</label>
@@ -1457,6 +1465,57 @@
           <button type="button" id="btn-demo-login" class="btn btn-secondary" style="padding: 12px 16px; border-radius: 25px; font-weight: 800;" onclick="handleGuestTeacherDemoLogin()">
             👤 Demo
           </button>
+        </div>
+
+        <!-- DÒNG HƯỚNG DẪN CHUYỂN SANG ĐĂNG KÝ -->
+        <div id="login-footer-register-link" style="text-align: center; margin-top: 16px; font-size: 0.88rem; font-weight: 700; color: #475569;">
+          Chưa có tài khoản? <a href="javascript:void(0)" onclick="switchLoginMode('register')" style="color: #10b981; font-weight: 900; text-decoration: underline;">Đăng ký tài khoản mới ngay ➔</a>
+        </div>
+      </form>
+
+      <!-- FORM ĐĂNG KÝ TÀI KHOẢN MỚI -->
+      <form id="form-register-modal" onsubmit="handleModalRegisterSubmit(event)" style="display: none;">
+        <div class="form-group" style="margin-bottom: 10px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Họ và Tên hiển thị:</label>
+          <input type="text" id="modal-reg-fullname" class="form-control" placeholder="Ví dụ: Nguyễn Văn A, Bé Nam..." required style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Tên tài khoản (Username):</label>
+          <input type="text" id="modal-reg-username" class="form-control" placeholder="Ví dụ: nguyenvana, benam2026..." required style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Mật khẩu:</label>
+          <input type="password" id="modal-reg-password" class="form-control" placeholder="Tạo mật khẩu..." required style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Vai trò người dùng:</label>
+          <select id="modal-reg-role" class="form-control" style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; background: white; box-sizing: border-box;">
+            <option value="student">👶 Học Sinh</option>
+            <option value="teacher">👩‍🏫 Giáo Viên</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Lớp / Nhóm Học:</label>
+          <select id="modal-reg-class" class="form-control" style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; background: white; box-sizing: border-box;">
+            <option value="2AI">Lớp 2 AI</option>
+            <option value="2A">Lớp 2A</option>
+            <option value="2B">Lớp 2B</option>
+            <option value="2C">Lớp 2C</option>
+          </select>
+        </div>
+
+        <div id="modal-reg-feedback" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-bottom: 10px; min-height: 20px; text-align: center;"></div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 25px; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; cursor: pointer;">
+          📝 Đăng Ký Tài Khoản Ngay
+        </button>
+
+        <div style="text-align: center; margin-top: 14px; font-size: 0.88rem; font-weight: 700; color: #475569;">
+          Đã có tài khoản? <a href="javascript:void(0)" onclick="switchLoginMode('teacher')" style="color: #2563eb; font-weight: 900; text-decoration: underline;">Đăng nhập ngay tại đây ➔</a>
         </div>
       </form>
     </div>
@@ -1816,29 +1875,44 @@
       }
     }
 
-    // Hàm chuyển chế độ Đăng nhập (Giáo viên / Admin)
+    // Hàm chuyển chế độ Đăng nhập (Giáo viên / Admin / Đăng ký)
     let currentLoginMode = 'teacher';
     function switchLoginMode(mode) {
       currentLoginMode = mode;
       const modalBox = document.getElementById("login-modal-box");
       const teacherTab = document.getElementById("tab-login-teacher");
       const adminTab = document.getElementById("tab-login-admin");
+      const regTab = document.getElementById("tab-login-register");
       const iconHeader = document.getElementById("login-icon-header");
       const titleHeader = document.getElementById("login-title-header");
       const subtitleHeader = document.getElementById("login-subtitle-header");
       const labelUsername = document.getElementById("label-username-input");
       const inputUsername = document.getElementById("teacher-name");
-      const inputPassword = document.getElementById("teacher-password-input");
       const btnSubmit = document.getElementById("btn-submit-login");
       const btnDemo = document.getElementById("btn-demo-login");
       const errBox = document.getElementById("teacher-login-error");
+      const formLogin = document.getElementById("form-login-teacher");
+      const formReg = document.getElementById("form-register-modal");
 
       if (errBox) errBox.textContent = "";
 
-      if (mode === 'admin') {
+      if (mode === 'register') {
+        if (formLogin) formLogin.style.display = "none";
+        if (formReg) formReg.style.display = "block";
+        if (modalBox) modalBox.classList.remove("admin-mode");
+        if (teacherTab) teacherTab.className = "login-role-tab";
+        if (adminTab) adminTab.className = "login-role-tab";
+        if (regTab) regTab.className = "login-role-tab active";
+        if (iconHeader) iconHeader.textContent = "📝";
+        if (titleHeader) titleHeader.textContent = "Đăng Ký Tài Khoản Mới";
+        if (subtitleHeader) subtitleHeader.textContent = "Tạo tài khoản mới và lưu trữ đồng bộ lên Supabase CSDL.";
+      } else if (mode === 'admin') {
+        if (formLogin) formLogin.style.display = "block";
+        if (formReg) formReg.style.display = "none";
         if (modalBox) modalBox.classList.add("admin-mode");
         if (teacherTab) teacherTab.className = "login-role-tab";
         if (adminTab) adminTab.className = "login-role-tab active admin-tab";
+        if (regTab) regTab.className = "login-role-tab";
         if (iconHeader) iconHeader.textContent = "👑";
         if (titleHeader) titleHeader.textContent = "Đăng Nhập Admin";
         if (subtitleHeader) subtitleHeader.textContent = "Đăng nhập quyền Quản trị viên hệ thống";
@@ -1850,9 +1924,12 @@
         }
         if (btnDemo) btnDemo.style.display = "none";
       } else {
+        if (formLogin) formLogin.style.display = "block";
+        if (formReg) formReg.style.display = "none";
         if (modalBox) modalBox.classList.remove("admin-mode");
         if (teacherTab) teacherTab.className = "login-role-tab active";
         if (adminTab) adminTab.className = "login-role-tab";
+        if (regTab) regTab.className = "login-role-tab";
         if (iconHeader) iconHeader.textContent = "🏫";
         if (titleHeader) titleHeader.textContent = "Đăng Nhập Giáo Viên";
         if (subtitleHeader) subtitleHeader.textContent = "Đăng nhập bằng tài khoản Giáo viên được cấp.";
@@ -1865,6 +1942,44 @@
         if (btnDemo) btnDemo.style.display = "inline-block";
       }
     }
+
+    // Hàm xử lý nộp Form Đăng Ký Tài Khoản từ Modal Đăng Nhập / Đăng Ký
+    window.handleModalRegisterSubmit = async function (event) {
+      event.preventDefault();
+      const fullNameInput = document.getElementById("modal-reg-fullname");
+      const usernameInput = document.getElementById("modal-reg-username");
+      const passwordInput = document.getElementById("modal-reg-password");
+      const roleInput = document.getElementById("modal-reg-role");
+      const classInput = document.getElementById("modal-reg-class");
+      const feedback = document.getElementById("modal-reg-feedback");
+
+      const fullName = fullNameInput ? fullNameInput.value.trim() : "";
+      const username = usernameInput ? usernameInput.value.trim() : "";
+      const password = passwordInput ? passwordInput.value.trim() : "";
+      const role = roleInput ? roleInput.value : "student";
+      const classId = classInput ? classInput.value : "2AI";
+
+      if (feedback) feedback.textContent = "⏳ Đang tạo tài khoản trên Supabase CSDL...";
+
+      const res = await window.supabaseAuth.registerUser({ username, password, fullName, role, classId });
+
+      if (res.success) {
+        if (feedback) {
+          feedback.style.color = "#10b981";
+          feedback.textContent = res.message;
+        }
+        setTimeout(async () => {
+          await window.supabaseAuth.loginUser(username, password);
+          closeModal("teacher-login-modal");
+          location.reload();
+        }, 1000);
+      } else {
+        if (feedback) {
+          feedback.style.color = "#ef4444";
+          feedback.textContent = res.message;
+        }
+      }
+    };
 
     document.addEventListener("DOMContentLoaded", function () {
 
