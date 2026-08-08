@@ -1,5 +1,5 @@
 /* ============================================================
-   SUPABASE INTEGRATION MODULE - TOÁN CÙNG EM
+   SUPABASE INTEGRATION MODULE & AUTH SERVICE - TOÁN CÙNG EM
    ============================================================ */
 
 // 1. Cấu hình Supabase Credentials kết nối trực tiếp CSDL Supabase
@@ -20,10 +20,152 @@ if (typeof supabase !== "undefined" && SUPABASE_URL.includes("supabase.co") && !
   console.log("ℹ️ [Supabase] Đang vận hành chế độ Local Storage dự phòng.");
 }
 
+// ============================================================
+// DỊCH VỤ XÁC THỰC ĐĂNG NHẬP / ĐĂNG KÝ VÀ DỮ LIỆU SUPABASE
+// ============================================================
+
+window.supabaseAuth = {
+  // 1. Đăng ký tài khoản mới (Register)
+  async registerUser({ username, password, fullName, role, classId }) {
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    const cleanFullName = fullName.trim();
+    const userRole = role || 'student';
+    const userClass = classId || '2AI';
+
+    if (!cleanUsername || !cleanPassword || !cleanFullName) {
+      return { success: false, message: 'Vui lòng điền đầy đủ Tên tài khoản, Mật khẩu và Họ tên!' };
+    }
+
+    if (supabaseClient) {
+      try {
+        const { data: existingUser } = await supabaseClient
+          .from('users')
+          .select('id')
+          .eq('username', cleanUsername)
+          .maybeSingle();
+
+        if (existingUser) {
+          return { success: false, message: 'Tên tài khoản (username) này đã tồn tại! Vui lòng chọn tên khác.' };
+        }
+
+        const { data: newUser, error: insertErr } = await supabaseClient
+          .from('users')
+          .insert([{
+            username: cleanUsername,
+            password: cleanPassword,
+            full_name: cleanFullName,
+            role: userRole,
+            class_id: userClass,
+            xp: 450,
+            coins: 1250
+          }])
+          .select()
+          .single();
+
+        if (insertErr) throw insertErr;
+
+        if (userRole === 'student') {
+          await supabaseClient.from('students').insert([{
+            name: cleanFullName,
+            class_id: userClass,
+            xp: 450,
+            coins: 1250
+          }]);
+        }
+
+        return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase!' };
+      } catch (err) {
+        console.error('Lỗi đăng ký Supabase:', err);
+        return { success: false, message: 'Lỗi Supabase: ' + (err.message || err) };
+      }
+    }
+
+    // LocalStorage Fallback
+    let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
+    if (localUsers.some(u => u.username.toLowerCase() === cleanUsername)) {
+      return { success: false, message: 'Tên tài khoản này đã tồn tại trong bộ nhớ!' };
+    }
+
+    const newUser = {
+      id: Date.now(),
+      username: cleanUsername,
+      password: cleanPassword,
+      full_name: cleanFullName,
+      role: userRole,
+      class_id: userClass,
+      xp: 450,
+      coins: 1250
+    };
+    localUsers.push(newUser);
+    localStorage.setItem('users_db', JSON.stringify(localUsers));
+
+    return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công!' };
+  },
+
+  // 2. Đăng nhập tài khoản (Login)
+  async loginUser(username, password) {
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanUsername || !cleanPassword) {
+      return { success: false, message: 'Vui lòng nhập Tên tài khoản và Mật khẩu!' };
+    }
+
+    if (supabaseClient) {
+      try {
+        const { data: user, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('username', cleanUsername)
+          .eq('password', cleanPassword)
+          .maybeSingle();
+
+        if (user) {
+          localStorage.setItem('studentName', user.full_name);
+          localStorage.setItem('studentClass', user.class_id || '2AI');
+          localStorage.setItem('currentUserRole', user.role);
+          localStorage.setItem('userXP', user.xp || 450);
+          localStorage.setItem('userXu', user.coins || 1250);
+
+          return { success: true, user: user, message: '🔑 Đăng nhập thành công!' };
+        }
+      } catch (err) {
+        console.error('Lỗi đăng nhập Supabase:', err);
+      }
+    }
+
+    // LocalStorage Fallback
+    let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
+    let user = localUsers.find(u => u.username.toLowerCase() === cleanUsername && u.password === cleanPassword);
+
+    if (!user) {
+      if (cleanUsername === 'benam' && cleanPassword === '123456') {
+        user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', xp: 450, coins: 1250 };
+      } else if (cleanUsername === 'comai' && cleanPassword === '123456') {
+        user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', xp: 0, coins: 0 };
+      } else if (cleanUsername === 'admin' && cleanPassword === '123456') {
+        user = { id: 999, username: 'admin', full_name: 'Admin Quản Trị', role: 'admin', class_id: '2AI', xp: 0, coins: 0 };
+      }
+    }
+
+    if (!user) {
+      return { success: false, message: '❌ Tên tài khoản hoặc mật khẩu không chính xác!' };
+    }
+
+    localStorage.setItem('studentName', user.full_name);
+    localStorage.setItem('studentClass', user.class_id || '2AI');
+    localStorage.setItem('currentUserRole', user.role);
+    localStorage.setItem('userXP', user.xp || 450);
+    localStorage.setItem('userXu', user.coins || 1250);
+
+    return { success: true, user: user, message: '🔑 Đăng nhập thành công!' };
+  }
+};
+
 window.supabaseService = {
   client: supabaseClient,
 
-  // 1. Tải danh sách Lớp Học từ Supabase
   async getClasses() {
     if (!supabaseClient) return null;
     try {
@@ -36,7 +178,6 @@ window.supabaseService = {
     }
   },
 
-  // 2. Tải danh sách Học Sinh từ Supabase
   async getStudents() {
     if (!supabaseClient) return null;
     try {
@@ -49,7 +190,6 @@ window.supabaseService = {
     }
   },
 
-  // 3. Tải danh sách Giáo Viên từ Supabase
   async getTeachers() {
     if (!supabaseClient) return null;
     try {
@@ -62,7 +202,6 @@ window.supabaseService = {
     }
   },
 
-  // 4. Lưu/Cập nhật Điểm XP Trò Chơi lên Supabase
   async saveGameScore(categoryKey, studentId, studentName, xp) {
     if (!supabaseClient) return null;
     try {
@@ -83,7 +222,6 @@ window.supabaseService = {
     }
   },
 
-  // 5. Lưu Bài Nộp / Điểm Bài Kiểm Tra lên Supabase
   async saveExamScore(studentId, studentName, quizTitle, score, timeText) {
     if (!supabaseClient) return null;
     try {

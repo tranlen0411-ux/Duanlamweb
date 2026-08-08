@@ -1604,23 +1604,88 @@
   </div>
 
   <div class="modal-backdrop" id="edit-profile-modal" style="display: none;">
-    <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-card" style="max-width: 480px; position: relative;">
       <button class="modal-close" onclick="closeModal('edit-profile-modal')">✕</button>
-      <div style="text-align: center; margin-bottom: 20px;">
-        <span style="font-size: 3rem;">✏️</span>
-        <h3>Nhập Tên Học Sinh</h3>
+      
+      <!-- Chuyển Đổi Tab: Đăng Nhập vs Đăng Ký -->
+      <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+        <button type="button" id="tab-auth-login" onclick="switchAuthTab('login')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 900; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; cursor: pointer;">
+          🔑 Đăng Nhập
+        </button>
+        <button type="button" id="tab-auth-register" onclick="switchAuthTab('register')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 900; background: #f1f5f9; color: #475569; cursor: pointer;">
+          📝 Đăng Ký Tài Khoản
+        </button>
       </div>
-      <div class="form-group" style="margin-bottom: 14px; text-align: left;">
-        <label style="font-weight: bold; font-size: 0.92rem; display: block; margin-bottom: 6px;">Họ và Tên Học Sinh:</label>
-        <input type="text" id="input-student-fullname" class="form-control" value="Bé Nam" placeholder="Nhập tên của bé..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
-      </div>
-      <div class="form-group" style="margin-top: 14px; text-align: left;">
-        <label style="font-weight: bold; font-size: 0.92rem; display: block; margin-bottom: 6px;">Lớp / Nhóm Học:</label>
-        <select id="student-class-input" class="form-control" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box; background: white;">
-          <!-- JavaScript tự động đổ danh sách lớp -->
-        </select>
-      </div>
-      <button class="btn btn-primary" style="width: 100%; margin-top: 16px; padding: 12px; border-radius: 12px; font-weight: bold; background: #fde047; border: none; color: #854d0e; cursor: pointer;" onclick="saveStudentProfileFromModal()">💾 Lưu Lại</button>
+
+      <!-- FORM 1: ĐĂNG NHẬP -->
+      <form id="form-user-login" onsubmit="handleUserAuthSubmit(event, 'login')">
+        <div style="text-align: center; margin-bottom: 16px;">
+          <span style="font-size: 2.8rem;">👶</span>
+          <h3 style="font-size: 1.35rem; font-weight: 900; margin-top: 4px;">Đăng Nhập Học Sinh / Người Dùng</h3>
+          <p style="font-size: 0.85rem; color: #64748b; font-weight: 700;">Nhập Tên tài khoản và Mật khẩu để đồng bộ dữ liệu Supabase CSDL.</p>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.9rem; display: block; margin-bottom: 6px;">Tên tài khoản (Username):</label>
+          <input type="text" id="input-login-username" class="form-control" placeholder="Ví dụ: benam, vubaoan..." required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.9rem; display: block; margin-bottom: 6px;">Mật khẩu:</label>
+          <input type="password" id="input-login-password" class="form-control" placeholder="Nhập mật khẩu..." required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+        </div>
+
+        <div id="auth-login-feedback" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-bottom: 10px; min-height: 20px; text-align: center;"></div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 20px; font-weight: 900; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; color: white; cursor: pointer;">
+          🚀 Đăng Nhập Ngay
+        </button>
+      </form>
+
+      <!-- FORM 2: ĐĂNG KÝ -->
+      <form id="form-user-register" onsubmit="handleUserAuthSubmit(event, 'register')" style="display: none;">
+        <div style="text-align: center; margin-bottom: 16px;">
+          <span style="font-size: 2.8rem;">✨</span>
+          <h3 style="font-size: 1.35rem; font-weight: 900; margin-top: 4px;">Đăng Ký Tài Khoản Mới</h3>
+          <p style="font-size: 0.85rem; color: #64748b; font-weight: 700;">Tạo tài khoản mới và lưu trữ đồng bộ lên Supabase Database.</p>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Họ và Tên hiển thị:</label>
+          <input type="text" id="input-reg-fullname" class="form-control" placeholder="Ví dụ: Nguyễn Văn A, Bé Nam..." required style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Tên tài khoản (Username):</label>
+          <input type="text" id="input-reg-username" class="form-control" placeholder="Ví dụ: nguyenvana, benam2026..." required style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Mật khẩu:</label>
+          <input type="password" id="input-reg-password" class="form-control" placeholder="Tạo mật khẩu..." required style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; box-sizing: border-box;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 10px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Vai trò người dùng:</label>
+          <select id="input-reg-role" class="form-control" style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; background: white; box-sizing: border-box;">
+            <option value="student">👶 Học Sinh</option>
+            <option value="teacher">👩‍🏫 Giáo Viên</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Lớp / Nhóm Học:</label>
+          <select id="student-class-input" class="form-control" style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; background: white; box-sizing: border-box;">
+            <!-- JavaScript tự động đổ danh sách lớp -->
+          </select>
+        </div>
+
+        <div id="auth-reg-feedback" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-bottom: 10px; min-height: 20px; text-align: center;"></div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 20px; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; cursor: pointer;">
+          📝 Đăng Ký Ngay
+        </button>
+      </form>
     </div>
   </div>
 
@@ -1637,6 +1702,106 @@
         MÃ SCRIPT GIÁO VIÊN & ADMIN & NÚT BANNER LIÊN KẾT
         ============================================================ -->
   <script>
+    // Hàm chuyển tab Đăng Nhập / Đăng Ký trong Modal
+    window.switchAuthTab = function (tabMode) {
+      const loginForm = document.getElementById("form-user-login");
+      const regForm = document.getElementById("form-user-register");
+      const tabLogin = document.getElementById("tab-auth-login");
+      const tabReg = document.getElementById("tab-auth-register");
+
+      if (tabMode === "login") {
+        if (loginForm) loginForm.style.display = "block";
+        if (regForm) regForm.style.display = "none";
+        if (tabLogin) {
+          tabLogin.style.background = "linear-gradient(135deg, #3b82f6, #1d4ed8)";
+          tabLogin.style.color = "white";
+        }
+        if (tabReg) {
+          tabReg.style.background = "#f1f5f9";
+          tabReg.style.color = "#475569";
+        }
+      } else {
+        if (loginForm) loginForm.style.display = "none";
+        if (regForm) regForm.style.display = "block";
+        if (tabLogin) {
+          tabLogin.style.background = "#f1f5f9";
+          tabLogin.style.color = "#475569";
+        }
+        if (tabReg) {
+          tabReg.style.background = "linear-gradient(135deg, #10b981, #059669)";
+          tabReg.style.color = "white";
+        }
+      }
+    };
+
+    // Hàm xử lý nộp Form Đăng Nhập / Đăng Ký kết nối Supabase CSDL
+    window.handleUserAuthSubmit = async function (event, mode) {
+      event.preventDefault();
+
+      if (mode === "login") {
+        const usernameInput = document.getElementById("input-login-username");
+        const passwordInput = document.getElementById("input-login-password");
+        const feedback = document.getElementById("auth-login-feedback");
+
+        const username = usernameInput ? usernameInput.value.trim() : "";
+        const password = passwordInput ? passwordInput.value.trim() : "";
+
+        if (feedback) feedback.textContent = "⏳ Đang kết nối Supabase CSDL...";
+
+        const res = await window.supabaseAuth.loginUser(username, password);
+
+        if (res.success) {
+          if (feedback) {
+            feedback.style.color = "#10b981";
+            feedback.textContent = res.message;
+          }
+          setTimeout(() => {
+            closeModal("edit-profile-modal");
+            location.reload();
+          }, 800);
+        } else {
+          if (feedback) {
+            feedback.style.color = "#ef4444";
+            feedback.textContent = res.message;
+          }
+        }
+      } else if (mode === "register") {
+        const fullNameInput = document.getElementById("input-reg-fullname");
+        const usernameInput = document.getElementById("input-reg-username");
+        const passwordInput = document.getElementById("input-reg-password");
+        const roleInput = document.getElementById("input-reg-role");
+        const classInput = document.getElementById("student-class-input");
+        const feedback = document.getElementById("auth-reg-feedback");
+
+        const fullName = fullNameInput ? fullNameInput.value.trim() : "";
+        const username = usernameInput ? usernameInput.value.trim() : "";
+        const password = passwordInput ? passwordInput.value.trim() : "";
+        const role = roleInput ? roleInput.value : "student";
+        const classId = classInput ? classInput.value : "2AI";
+
+        if (feedback) feedback.textContent = "⏳ Đang tạo tài khoản trên Supabase CSDL...";
+
+        const res = await window.supabaseAuth.registerUser({ username, password, fullName, role, classId });
+
+        if (res.success) {
+          if (feedback) {
+            feedback.style.color = "#10b981";
+            feedback.textContent = res.message;
+          }
+          setTimeout(async () => {
+            await window.supabaseAuth.loginUser(username, password);
+            closeModal("edit-profile-modal");
+            location.reload();
+          }, 1000);
+        } else {
+          if (feedback) {
+            feedback.style.color = "#ef4444";
+            feedback.textContent = res.message;
+          }
+        }
+      }
+    };
+
     // Hàm toggle ẩn/hiện mật khẩu
     function togglePasswordVisibility(inputId, btn) {
       const input = document.getElementById(inputId);

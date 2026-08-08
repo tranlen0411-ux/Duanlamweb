@@ -10,7 +10,20 @@ CREATE TABLE IF NOT EXISTS classes (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Bảng Học Sinh (students)
+-- 2. Bảng Tất Cả Tài Khoản Người Dùng (users)
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'teacher', 'admin')),
+    class_id TEXT REFERENCES classes(id) ON DELETE SET NULL,
+    xp INT DEFAULT 450,
+    coins INT DEFAULT 1250,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Bảng Học Sinh (students)
 CREATE TABLE IF NOT EXISTS students (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -20,7 +33,7 @@ CREATE TABLE IF NOT EXISTS students (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Bảng Tài Khoản Giáo Viên / Admin (teachers)
+-- 4. Bảng Tài Khoản Giáo Viên / Admin (teachers)
 CREATE TABLE IF NOT EXISTS teachers (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
@@ -32,7 +45,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Bảng Xếp Hạng Trò Chơi & Nhiệm Vụ (game_scores)
+-- 5. Bảng Xếp Hạng Trò Chơi & Nhiệm Vụ (game_scores)
 CREATE TABLE IF NOT EXISTS game_scores (
     id SERIAL PRIMARY KEY,
     category_key TEXT NOT NULL,
@@ -42,7 +55,7 @@ CREATE TABLE IF NOT EXISTS game_scores (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. Bảng Điểm Bài Kiểm Tra Hằng Tuần (exam_scores)
+-- 6. Bảng Điểm Bài Kiểm Tra Hằng Tuần (exam_scores)
 CREATE TABLE IF NOT EXISTS exam_scores (
     id SERIAL PRIMARY KEY,
     student_id INT REFERENCES students(id) ON DELETE CASCADE,
@@ -54,7 +67,7 @@ CREATE TABLE IF NOT EXISTS exam_scores (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Bảng Nhật Ký Anti-Cheat (anti_cheat_logs)
+-- 7. Bảng Nhật Ký Anti-Cheat (anti_cheat_logs)
 CREATE TABLE IF NOT EXISTS anti_cheat_logs (
     id SERIAL PRIMARY KEY,
     student_id INT REFERENCES students(id) ON DELETE CASCADE,
@@ -70,6 +83,7 @@ CREATE TABLE IF NOT EXISTS anti_cheat_logs (
 -- ============================================================
 
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE teachers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE game_scores ENABLE ROW LEVEL SECURITY;
@@ -77,6 +91,7 @@ ALTER TABLE exam_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE anti_cheat_logs ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public Classes Access" ON classes;
+DROP POLICY IF EXISTS "Public Users Access" ON users;
 DROP POLICY IF EXISTS "Public Students Access" ON students;
 DROP POLICY IF EXISTS "Public Teachers Access" ON teachers;
 DROP POLICY IF EXISTS "Public Game Scores Access" ON game_scores;
@@ -84,6 +99,7 @@ DROP POLICY IF EXISTS "Public Exam Scores Access" ON exam_scores;
 DROP POLICY IF EXISTS "Public Anti-Cheat Access" ON anti_cheat_logs;
 
 CREATE POLICY "Public Classes Access" ON classes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public Users Access" ON users FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Students Access" ON students FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Teachers Access" ON teachers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Game Scores Access" ON game_scores FOR ALL USING (true) WITH CHECK (true);
@@ -101,6 +117,14 @@ INSERT INTO classes (id, name) VALUES
 ('2B', 'Lớp 2B'),
 ('2C', 'Lớp 2C')
 ON CONFLICT (id) DO NOTHING;
+
+-- Thêm tài khoản người dùng mẫu vào bảng users
+INSERT INTO users (username, password, full_name, role, class_id, xp, coins) VALUES
+('benam', '123456', 'Bé Nam', 'student', '2AI', 450, 1250),
+('vubaoan', '123456', 'Vũ Bảo An', 'student', '2AI', 2100, 1250),
+('comai', '123456', 'Cô Mai', 'teacher', '2A', 0, 0),
+('admin', '123456', 'Admin Quản Trị', 'admin', '2AI', 0, 0)
+ON CONFLICT (username) DO NOTHING;
 
 -- Thêm tài khoản Giáo viên & Admin mẫu
 INSERT INTO teachers (id, username, password, display_name, assigned_classes, role) VALUES
