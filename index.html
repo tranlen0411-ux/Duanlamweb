@@ -556,6 +556,11 @@
       box-shadow: 0 6px 18px rgba(234, 88, 12, 0.35) !important;
     }
 
+    /* CSS PHÂN QUYỀN VAI TRÒ HỌC SINH (role-student) & GIÁO VIÊN/ADMIN */
+    body:not(.role-teacher):not(.role-admin) .teacher-only-control {
+      display: none !important;
+    }
+
     /* CHỐNG GIAN LẬN (ANTI-CHEAT) - CÔ LẬP TRONG MÀN HÌNH LÀM BÀI THI (#exam-working-screen) */
     #exam-working-screen {
       position: relative;
@@ -1131,12 +1136,12 @@
         <div class="history-table-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
             <h3 style="font-size: 1.4rem; font-weight: 900; margin: 0;">📜 Lịch Sử Bài Làm & Lời Nhắn Từ Giáo Viên</h3>
-            <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800; border: 2px solid #10b981; color: #047857;" onclick="nhapNhanXetGiaoVien()">
+            <button class="btn btn-outline teacher-only-control" id="btn-teacher-comment-action" style="border-radius: 20px; font-weight: 800; border: 2px solid #10b981; color: #047857;" onclick="nhapNhanXetGiaoVien()">
               ✏️ Ghi / Sửa Nhận Xét (Dành Cho Giáo Viên)
             </button>
           </div>
 
-          <p style="font-size: 0.88rem; color: #0284c7; font-weight: 800; margin-bottom: 12px;">
+          <p class="teacher-only-control" id="teacher-comment-tip" style="font-size: 0.88rem; color: #0284c7; font-weight: 800; margin-bottom: 12px;">
             💡 <em>Mẹo: Giáo viên có thể click trực tiếp vào ô Lời Nhắn của từng dòng dưới đây để chỉnh sửa nhận xét riêng cho lượt làm đó!</em>
           </p>
 
@@ -1187,7 +1192,7 @@
           <button class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 20px; font-weight: 800;" onclick="openTeacherLoginModal()">
             🔄 Đổi Tài Khoản / Admin
           </button>
-          <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800;" id="logout-teacher-btn">
+          <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800;" id="logout-teacher-btn" onclick="switchToStudentView()">
             👦 Đăng xuất (Về Học sinh)
           </button>
         </div>
@@ -3051,7 +3056,45 @@
         }
       };
 
+      window.switchToStudentView = function() {
+        localStorage.setItem("currentUserRole", "student");
+        document.body.classList.remove("role-teacher", "role-admin");
+        document.body.classList.add("role-student");
+
+        const studentView = document.getElementById("student-view-container");
+        const teacherView = document.getElementById("teacher-view-container");
+
+        if (studentView && teacherView) {
+          studentView.style.display = "block";
+          teacherView.style.display = "none";
+        }
+
+        // Tự động ẩn các bảng báo cáo & quản trị hệ thống của giáo viên
+        const adminModule = document.getElementById("admin-system-control-module");
+        if (adminModule) adminModule.style.display = "none";
+
+        const warningBanner = document.getElementById("teacher-unassigned-warning");
+        if (warningBanner) warningBanner.style.display = "none";
+
+        const teacherNameDisplay = document.getElementById("teacher-name-display");
+        if (teacherNameDisplay) teacherNameDisplay.textContent = "Đăng nhập";
+
+        if (typeof goToHomeTab === "function") {
+          goToHomeTab();
+        }
+      };
+
       window.switchTeacherDashboardView = function() {
+        const role = localStorage.getItem("currentUserRole") || "teacher";
+        document.body.classList.remove("role-student");
+        if (role === "admin") {
+          document.body.classList.add("role-admin");
+          document.body.classList.remove("role-teacher");
+        } else {
+          document.body.classList.add("role-teacher");
+          document.body.classList.remove("role-admin");
+        }
+
         const studentView = document.getElementById("student-view-container");
         const teacherView = document.getElementById("teacher-view-container");
 
@@ -3060,7 +3103,6 @@
           teacherView.style.display = "block";
         }
 
-        const role = localStorage.getItem("currentUserRole") || "teacher";
         const teacher = getCurrentTeacher();
 
         const adminModule = document.getElementById("admin-system-control-module");
@@ -3304,9 +3346,56 @@
         if (typeof handleClassChange === "function") {
           handleClassChange(newClass);
         }
+
+        // Chuyển chế độ sang Học sinh và ẩn sạch sẽ các bảng quản trị của giáo viên
+        switchToStudentView();
       };
 
       window.saveStudentProfile = window.saveStudentProfileFromModal;
+
+      window.nhapNhanXetGiaoVien = function () {
+        const role = localStorage.getItem("currentUserRole") || "student";
+        if (role !== "teacher" && role !== "admin") {
+          alert("🔒 Chức năng ghi / sửa nhận xét chỉ dành cho Giáo viên hoặc Admin!");
+          return;
+        }
+
+        const modal = document.getElementById("teacher-comment-modal");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+        }
+      };
+
+      window.saveTeacherCommentFromModal = function () {
+        const role = localStorage.getItem("currentUserRole") || "student";
+        if (role !== "teacher" && role !== "admin") {
+          alert("🔒 Bạn không có quyền thực hiện thao tác này!");
+          closeModal("teacher-comment-modal");
+          return;
+        }
+
+        const input = document.getElementById("input-teacher-comment-text");
+        const commentText = input ? input.value.trim() : "";
+        if (!commentText) {
+          alert("Vui lòng nhập lời nhận xét!");
+          return;
+        }
+
+        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
+        const teacherName = (role === "admin") ? "Admin" : (teacher ? teacher.displayName : (localStorage.getItem("teacherName") || "Cô Mai"));
+
+        const commentCell = document.querySelector("#student-history-table-body .teacher-comment-italic");
+        if (commentCell) {
+          commentCell.innerHTML = `"${commentText}"<br><strong style="font-size: 0.85rem; color: #0284c7;">(Lời nhắn từ <span class="teacher-sign-name">${teacherName}</span>)</strong>`;
+        }
+
+        localStorage.setItem("latestTeacherComment", commentText);
+        localStorage.setItem("latestTeacherName", teacherName);
+
+        closeModal("teacher-comment-modal");
+        alert("✅ Đã lưu lời nhắn nhận xét cho học sinh!");
+      };
 
       window.openLeaderboardModal = function (btnEl) {
         if (typeof forceHideAllModals === "function") forceHideAllModals();
@@ -3581,6 +3670,8 @@
       const currentRole = localStorage.getItem("currentUserRole");
       if (currentRole === "teacher" || currentRole === "admin") {
         switchTeacherDashboardView();
+      } else {
+        switchToStudentView();
       }
 
       const savedName = localStorage.getItem("studentName");
@@ -3599,37 +3690,26 @@
         rankBtn.onclick = openLeaderboardModal;
       }
 
-      // Thêm Lớp/Nhóm mới
+      // Thêm Lớp/Nhóm mới (Cho phép tự nhập Mã Lớp và Tên Lớp)
       window.addNewClass = function () {
-        const className = prompt("Nhập tên Lớp hoặc Nhóm mới (Ví dụ: Lớp 2C, Nhóm Tăng Cường...):");
-        if (className && className.trim() !== "") {
-          const newId = "CLASS_" + Date.now();
-          globalClasses.push({ id: newId, name: className.trim() });
-          renderClassOptions();
-          handleClassChange(document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL");
-        }
-      };
+        const classIdInput = prompt("Nhập Mã Lớp (Ví dụ: 2D, 3A...):");
+        if (!classIdInput || classIdInput.trim() === "") return;
+        
+        const classNameInput = prompt("Nhập Tên Lớp hiển thị (Ví dụ: Lớp 2D):", "Lớp " + classIdInput.trim().toUpperCase());
+        if (!classNameInput) return;
 
-      // Sửa tên Lớp/Nhóm
-      window.editClassName = function (classId) {
-        const cls = globalClasses.find(c => c.id === classId);
-        if (!cls) return;
-
-        const newName = prompt("Nhập tên mới cho lớp/nhóm này:", cls.name);
-        if (newName && newName.trim() !== "") {
-          cls.name = newName.trim();
-          renderClassOptions();
-          handleClassChange(document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL");
+        const cleanId = classIdInput.trim();
+        
+        // Kiểm tra xem mã lớp đã tồn tại chưa
+        if (globalClasses.some(c => c.id.toLowerCase() === cleanId.toLowerCase())) {
+          alert("❌ Mã lớp này đã tồn tại! Vui lòng chọn mã khác.");
+          return;
         }
-      };
 
-      // Xóa Lớp/Nhóm
-      window.deleteClass = function (classId) {
-        if (confirm("Bạn có chắc muốn xóa Lớp/Nhóm này?")) {
-          globalClasses = globalClasses.filter(c => c.id !== classId);
-          renderClassOptions();
-          handleClassChange("ALL");
-        }
+        globalClasses.push({ id: cleanId, name: classNameInput.trim() });
+        renderClassOptions();
+        if (typeof renderAdminTeacherTable === "function") renderAdminTeacherTable();
+        handleClassChange(document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL");
       };
 
       // Render Bảng Trò chơi & Nhiệm vụ
@@ -3813,14 +3893,16 @@
       };
 
       window.resetSelectedCategoryRanking = function () {
-        const selectCatEl = document.getElementById("teacher-select-game-task");
-        let selectedCategory = selectCatEl ? selectCatEl.value : "game-pika";
-        if (confirm("Xác nhận reset toàn bộ điểm của danh mục này về 0?")) {
-          gameTaskScoreStore[selectedCategory] = [];
-          renderGameTaskTable();
-          updateStudentModalView();
-        }
-      };
+     const selectCatEl = document.getElementById("teacher-select-game-task");
+     let selectedCategory = selectCatEl ? selectCatEl.value : "game-pika";
+     if (confirm("Xác nhận reset toàn bộ điểm của danh mục này về 0?")) {
+       gameTaskScoreStore[selectedCategory] = [];
+       // Lưu trạng thái đã reset vào bộ nhớ trình duyệt để không bị phục hồi lại
+       localStorage.setItem("gameTaskScoreStore", JSON.stringify(gameTaskScoreStore));
+       renderGameTaskTable();
+       updateStudentModalView();
+     }
+   };
 
       window.updateLeaderboardData = function (val) {
         updateStudentModalView();
@@ -3850,6 +3932,7 @@
             <option value="game-vuon-thu">Vườn Thú Toán Học</option>
             <option value="game-kho-bau">Kho Báu Thời Gian</option>
             <option value="game-phong-phan-so">Khu Rừng Phân Số</option>
+<option value="game-ai-la-trieu-phu">Ai Là Triệu Phú</option>
           </optgroup>
 
           <optgroup label="📋 Nhiệm Vụ Hằng Ngày">
@@ -3985,6 +4068,38 @@
         msgContainer.scrollTop = msgContainer.scrollHeight;
       }, 400);
     }
+
+/* ============================================================
+     MODULE ĐỒNG BỘ TOÀN DIỆN: LỚP - BANNER - HỌC SINH ĐĂNG NHẬP
+     ============================================================ */
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const classSelect = document.getElementById("global-class-select");
+    if (classSelect) {
+      classSelect.addEventListener("change", function () {
+        const selectedValue = this.value; // Mã lớp được chọn (VD: 2A, 2B, ALL...)
+        const selectedText = this.options[this.selectedIndex] ? this.options[this.selectedIndex].text : "";
+
+        // 1. Cập nhật lại tên hiển thị của học sinh/hoặc trạng thái cho khớp với lớp vừa chọn
+        const nameEls = document.querySelectorAll('#user-name-display, .student-name-text');
+        nameEls.forEach(el => {
+          if (selectedValue === "ALL") {
+            el.textContent = "Tất cả học sinh";
+          } else {
+            // Có thể hiển thị tên đại diện theo lớp hoặc làm mới thông tin
+            el.textContent = "Học sinh " + selectedText;
+          }
+        });
+
+        // 2. Kích hoạt lại hàm đổi lớp của hệ thống để vẽ lại bảng học sinh bên dưới
+        if (typeof handleClassChange === "function") {
+          handleClassChange(selectedValue);
+        } else if (typeof teacherDashboard !== "undefined" && typeof teacherDashboard.renderStudentTable === "function") {
+          teacherDashboard.renderStudentTable();
+        }
+      });
+    }
+  });
   </script>
 </body>
 </html>
