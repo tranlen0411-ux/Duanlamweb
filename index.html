@@ -1045,8 +1045,28 @@
             <button class="btn-play-img17 fraction custom-game-trigger" data-game-key="fraction" data-game-title="Khu Rừng Phân Số">Chơi Ngay ✨</button>
           </div>
         </div>
+<!-- Trò chơi thứ 7: Ai Là Triệu Phú -->
+<div class="game-card game-card-custom" style="background: #1e1b4b; border: 3px solid #6366f1; border-radius: 24px; padding: 20px; position: relative; color: white; margin-top: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <h3 style="font-size: 1.25rem; font-weight: 900; color: #fbbf24; margin: 0 0 6px 0;">Ai Là Triệu Phú</h3>
+            <p style="font-size: 0.88rem; color: #cbd5e1; font-weight: 700; margin: 0 0 12px 0;">Cấp độ: Thử thách • Kiến thức chung</p>
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                <span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 800; color: #facc15;">⭐ +100 XP</span>
+                <span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 800; color: #38bdf8;">🪙 +50 Xu</span>
+            </div>
+        </div>
+        <div style="width: 70px; height: 70px; background: rgba(255,255,255,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+            💰
+        </div>
+    </div>
+    
+    <!-- Lệnh mở sang Tab mới rộng rãi -->
+    <button onclick="window.open('ai-la-trieu-phu.html', '_blank')" style="width: 100%; background: linear-gradient(135deg, #4f46e5, #3730a3); color: white; border: none; padding: 10px; border-radius: 18px; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 0 0 #312e81; transition: all 0.2s;">
+        Chơi Ngay ✨
+    </button>
+</div>
       </div>
-
       <!-- ============================================================
             TAB 3: KHU VỰC BÀI THI HẰNG TUẦN (CÓ BỘ CHỌN TUẦN THI LINH HOẠT & ANTI-CHEAT)
             ============================================================ -->
@@ -3499,6 +3519,36 @@
           console.error("Lỗi khi tự động cập nhật điểm Bảng Xếp Hạng:", err);
         }
       };
+
+      // ============================================================
+      // LẮNG NGHE SỰ KIỆN ĐỒNG BỘ ĐIỂM TỪ TAB GAME KHÁC (CROSS-TAB SYNC)
+      // ============================================================
+      window.addEventListener("storage", function (e) {
+        if (e.key === "game_win_signal" && e.newValue) {
+          try {
+            const data = JSON.parse(e.newValue);
+            if (data && data.xp) {
+              // Gọi hàm tự động cộng điểm và cập nhật Bảng Xếp Hạng đang có sẵn
+              if (typeof window.updateLeaderboardScoreAutomatically === "function") {
+                window.updateLeaderboardScoreAutomatically(data.studentId || null, data.gameKey || "game-ailatrieuphu", data.xp);
+              }
+
+              // Cập nhật hiển thị Xu trên Header
+              if (data.coins) {
+                const currentCoins = parseInt(localStorage.getItem("userXu")) || 1250;
+                const newCoins = currentCoins + parseInt(data.coins);
+                localStorage.setItem("userXu", newCoins);
+                const coinsDisplay = document.getElementById("user-coins-display");
+                if (coinsDisplay) coinsDisplay.textContent = newCoins;
+              }
+
+              console.log(`[Cross-Tab Sync] Nhận tín hiệu thắng từ tab game: +${data.xp} XP, +${data.coins || 0} Xu (Game: ${data.gameKey || 'Ai Là Triệu Phú'})`);
+            }
+          } catch (err) {
+            console.error("Lỗi khi xử lý đồng bộ điểm từ tab game:", err);
+          }
+        }
+      });
 
       window.handleClassChange = function (selectedClass) {
         if (selectedClass && selectedClass !== "ALL") {
