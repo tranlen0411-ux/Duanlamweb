@@ -2,9 +2,9 @@
    SUPABASE INTEGRATION MODULE - TOÁN CÙNG EM
    ============================================================ */
 
-// 1. Cấu hình Supabase Credentials (Thay thế URL và Anon Key của bạn vào 2 dòng dưới)
-const SUPABASE_URL = "https://your-project-id.supabase.co"; // Thay thế bằng Supabase URL của bạn
-const SUPABASE_ANON_KEY = "your-anon-key-here";            // Thay thế bằng Supabase Anon Key của bạn
+// 1. Cấu hình Supabase Credentials kết nối trực tiếp CSDL Supabase
+const SUPABASE_URL = "https://rcqgxmcqolxbrahhyxji.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjcWd4bWNxb2x4YnJhaGh5eGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjQ3MTQsImV4cCI6MjEwMTY0MDcxNH0.szavY7MZ2T9znw-ja_lmjftlbG6U7-OvEiKFmA3m0HE";
 
 let supabaseClient = null;
 
@@ -12,12 +12,12 @@ let supabaseClient = null;
 if (typeof supabase !== "undefined" && SUPABASE_URL.includes("supabase.co") && !SUPABASE_ANON_KEY.includes("your-anon-key")) {
   try {
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log("⚡ [Supabase] Đã kết nối thành công tới Supabase Database!");
+    console.log("⚡ [Supabase] Đã kết nối thành công tới Supabase Database! (Project ID: rcqgxmcqolxbrahhyxji)");
   } catch (err) {
     console.warn("⚠️ [Supabase] Chưa thể kết nối tới Supabase:", err);
   }
 } else {
-  console.log("ℹ️ [Supabase] Đang vận hành chế độ Local Storage dự phòng (Chưa điền Supabase Key).");
+  console.log("ℹ️ [Supabase] Đang vận hành chế độ Local Storage dự phòng.");
 }
 
 window.supabaseService = {
