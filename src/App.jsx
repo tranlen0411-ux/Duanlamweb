@@ -77,6 +77,33 @@ export default function App() {
     setActiveTab('admin-view');
   };
 
+  // Hàm Đăng Xuất chung cho tất cả phân quyền (Học sinh, Giáo viên, Admin)
+  const handleGlobalLogout = () => {
+    console.log('Global Logout Triggered');
+    localStorage.removeItem("currentUserRole");
+    localStorage.removeItem("currentUserUsername");
+    localStorage.removeItem("adminName");
+    localStorage.removeItem("teacherName");
+    localStorage.setItem("currentUserRole", "guest");
+
+    setCurrentUser({
+      username: '',
+      name: 'Bé Nam',
+      classId: '2AI',
+      role: 'student',
+      xp: 450,
+      coins: 1250
+    });
+    
+    setAuthMode('login');
+    setIsAuthModalOpen(true);
+    setActiveTab('student-view');
+
+    if (typeof window.updateStudentViewPermissionsAndTeacherName === 'function') {
+      window.updateStudentViewPermissionsAndTeacherName();
+    }
+  };
+
   // Handle Login Submit
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -191,6 +218,15 @@ export default function App() {
               style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 900, cursor: 'pointer' }}
             >
               👑 Quản Trị Admin
+            </button>
+
+            <button 
+              className="btn btn-logout-global"
+              onClick={handleGlobalLogout}
+              title="Đăng xuất khỏi hệ thống"
+              style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: 'white', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 900, cursor: 'pointer', boxShadow: '0 3px 8px rgba(239, 68, 68, 0.4)' }}
+            >
+              🚪 Đăng Xuất
             </button>
           </div>
         </div>

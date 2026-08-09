@@ -1119,6 +1119,10 @@
         <button class="header-admin-btn btn" onclick="openAdminDashboardView()" title="Nhấp để vào Quản Trị Admin (lahuong2904@gmail.com)" style="background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);">
           👑 Quản Trị Admin
         </button>
+
+        <button class="header-logout-global-btn btn" onclick="handleGlobalLogoutHTML()" title="Đăng xuất khỏi hệ thống" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);">
+          🚪 Đăng Xuất
+        </button>
       </div>
     </nav>
   </header>
@@ -2668,6 +2672,37 @@
 
     // Tự động kích hoạt khi nạp xong
     window.updateStudentViewPermissionsAndTeacherName();
+
+    // 6. Hàm Đăng Xuất chung trên Header cho tất cả phân quyền (Học sinh, Giáo viên, Admin)
+    window.handleGlobalLogoutHTML = function() {
+      console.log('Global Logout Triggered');
+      localStorage.removeItem("currentUserRole");
+      localStorage.removeItem("currentUserUsername");
+      localStorage.removeItem("adminName");
+      localStorage.removeItem("teacherName");
+      localStorage.setItem("currentUserRole", "guest");
+
+      const studentView = document.getElementById("student-view-container");
+      const teacherView = document.getElementById("teacher-view-container");
+      const adminModule = document.getElementById("admin-system-control-module");
+
+      if (studentView) studentView.style.display = "block";
+      if (teacherView) teacherView.style.display = "none";
+      if (adminModule) adminModule.style.display = "none";
+
+      if (typeof window.updateStudentViewPermissionsAndTeacherName === 'function') {
+        window.updateStudentViewPermissionsAndTeacherName();
+      }
+
+      const userNameDisplay = document.getElementById("user-name-display");
+      if (userNameDisplay) userNameDisplay.textContent = "Bé Nam";
+
+      if (typeof window.openAdminLoginModalQuick === 'function') {
+        window.openAdminLoginModalQuick();
+      } else if (typeof window.openModal === 'function') {
+        window.openModal('teacher-login-modal');
+      }
+    };
 
     window.checkAdminPermission = function() {
       const ADMIN_EMAIL = 'lahuong2904@gmail.com';
