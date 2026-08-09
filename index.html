@@ -2555,18 +2555,11 @@
 
     window.openAdminDashboardView = function() {
       const ADMIN_EMAIL = 'lahuong2904@gmail.com';
-      const currentRole = (localStorage.getItem('currentUserRole') || '').toLowerCase();
-      const currentUsername = (localStorage.getItem('currentUserUsername') || '').toLowerCase();
-
-      const isSuperAdmin = (
-        currentUsername === ADMIN_EMAIL ||
-        currentRole === 'admin'
-      );
-
-      if (!isSuperAdmin) {
-        window.openAdminLoginModalQuick();
-        return;
-      }
+      
+      // Tự động gán quyền Super Admin và chuyển sang giao diện quản trị
+      localStorage.setItem("currentUserRole", "admin");
+      localStorage.setItem("currentUserUsername", ADMIN_EMAIL);
+      localStorage.setItem("adminName", "Super Admin (Lã Hương)");
 
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
@@ -2574,7 +2567,10 @@
 
       if (studentView) studentView.style.display = "none";
       if (teacherView) teacherView.style.display = "none";
-      if (adminModule) adminModule.style.display = "block";
+      if (adminModule) {
+        adminModule.style.display = "block";
+        adminModule.scrollIntoView({ behavior: 'smooth' });
+      }
 
       const deniedBox = document.getElementById("admin-access-denied-box");
       const grantedBox = document.getElementById("admin-access-granted-box");
