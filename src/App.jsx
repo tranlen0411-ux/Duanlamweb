@@ -154,7 +154,7 @@ export default function App() {
     }
   };
 
-  // Handle Admin Direct Login
+  // Handle Admin Direct Login - Truy vấn trực tiếp vào CSDL Supabase để xác thực Admin
   const handleAdminDirectLogin = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setAdminLoginError('');
@@ -162,32 +162,25 @@ export default function App() {
     const email = (adminEmailInput || '').trim().toLowerCase();
     const pass = (adminPassInput || '').trim();
 
-    // 1. Xử lý linh hoạt tài khoản Super Admin lahuong2904@gmail.com hoặc admin với mật khẩu 123456
-    const isSuperAdminCreds = (
-      (email === 'lahuong2904@gmail.com' || email === 'admin') &&
-      (pass === '123456' || pass === 'admin123')
-    );
+    if (!email || !pass) {
+      setAdminLoginError('⚠️ Vui lòng nhập đầy đủ tài khoản và mật khẩu Admin!');
+      return;
+    }
 
-    // 2. Xác thực với Supabase CSDL dịch vụ authService
+    // Truy vấn trực tiếp vào cơ sở dữ liệu Supabase để xác thực thông tin tài khoản & mật khẩu của Admin
     const res = await authService.loginUser(email, pass);
 
-    const isUserAdmin = isSuperAdminCreds || (res && res.success && (
-      res.user?.role === 'admin' ||
-      res.user?.username?.toLowerCase() === 'lahuong2904@gmail.com' ||
-      res.user?.email?.toLowerCase() === 'lahuong2904@gmail.com'
-    ));
-
-    if (isUserAdmin) {
+    if (res && res.success) {
       const adminUser = {
-        username: email || 'lahuong2904@gmail.com',
-        name: (res && res.user && res.user.full_name) ? res.user.full_name : 'Super Admin (Lã Hương)',
-        classId: '2AI',
+        username: res.user?.username || email,
+        name: res.user?.full_name || (email.includes('lahuong') ? 'Super Admin (Lã Hương)' : 'Admin Quản Trị'),
+        classId: res.user?.class_id || '2AI',
         role: 'admin',
-        xp: 9999,
-        coins: 9999
+        xp: res.user?.xp || 9999,
+        coins: res.user?.coins || 9999
       };
 
-      // Lưu phiên vào localStorage
+      // Lưu thông tin phiên vào localStorage
       localStorage.setItem("currentUserRole", "admin");
       localStorage.setItem("currentUserUsername", adminUser.username);
       localStorage.setItem("adminName", adminUser.name);
@@ -200,7 +193,7 @@ export default function App() {
         window.openAdminDashboardView();
       }
     } else {
-      setAdminLoginError('❌ Mật khẩu hoặc tài khoản Admin chưa chính xác!');
+      setAdminLoginError(res?.message || '❌ Mật khẩu hoặc tài khoản Admin chưa chính xác!');
     }
   };
 
