@@ -2558,14 +2558,25 @@
     let activeAdminSubTab = 'users';
 
     window.handleOpenAdminDirect = function() {
-      console.log('Da mo Admin');
       const ADMIN_EMAIL = 'lahuong2904@gmail.com';
-      
-      // Tự động gán quyền Super Admin và chuyển sang giao diện quản trị
-      localStorage.setItem("currentUserRole", "admin");
-      localStorage.setItem("currentUserUsername", ADMIN_EMAIL);
-      localStorage.setItem("adminName", "Super Admin (Lã Hương)");
+      const currentRole = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+      const currentUsername = (localStorage.getItem("currentUserUsername") || "").toLowerCase();
 
+      const isSuperAdmin = (
+        currentRole === 'admin' ||
+        currentUsername === ADMIN_EMAIL
+      );
+
+      // KHI KHÔNG PHẢI SUPER ADMIN: CHẶN QUYỀN VÀ YÊU CẦU ĐĂNG NHẬP ADMIN!
+      if (!isSuperAdmin) {
+        console.warn("⛔ Chặn quyền truy cập Admin đối với Học sinh / Giáo viên thường!");
+        if (typeof window.openAdminLoginModalQuick === 'function') {
+          window.openAdminLoginModalQuick();
+        }
+        return false;
+      }
+
+      // ĐÃ LÀ SUPER ADMIN: MỞ GIAO DIỆN QUẢN TRỊ
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");
@@ -2634,11 +2645,7 @@
 
     // 4. Hàm đăng xuất về Học sinh
     window.logoutTeacher = function() {
-      console.log('Dang xuat ve Hoc sinh');
-      localStorage.setItem("currentUserRole", "student");
-      localStorage.setItem("studentName", "Bé Nam");
-      window.updateStudentViewPermissionsAndTeacherName();
-      window.goToHomeTab();
+      window.handleGlobalLogoutHTML();
     };
 
     // 5. Hàm cập nhật phân quyền và Tên Giáo viên phụ trách từ CSDL Supabase
@@ -2673,25 +2680,25 @@
     // Tự động kích hoạt khi nạp xong
     window.updateStudentViewPermissionsAndTeacherName();
 
-    // 6. Hàm Đăng Xuất chung trên Header cho tất cả phân quyền (Học sinh, Giáo viên, Admin)
+    // 6. Hàm Đăng Xuất chung trên Header cho tất cả phân quyền (Xóa sạch phiên về dạng Khách)
     window.handleGlobalLogoutHTML = function() {
-      console.log('Global Logout Executed Safely');
+      console.log('Global Logout Executed - Resetting to Guest State');
 
-      // 1. Xóa toàn bộ dữ liệu phiên lưu trữ
+      // 1. Xóa toàn bộ dữ liệu phiên lưu trữ (currentUser = null)
       localStorage.removeItem("currentUserRole");
       localStorage.removeItem("currentUserUsername");
       localStorage.removeItem("adminName");
       localStorage.removeItem("teacherName");
-      localStorage.setItem("currentUserRole", "student");
-      localStorage.setItem("studentName", "Bé Nam");
+      localStorage.removeItem("studentName");
+      localStorage.setItem("currentUserRole", "guest");
 
-      // 2. Đóng và ẩn toàn bộ các modal đang mở (Tuyệt đối không bật bảng Đăng nhập Admin)
+      // 2. Đóng và ẩn toàn bộ các modal
       document.querySelectorAll(".modal-backdrop").forEach(modal => {
         modal.style.display = "none";
         modal.classList.remove("active");
       });
 
-      // 3. Đưa giao diện về màn hình Trang chủ Học sinh ban đầu
+      // 3. Đưa ứng dụng về trạng thái Trang Chủ mặc định ở dạng Khách (Guest)
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");
@@ -2701,7 +2708,7 @@
       if (adminModule) adminModule.style.display = "none";
 
       const userNameDisplay = document.getElementById("user-name-display");
-      if (userNameDisplay) userNameDisplay.textContent = "Bé Nam";
+      if (userNameDisplay) userNameDisplay.textContent = "Khách (Chưa đăng nhập)";
 
       if (typeof window.activatePanel === 'function') {
         const homeTabBtn = document.getElementById("tab-btn-home");

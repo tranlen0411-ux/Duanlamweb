@@ -60,45 +60,43 @@ export default function App() {
     currentUser.role === 'admin'
   );
 
-  // Hàm độc lập mở trực tiếp Bảng Quản Trị Admin cho lahuong2904@gmail.com
+  // Kiểm tra quyền truy cập Admin khi click nút
   const handleOpenAdminDirect = () => {
-    console.log('Da mo Admin');
-    localStorage.setItem("currentUserRole", "admin");
-    localStorage.setItem("currentUserUsername", "lahuong2904@gmail.com");
-    localStorage.setItem("adminName", "Super Admin (Lã Hương)");
-    setCurrentUser({
-      username: 'lahuong2904@gmail.com',
-      name: 'Super Admin (Lã Hương)',
-      classId: '2AI',
-      role: 'admin',
-      xp: 9999,
-      coins: 9999
-    });
+    const ADMIN_EMAIL = 'lahuong2904@gmail.com';
+    const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+    const username = (localStorage.getItem("currentUserUsername") || "").toLowerCase();
+
+    const isUserAdmin = (
+      role === 'admin' ||
+      username === ADMIN_EMAIL ||
+      (currentUser && (currentUser.role === 'admin' || currentUser.username?.toLowerCase() === ADMIN_EMAIL))
+    );
+
+    // KHI KHÔNG PHẢI SUPER ADMIN: CHẶN LẠI VÀ BẬT BẢNG ĐĂNG NHẬP ADMIN!
+    if (!isUserAdmin) {
+      console.warn("⛔ Chặn truy cập Admin - Yêu cầu xác thực Super Admin!");
+      setAuthMode('login');
+      setIsAuthModalOpen(true);
+      return false;
+    }
+
     setActiveTab('admin-view');
   };
 
-  // Hàm Đăng Xuất chung cho tất cả phân quyền (Học sinh, Giáo viên, Admin)
+  // Hàm Đăng Xuất chung cho tất cả phân quyền (Xóa sạch phiên currentUser = null về dạng Khách)
   const handleGlobalLogout = () => {
-    console.log('Global Logout Executed Safely');
+    console.log('Global Logout Executed - Resetting to Guest State');
 
     // 1. Xóa toàn bộ dữ liệu phiên lưu trữ
     localStorage.removeItem("currentUserRole");
     localStorage.removeItem("currentUserUsername");
     localStorage.removeItem("adminName");
     localStorage.removeItem("teacherName");
-    localStorage.setItem("currentUserRole", "student");
-    localStorage.setItem("studentName", "Bé Nam");
+    localStorage.removeItem("studentName");
+    localStorage.setItem("currentUserRole", "guest");
 
-    setCurrentUser({
-      username: '',
-      name: 'Bé Nam',
-      classId: '2AI',
-      role: 'student',
-      xp: 450,
-      coins: 1250
-    });
-    
-    // 2. Đóng toàn bộ Modal và đưa về trang chủ học sinh (Tuyệt đối không bật modal đăng nhập)
+    // 2. Set currentUser = null và đưa về trạng thái trang chủ Khách
+    setCurrentUser(null);
     setIsAuthModalOpen(false);
     setActiveTab('student-view');
 
