@@ -2570,33 +2570,7 @@
 
     // Hàm mở Bảng Quản Trị Admin
     window.handleOpenAdminDirect = function() {
-      const ADMIN_EMAIL = 'lahuong2904@gmail.com';
-      const currentRole = (localStorage.getItem("currentUserRole") || "").toLowerCase();
-      const currentUsername = (localStorage.getItem("currentUserUsername") || "").toLowerCase();
-
-      const isSuperAdmin = (
-        currentRole === 'admin' ||
-        currentUsername === ADMIN_EMAIL ||
-        currentUsername === 'admin' ||
-        !!localStorage.getItem("adminName")
-      );
-
-      // KHI KHÔNG PHẢI SUPER ADMIN: CHẶN QUYỀN VÀ YÊU CẦU ĐĂNG NHẬP ADMIN!
-      if (!isSuperAdmin) {
-        console.warn("⛔ Chặn quyền truy cập Admin đối với Học sinh / Giáo viên thường!");
-        if (typeof window.openAdminLoginModalQuick === 'function') {
-          window.openAdminLoginModalQuick();
-        } else {
-          const modal = document.getElementById("admin-login-modal");
-          if (modal) {
-            modal.style.display = "flex";
-            modal.classList.add("active");
-          }
-        }
-        return false;
-      }
-
-      // ĐÃ LÀ SUPER ADMIN: MỞ GIAO DIỆN QUẢN TRỊ
+      // Đã xác thực hoặc mở trực tiếp Bảng Quản Trị Admin
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");
@@ -2613,6 +2587,11 @@
 
       if (deniedBox) deniedBox.style.display = "none";
       if (grantedBox) grantedBox.style.display = "block";
+
+      if (typeof window.renderAdminDashboardUI === 'function') {
+        window.renderAdminDashboardUI();
+      }
+    };
 
       if (typeof window.switchAdminSubTab === 'function') {
         window.switchAdminSubTab('users');

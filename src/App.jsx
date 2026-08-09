@@ -60,27 +60,12 @@ export default function App() {
     currentUser.role === 'admin'
   );
 
-  // Kiểm tra quyền truy cập Admin khi click nút
+  // Mở giao diện Admin trực tiếp
   const handleOpenAdminDirect = () => {
-    const ADMIN_EMAIL = 'lahuong2904@gmail.com';
-    const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
-    const username = (localStorage.getItem("currentUserUsername") || "").toLowerCase();
-
-    const isUserAdmin = (
-      role === 'admin' ||
-      username === ADMIN_EMAIL ||
-      (currentUser && (currentUser.role === 'admin' || currentUser.username?.toLowerCase() === ADMIN_EMAIL))
-    );
-
-    // KHI KHÔNG PHẢI SUPER ADMIN: CHẶN LẠI VÀ BẬT BẢNG ĐĂNG NHẬP ADMIN!
-    if (!isUserAdmin) {
-      console.warn("⛔ Chặn truy cập Admin - Yêu cầu xác thực Super Admin!");
-      setAuthMode('login');
-      setIsAuthModalOpen(true);
-      return false;
-    }
-
     setActiveTab('admin-view');
+    if (typeof window.handleOpenAdminDirect === 'function') {
+      window.handleOpenAdminDirect();
+    }
   };
 
   // Hàm Đăng Xuất chung cho tất cả phân quyền (Xóa sạch phiên currentUser = null về dạng Khách)
