@@ -2091,13 +2091,13 @@
 
         <div class="form-group" style="margin-bottom: 10px; text-align: left;">
           <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Vai trò người dùng:</label>
-          <select id="modal-reg-role" class="form-control" style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; background: white; box-sizing: border-box;">
+          <select id="modal-reg-role" onchange="handleRegisterRoleChange(this.value)" class="form-control" style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; background: white; box-sizing: border-box;">
             <option value="student">👶 Học Sinh</option>
             <option value="teacher">👩‍🏫 Giáo Viên</option>
           </select>
         </div>
 
-        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+        <div class="form-group" id="group-modal-reg-class" style="margin-bottom: 14px; text-align: left;">
           <label style="font-weight: 800; font-size: 0.88rem; display: block; margin-bottom: 4px;">Lớp / Nhóm Học:</label>
           <select id="modal-reg-class" class="form-control" style="width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; outline: none; background: white; box-sizing: border-box;">
             <option value="2AI">Lớp 2 AI</option>
@@ -3203,6 +3203,18 @@
         if (btnDemo) btnDemo.style.display = "inline-block";
       }
     }
+
+    // Hàm xử lý thay đổi vai trò người dùng trong form đăng ký (Ẩn/Hiện trường chọn Lớp)
+    window.handleRegisterRoleChange = function(roleVal) {
+      const classGroup = document.getElementById("group-modal-reg-class");
+      if (classGroup) {
+        if (roleVal === "teacher") {
+          classGroup.style.display = "none";
+        } else {
+          classGroup.style.display = "block";
+        }
+      }
+    };
 
     // Hàm xử lý nộp Form Đăng Ký Tài Khoản từ Modal Đăng Nhập / Đăng Ký
     window.handleModalRegisterSubmit = async function (event) {
