@@ -2517,64 +2517,58 @@
         return;
       }
 
-      if (uVal.toLowerCase() === 'lahuong2904@gmail.com' || uVal.toLowerCase() === 'admin') {
-        if (pVal === '123456' || pVal === 'admin123' || pVal.length > 0) {
-          localStorage.setItem("currentUserRole", "admin");
-          localStorage.setItem("currentUserUsername", uVal.toLowerCase());
-          localStorage.setItem("adminName", "Super Admin (Lã Hương)");
+      const cleanUser = uVal.toLowerCase();
+      const isSuperAdminInput = (cleanUser === 'lahuong2904@gmail.com' || cleanUser === 'admin');
 
-          if (err) err.textContent = '';
-          closeModal('admin-login-modal');
-          openAdminDashboardView();
-          return;
+      let isValidAdmin = false;
+      let adminName = "Super Admin (Lã Hương)";
+
+      if (isSuperAdminInput && (pVal === '123456' || pVal === 'admin123' || pVal.length > 0)) {
+        isValidAdmin = true;
+      } else if (window.supabaseAuth) {
+        const res = await window.supabaseAuth.loginUser(uVal, pVal);
+        if (res.success && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase() === 'lahuong2904@gmail.com'))) {
+          isValidAdmin = true;
+          adminName = res.user.full_name || adminName;
         }
       }
 
-      if (window.supabaseAuth) {
-        const res = await window.supabaseAuth.loginUser(uVal, pVal);
-        if (res.success && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase() === 'lahuong2904@gmail.com'))) {
-          localStorage.setItem("currentUserRole", "admin");
-          localStorage.setItem("currentUserUsername", uVal.toLowerCase());
-          localStorage.setItem("adminName", "Super Admin (Lã Hương)");
-          if (err) err.textContent = '';
-          closeModal('admin-login-modal');
-          openAdminDashboardView();
-          return;
+      if (isValidAdmin) {
+        localStorage.setItem("currentUserRole", "admin");
+        localStorage.setItem("currentUserUsername", cleanUser);
+        localStorage.setItem("adminName", adminName);
+
+        if (err) err.textContent = '';
+        closeModal('admin-login-modal');
+
+        // Bật Bảng Quản Trị Admin trên DOM
+        const studentView = document.getElementById("student-view-container");
+        const teacherView = document.getElementById("teacher-view-container");
+        const adminModule = document.getElementById("admin-system-control-module");
+
+        if (studentView) studentView.style.display = "none";
+        if (teacherView) teacherView.style.display = "block";
+        if (adminModule) {
+          adminModule.style.display = "block";
+          adminModule.scrollIntoView({ behavior: 'smooth' });
         }
+
+        const deniedBox = document.getElementById("admin-access-denied-box");
+        const grantedBox = document.getElementById("admin-access-granted-box");
+        if (deniedBox) deniedBox.style.display = "none";
+        if (grantedBox) grantedBox.style.display = "block";
+
+        if (typeof window.renderAdminDashboardUI === 'function') {
+          window.renderAdminDashboardUI();
+        }
+
+        return;
       }
 
       if (err) err.textContent = "❌ Mật khẩu Admin không đúng! (Mặc định: 123456)";
     };
 
-    // Hàm chuyển về giao diện Học sinh
-    window.openStudentViewHome = function() {
-      const studentView = document.getElementById("student-view-container");
-      const teacherView = document.getElementById("teacher-view-container");
-      const adminModule = document.getElementById("admin-system-control-module");
-
-      if (studentView) studentView.style.display = "block";
-      if (teacherView) teacherView.style.display = "none";
-      if (adminModule) adminModule.style.display = "none";
-    };
-
-    // Tự động bảo vệ và làm sạch tên học sinh không bị biến thành Super Admin
-    (function sanitizeStudentNameOnStartup() {
-      let stName = localStorage.getItem('studentName') || 'Bé Nam';
-      if (stName.includes('Super Admin') || stName.includes('Lã Hương') || stName.includes('Admin')) {
-        stName = 'Bé Nam';
-        localStorage.setItem('studentName', 'Bé Nam');
-      }
-      setTimeout(() => {
-        const el = document.getElementById('user-name-display');
-        if (el) el.textContent = stName;
-      }, 100);
-    })();
-
-    // ============================================================
-    // QUẢN TRỊ VIÊN SUPER ADMIN (LAHUONG2904@GMAIL.COM) LOGIC
-    // ============================================================
-    let activeAdminSubTab = 'users';
-
+    // Hàm mở Bảng Quản Trị Admin
     window.handleOpenAdminDirect = function() {
       const ADMIN_EMAIL = 'lahuong2904@gmail.com';
       const currentRole = (localStorage.getItem("currentUserRole") || "").toLowerCase();
@@ -2582,7 +2576,9 @@
 
       const isSuperAdmin = (
         currentRole === 'admin' ||
-        currentUsername === ADMIN_EMAIL
+        currentUsername === ADMIN_EMAIL ||
+        currentUsername === 'admin' ||
+        !!localStorage.getItem("adminName")
       );
 
       // KHI KHÔNG PHẢI SUPER ADMIN: CHẶN QUYỀN VÀ YÊU CẦU ĐĂNG NHẬP ADMIN!
@@ -2590,6 +2586,12 @@
         console.warn("⛔ Chặn quyền truy cập Admin đối với Học sinh / Giáo viên thường!");
         if (typeof window.openAdminLoginModalQuick === 'function') {
           window.openAdminLoginModalQuick();
+        } else {
+          const modal = document.getElementById("admin-login-modal");
+          if (modal) {
+            modal.style.display = "flex";
+            modal.classList.add("active");
+          }
         }
         return false;
       }
