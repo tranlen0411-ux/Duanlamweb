@@ -1436,10 +1436,14 @@
                 Quyền Hạn Cao Cấp Duy Nhất: lahuong2904@gmail.com
               </span>
             </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="openStudentViewHome()" style="padding: 8px 16px; border-radius: 14px; font-weight: 800; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; cursor: pointer;">
+              🏠 Quay Lại Trang Chủ
+            </button>
+            <button class="btn btn-secondary" onclick="renderAdminDashboardUI()" style="padding: 8px 16px; border-radius: 14px; font-weight: 800; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; cursor: pointer;">
+              🔄 Tải Lại Dữ Liệu CSDL Live
+            </button>
           </div>
-          <button class="btn btn-secondary" onclick="renderAdminDashboardUI()" style="padding: 8px 16px; border-radius: 14px; font-weight: 800; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; cursor: pointer;">
-            🔄 Tải Lại Dữ Liệu CSDL Live
-          </button>
         </div>
 
         <!-- 5 Tab Mô-đun Quản Lý -->
@@ -2053,6 +2057,30 @@
       if (typeof openTeacherLoginModal === 'function') openTeacherLoginModal();
       window.fillAdminLoginQuick();
     };
+
+    // Hàm chuyển về giao diện Học sinh
+    window.openStudentViewHome = function() {
+      const studentView = document.getElementById("student-view-container");
+      const teacherView = document.getElementById("teacher-view-container");
+      const adminModule = document.getElementById("admin-system-control-module");
+
+      if (studentView) studentView.style.display = "block";
+      if (teacherView) teacherView.style.display = "none";
+      if (adminModule) adminModule.style.display = "none";
+    };
+
+    // Tự động bảo vệ và làm sạch tên học sinh không bị biến thành Super Admin
+    (function sanitizeStudentNameOnStartup() {
+      let stName = localStorage.getItem('studentName') || 'Bé Nam';
+      if (stName.includes('Super Admin') || stName.includes('Lã Hương') || stName.includes('Admin')) {
+        stName = 'Bé Nam';
+        localStorage.setItem('studentName', 'Bé Nam');
+      }
+      setTimeout(() => {
+        const el = document.getElementById('user-name-display');
+        if (el) el.textContent = stName;
+      }, 100);
+    })();
 
     // ============================================================
     // QUẢN TRỊ VIÊN SUPER ADMIN (LAHUONG2904@GMAIL.COM) LOGIC
@@ -2737,8 +2765,14 @@
               localStorage.setItem("currentUserRole", "admin");
               localStorage.setItem("currentUserUsername", cleanUser);
               localStorage.setItem("currentTeacherId", "admin");
-              localStorage.setItem("studentName", cleanUser === 'lahuong2904@gmail.com' ? "Super Admin (Lã Hương)" : "Admin Quản Trị Hệ Thống");
-              localStorage.setItem("teacherName", cleanUser === 'lahuong2904@gmail.com' ? "Super Admin (Lã Hương)" : "Admin Quản Trị Hệ Thống");
+              localStorage.setItem("adminName", cleanUser === 'lahuong2904@gmail.com' ? "Super Admin (Lã Hương)" : "Admin Quản Trị Hệ Thống");
+
+              let stName = localStorage.getItem("studentName") || "Bé Nam";
+              if (stName.includes("Admin") || stName.includes("Hương")) {
+                localStorage.setItem("studentName", "Bé Nam");
+              }
+              const nameEl = document.getElementById("user-name-display");
+              if (nameEl) nameEl.textContent = "Bé Nam";
 
               if (err) err.textContent = '';
               closeModal('teacher-login-modal');
