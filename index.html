@@ -1678,25 +1678,25 @@
   </div>
 
   <!-- MODAL ĐĂNG NHẬP DÀNH RIÊNG CHO SUPER ADMIN (LAHUONG2904@GMAIL.COM) -->
-  <div class="teacher-login-modal-backdrop" id="admin-login-modal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div class="teacher-login-modal-box" style="background: white; border-radius: 24px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative; border: 2px solid #f87171;">
-      <button class="modal-close" onclick="closeModal('admin-login-modal')" style="position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; font-size: 1.2rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">✕</button>
+  <div class="modal-backdrop" id="admin-login-modal">
+    <div class="modal-card" style="max-width: 450px; border: 4px solid #f87171;">
+      <button class="modal-close" onclick="closeModal('admin-login-modal')">✕</button>
       
       <div style="text-align: center; margin-bottom: 20px;">
-        <span style="font-size: 3rem;">👑</span>
-        <h3 style="font-size: 1.5rem; font-weight: 900; color: #dc2626; margin-top: 6px;">Đăng Nhập Super Admin</h3>
+        <span style="font-size: 3.5rem;">👑</span>
+        <h3 style="font-size: 1.55rem; font-weight: 900; color: #dc2626; margin-top: 6px;">Đăng Nhập Super Admin</h3>
         <p style="font-size: 0.88rem; color: #64748b; font-weight: 700; margin-top: 4px;">
           Tài khoản quản trị viên tối cao <strong>lahuong2904@gmail.com</strong>
         </p>
       </div>
 
       <form id="form-login-admin-modal" onsubmit="handleAdminModalLoginSubmit(event)">
-        <div class="form-group" style="margin-bottom: 12px; text-align: left;">
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
           <label style="font-weight: 800; font-size: 0.9rem; color: #1e293b; display: block; margin-bottom: 4px;">Tài khoản Admin (Email/Username):</label>
           <input type="text" id="admin-login-email" class="form-control" value="lahuong2904@gmail.com" required style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
         </div>
 
-        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+        <div class="form-group" style="margin-bottom: 16px; text-align: left;">
           <label style="font-weight: 800; font-size: 0.9rem; color: #1e293b; display: block; margin-bottom: 4px;">Mật khẩu Admin:</label>
           <div class="pwd-input-wrapper" style="position: relative;">
             <input type="password" id="admin-login-password" class="form-control" value="123456" required style="width: 100%; padding: 10px 40px 10px 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
@@ -1704,9 +1704,9 @@
           </div>
         </div>
 
-        <div id="admin-modal-login-error" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-bottom: 12px; min-height: 20px; text-align: center;"></div>
+        <div id="admin-modal-login-error" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-bottom: 14px; min-height: 20px; text-align: center;"></div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 20px; font-weight: 900; background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border: none; font-size: 1.05rem; cursor: pointer; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; border-radius: 25px; font-weight: 900; background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border: none; font-size: 1.05rem; cursor: pointer; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
           🔑 Đăng Nhập Admin Ngay
         </button>
       </form>
@@ -2086,10 +2086,14 @@
     };
 
     window.openAdminLoginModalQuick = function() {
-      const modal = document.getElementById("admin-login-modal");
-      if (modal) {
-        modal.style.display = "flex";
-        modal.classList.add("active");
+      if (typeof window.openModal === 'function') {
+        window.openModal('admin-login-modal');
+      } else {
+        const modal = document.getElementById("admin-login-modal");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+        }
       }
     };
 
