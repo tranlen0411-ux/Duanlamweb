@@ -10,7 +10,10 @@ function initApp() {
   updateUserStatsUI();
   updateGradeUI();
 
-  const storedName = localStorage.getItem('student_fullname') || 'Bé Nam';
+  let storedName = localStorage.getItem('studentName') || localStorage.getItem('student_fullname') || 'Bé Nam';
+  if (storedName.toLowerCase().includes('admin') || storedName.toLowerCase().includes('super')) {
+    storedName = 'Bé Nam';
+  }
   setStudentNameUI(storedName);
 
   // Default to Tab 1
@@ -57,52 +60,36 @@ function updateGradeUI() {
 }
 
 function setStudentNameUI(name) {
+  let displayName = name || 'Bé Nam';
+  if (displayName.toLowerCase().includes('admin') || displayName.toLowerCase().includes('super')) {
+    displayName = 'Bé Nam';
+  }
   const nameEls = document.querySelectorAll('#user-name-display, .student-name-text');
   nameEls.forEach(el => {
-    el.textContent = name;
+    if (el) el.textContent = displayName;
   });
-  localStorage.setItem('student_fullname', name);
 }
 
-function openEditProfileModal() {
-  const modal = document.getElementById('edit-profile-modal');
-  const input = document.getElementById('input-student-fullname');
-  if (input) input.value = localStorage.getItem('student_fullname') || 'Bé Nam';
-  if (modal) modal.classList.add('active');
-}
+// Global Tab Exposer
+window.switchStudentTab = function(tabId) {
+  const tabs = document.querySelectorAll('.sub-view-tab');
+  tabs.forEach(t => {
+    if (t) t.style.display = 'none';
+  });
 
-function saveStudentProfileFromModal() {
-  const input = document.getElementById('input-student-fullname');
-  if (input && input.value.trim() !== '') {
-    setStudentNameUI(input.value.trim());
+  const activeTab = document.getElementById(tabId);
+  if (activeTab) {
+    activeTab.style.display = 'block';
   }
-  closeModal('edit-profile-modal');
-}
 
-function selectGlobalGrade(gradeNum) {
-  DBStore.setSelectedGrade(gradeNum);
-  updateGradeUI();
-  
-  if (window.TeacherDashboard) {
-    TeacherDashboard.render();
-  }
-}
-
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) modal.classList.remove('active');
-}
-
-function launchGameFromLibrary(gameKey) {
-  const modal = document.getElementById('game-modal');
-  const content = document.getElementById('game-modal-content');
-  if (!modal || !content) return;
-
-  const currentGrade = DBStore.getSelectedGrade();
-  content.innerHTML = GameEngine.renderGameContainer(gameKey, currentGrade);
-  modal.classList.add('active');
-
-  setTimeout(() => {
-    GameEngine.startCurrentGame(gameKey);
-  }, 100);
-}
+  const navBtns = document.querySelectorAll('.nav-tab-btn');
+  navBtns.forEach(btn => {
+    if (btn) {
+      if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabId)) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+  });
+};
