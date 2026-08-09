@@ -60,6 +60,23 @@ export default function App() {
     currentUser.role === 'admin'
   );
 
+  // Hàm độc lập mở trực tiếp Bảng Quản Trị Admin cho lahuong2904@gmail.com
+  const handleOpenAdminDirect = () => {
+    console.log('Da mo Admin');
+    localStorage.setItem("currentUserRole", "admin");
+    localStorage.setItem("currentUserUsername", "lahuong2904@gmail.com");
+    localStorage.setItem("adminName", "Super Admin (Lã Hương)");
+    setCurrentUser({
+      username: 'lahuong2904@gmail.com',
+      name: 'Super Admin (Lã Hương)',
+      classId: '2AI',
+      role: 'admin',
+      xp: 9999,
+      coins: 9999
+    });
+    setActiveTab('admin-view');
+  };
+
   // Handle Login Submit
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -170,20 +187,7 @@ export default function App() {
 
             <button 
               className="btn btn-admin"
-              onClick={() => {
-                localStorage.setItem("currentUserRole", "admin");
-                localStorage.setItem("currentUserUsername", "lahuong2904@gmail.com");
-                localStorage.setItem("adminName", "Super Admin (Lã Hương)");
-                setCurrentUser({
-                  username: 'lahuong2904@gmail.com',
-                  name: 'Super Admin (Lã Hương)',
-                  classId: '2AI',
-                  role: 'admin',
-                  xp: 9999,
-                  coins: 9999
-                });
-                setActiveTab('admin-view');
-              }}
+              onClick={handleOpenAdminDirect}
               style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 900, cursor: 'pointer' }}
             >
               👑 Quản Trị Admin

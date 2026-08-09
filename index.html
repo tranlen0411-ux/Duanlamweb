@@ -2553,7 +2553,8 @@
     // ============================================================
     let activeAdminSubTab = 'users';
 
-    window.openAdminDashboardView = function() {
+    window.handleOpenAdminDirect = function() {
+      console.log('Da mo Admin');
       const ADMIN_EMAIL = 'lahuong2904@gmail.com';
       
       // Tự động gán quyền Super Admin và chuyển sang giao diện quản trị
@@ -2588,6 +2589,8 @@
         console.warn("renderAdminDashboardUI warning:", err);
       }
     };
+
+    window.openAdminDashboardView = window.handleOpenAdminDirect;
 
     window.checkAdminPermission = function() {
       const ADMIN_EMAIL = 'lahuong2904@gmail.com';
