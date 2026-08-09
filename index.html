@@ -717,19 +717,15 @@
           <span>⚡</span> <span id="user-xp-display">450 XP</span>
         </div>
 
-        <button id="btn-student-login" class="header-user-btn btn" onclick="openStudentLoginModal()" title="Nhấp để đổi tên học sinh">
+        <button id="btn-student-login" class="header-user-btn btn" onclick="openStudentLoginModal()" title="Nhấp để đổi thông tin Học Sinh">
           👶 Học sinh: <span id="user-name-display">Tú</span>
         </button>
 
-        <button class="header-teacher-btn" id="role-switch-btn" onclick="openTeacherLoginModal()" title="Nhấp để đăng nhập hoặc đổi tài khoản Giáo viên">
-          🏫 Đăng Nhập Giáo Viên / Admin: <span id="teacher-name-display">Đăng nhập</span>
+        <button class="header-teacher-btn btn" id="role-switch-btn" onclick="switchLoginMode('teacher'); openTeacherLoginModal();" title="Nhấp để Đăng Nhập Giáo Viên" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);">
+          👩‍🏫 Giáo Viên
         </button>
 
-        <button class="header-register-btn btn" onclick="switchLoginMode('register'); openTeacherLoginModal();" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);">
-          📝 Đăng Ký
-        </button>
-
-        <button class="header-admin-btn btn" onclick="openAdminDashboardView()" style="background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);">
+        <button class="header-admin-btn btn" onclick="openAdminDashboardView()" title="Nhấp để vào Quản Trị Admin (lahuong2904@gmail.com)" style="background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);">
           👑 Quản Trị Admin
         </button>
       </div>
