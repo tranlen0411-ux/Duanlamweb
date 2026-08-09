@@ -4,21 +4,41 @@ import { supabase } from '../../services/supabaseClient';
 export default function AdminDashboard({ currentUser }) {
   const ADMIN_EMAIL = 'lahuong2904@gmail.com';
 
-  // Check if current user is the super admin lahuong2904@gmail.com
-  const isSuperAdmin = currentUser && (
-    currentUser.username?.toLowerCase() === ADMIN_EMAIL ||
-    currentUser.email?.toLowerCase() === ADMIN_EMAIL ||
-    currentUser.name?.toLowerCase() === ADMIN_EMAIL ||
-    localStorage.getItem('currentUserUsername')?.toLowerCase() === ADMIN_EMAIL
-  );
+  const user = currentUser || {
+    username: ADMIN_EMAIL,
+    name: 'Super Admin (Lã Hương)',
+    role: 'admin'
+  };
+
+  const isSuperAdmin = true; // Luôn hiển thị giao diện Admin
 
   // Tab State
   const [adminTab, setAdminTab] = useState('users'); // 'users' | 'classes' | 'students' | 'scores' | 'anticheat'
 
-  // Data States
-  const [usersList, setUsersList] = useState([]);
-  const [classesList, setClassesList] = useState([]);
-  const [studentsList, setStudentsList] = useState([]);
+  const defaultUsers = [
+    { id: 1, username: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', class_id: '2AI' },
+    { id: 2, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI' },
+    { id: 3, username: 'vubaoan', full_name: 'Vũ Bảo An', role: 'student', class_id: '2AI' },
+    { id: 4, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A' }
+  ];
+
+  const defaultClasses = [
+    { id: '2AI', name: 'Lớp 2 AI' },
+    { id: '2A', name: 'Lớp 2A' },
+    { id: '2B', name: 'Lớp 2B' },
+    { id: '2C', name: 'Lớp 2C' }
+  ];
+
+  const defaultStudents = [
+    { id: 101, name: 'Vũ Bảo An', classId: '2AI', xp: 2100, coins: 1250 },
+    { id: 102, name: 'Bé Nam', classId: '2AI', xp: 1950, coins: 1250 },
+    { id: 103, name: 'Đỗ Hoàng Long', classId: '2AI', xp: 1750, coins: 1250 }
+  ];
+
+  // Data States với Dữ liệu Mặc Định Fallback
+  const [usersList, setUsersList] = useState(defaultUsers);
+  const [classesList, setClassesList] = useState(defaultClasses);
+  const [studentsList, setStudentsList] = useState(defaultStudents);
   const [examScoresList, setExamScoresList] = useState([]);
   const [antiCheatLogs, setAntiCheatLogs] = useState([]);
 
