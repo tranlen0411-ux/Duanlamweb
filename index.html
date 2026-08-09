@@ -1466,7 +1466,7 @@
         </div>
 
         <!-- MÔ-ĐUN 1: QUẢN LÝ NGƯỜI DÙNG & TÀI KHOẢN -->
-        <div id="admin-panel-users" class="admin-panel-content">
+        <div id="admin-panel-users" class="admin-panel-content" style="display: block;">
           <div style="background: #f8fafc; padding: 16px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
             <h4 style="margin: 0 0 10px 0; font-weight: 900; color: #0f172a;">➕ Thêm Tài Khoản Mới Trực Tiếp Vào CSDL Supabase:</h4>
             <form id="admin-add-user-form" onsubmit="handleAdminCreateUserSubmit(event)" style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -2193,6 +2193,10 @@
 
       if (deniedBox) deniedBox.style.display = "none";
       if (grantedBox) grantedBox.style.display = "block";
+
+      if (typeof window.switchAdminSubTab === 'function') {
+        window.switchAdminSubTab('users');
+      }
 
       try {
         window.renderAdminDashboardUI();
