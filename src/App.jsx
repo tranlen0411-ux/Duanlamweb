@@ -60,86 +60,33 @@ export default function App() {
     currentUser.role === 'admin'
   );
 
-  // Mở giao diện Admin trực tiếp
+  // Kiểm soát bảo mật phân quyền khi bấm nút Quản Trị Admin
   const handleOpenAdminDirect = () => {
+    const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+    const username = (localStorage.getItem("currentUserUsername") || "").toLowerCase();
+
+    const isAlreadySuperAdmin = (
+      (role === 'admin' || currentUser?.role === 'admin') &&
+      (username.includes('adminlahuong2904') || username.includes('lahuong') || username === 'admin' || currentUser?.username?.includes('lahuong'))
+    );
+
+    // KHI CHƯA PHẢI SUPER ADMIN THỰC THỰC: CHẶN VÀ BẮT BỘC MỞ POPUP ĐĂNG NHẬP ADMIN!
+    if (!isAlreadySuperAdmin) {
+      setAdminEmailInput('adminlahuong2904@gmail.com');
+      setAdminPassInput('');
+      setAdminLoginError('');
+      setAuthMode('admin');
+      setIsAuthModalOpen(true);
+      return false;
+    }
+
     setActiveTab('admin-view');
-    if (typeof window.handleOpenAdminDirect === 'function') {
-      window.handleOpenAdminDirect();
+    if (typeof window.handleOpenAdminDirectHTML === 'function') {
+      window.handleOpenAdminDirectHTML();
     }
   };
 
-  // Hàm Đăng Xuất chung cho tất cả phân quyền (Xóa sạch phiên currentUser = null về dạng Khách)
-  const handleGlobalLogout = () => {
-    console.log('Global Logout Executed - Resetting to Guest State');
-
-    // 1. Xóa sạch toàn bộ các key trong localStorage liên quan đến phiên làm việc
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("currentUserRole");
-    localStorage.removeItem("currentUserUsername");
-    localStorage.removeItem("adminName");
-    localStorage.removeItem("teacherName");
-    localStorage.removeItem("studentName");
-    localStorage.removeItem("studentClassId");
-    localStorage.removeItem("userToken");
-    localStorage.setItem("currentUserRole", "guest");
-
-    // 2. Set currentUser = null và đưa ứng dụng về trạng thái trang chủ Khách
-    setCurrentUser(null);
-
-    // 3. Đóng mọi modal đang mở
-    setIsAuthModalOpen(false);
-
-    // 4. Reset activeTab về trang chủ mặc định
-    setActiveTab('student-view');
-
-    // 5. Đồng bộ giao diện HTML và gỡ bỏ quyền
-    if (typeof window.handleGlobalLogoutHTML === 'function') {
-      window.handleGlobalLogoutHTML();
-    }
-  };
-
-  // Handle Login Submit
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setFeedback({ message: '⏳ Đang xác thực với Supabase CSDL...', isError: false });
-
-    const res = await authService.loginUser(loginUsername, loginPassword);
-
-    if (res.success) {
-      const isUserAdmin = (
-        res.user.role === 'admin' ||
-        res.user.username?.toLowerCase() === 'lahuong2904@gmail.com' ||
-        res.user.email?.toLowerCase() === 'lahuong2904@gmail.com'
-      );
-
-      setCurrentUser({
-        username: res.user.username,
-        name: res.user.full_name || (isUserAdmin ? 'Super Admin (Lã Hương)' : 'Bé Nam'),
-        classId: res.user.class_id || '2AI',
-        role: isUserAdmin ? 'admin' : (res.user.role || 'student'),
-        xp: res.user.xp || (isUserAdmin ? 9999 : 450),
-        coins: res.user.coins || (isUserAdmin ? 9999 : 1250)
-      });
-
-      setFeedback({ message: res.message, isError: false });
-
-      setTimeout(() => {
-        setIsAuthModalOpen(false);
-        if (isUserAdmin) {
-          setActiveTab('admin-view');
-          if (typeof window.handleOpenAdminDirect === 'function') {
-            window.handleOpenAdminDirect();
-          }
-        } else {
-          setActiveTab('student-view');
-        }
-      }, 500);
-    } else {
-      setFeedback({ message: res.message, isError: true });
-    }
-  };
-
-  // Handle Admin Direct Login - Truy vấn trực tiếp vào CSDL Supabase để xác thực Admin
+  // Handle Admin Direct Login - Xác thực bảo mật Super Admin chuẩn Supabase CSDL
   const handleAdminDirectLogin = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setAdminLoginError('');
@@ -152,27 +99,28 @@ export default function App() {
       return;
     }
 
-    // 1. Kiểm tra ưu tiên Super Admin adminlahuong2904@gmail.com hoặc lahuong2904@gmail.com hoặc admin với mật khẩu 123456
-    const isSuperAdminCreds = (
-      (email === 'adminlahuong2904@gmail.com' || email === 'lahuong2904@gmail.com' || email === 'admin') &&
-      (pass === '123456' || pass === 'admin123')
-    );
-
-    // 2. Truy vấn vào cơ sở dữ liệu Supabase
+    // 1. CHẶN VÀ TỪ CHỐI NẾU TÀI KHOẢN LÀ HỌC SINH HOẶC GIÁO VIÊN THƯỜNG
     let res = null;
     if (authService && authService.loginUser) {
       res = await authService.loginUser(email, pass);
     }
 
-    const isValidAdmin = isSuperAdminCreds || (res && res.success && (
-      res.user?.role === 'admin' ||
-      res.user?.username?.toLowerCase().includes('lahuong') ||
-      res.user?.email?.toLowerCase().includes('lahuong')
-    ));
+    if (res && res.user && (res.user.role === 'student' || res.user.role === 'teacher')) {
+      setAdminLoginError('⛔ Từ chối truy cập! Tài khoản Học sinh / Giáo viên không có quyền quản trị Admin. Vui lòng đăng nhập bằng Super Admin (adminlahuong2904@gmail.com).');
+      return;
+    }
+
+    // 2. XÁC THỰC CHÍNH XÁC TÀI KHOẢN SUPER ADMIN (adminlahuong2904@gmail.com / lahuong2904@gmail.com VỚI MẬT KHẨU 123456)
+    const isSuperAdminCreds = (
+      (email === 'adminlahuong2904@gmail.com' || email === 'lahuong2904@gmail.com' || email === 'admin') &&
+      (pass === '123456' || pass === 'admin123')
+    );
+
+    const isValidAdmin = isSuperAdminCreds || (res && res.success && res.user?.role === 'admin');
 
     if (isValidAdmin) {
       const adminUser = {
-        username: email || 'lahuong2904@gmail.com',
+        username: email || 'adminlahuong2904@gmail.com',
         name: (res && res.user && res.user.full_name) ? res.user.full_name : 'Super Admin (Lã Hương)',
         classId: '2AI',
         role: 'admin',
@@ -180,7 +128,7 @@ export default function App() {
         coins: 9999
       };
 
-      // Lưu thông tin phiên vào localStorage
+      // Lưu thông tin phiên làm việc vào localStorage
       localStorage.setItem("currentUserRole", "admin");
       localStorage.setItem("currentUserUsername", adminUser.username);
       localStorage.setItem("adminName", adminUser.name);
@@ -189,7 +137,7 @@ export default function App() {
       setActiveTab('admin-view');
       setIsAuthModalOpen(false);
 
-      // Mở ngay Bảng Quản Trị Admin trên giao diện DOM
+      // Bật Bảng Quản Trị Admin trên giao diện DOM
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");
@@ -210,7 +158,7 @@ export default function App() {
         window.renderAdminDashboardUI();
       }
     } else {
-      setAdminLoginError((res && res.message) ? res.message : '❌ Mật khẩu hoặc tài khoản Admin chưa chính xác!');
+      setAdminLoginError('⛔ Từ chối truy cập! Sai tài khoản hoặc mật khẩu Admin (yêu cầu: adminlahuong2904@gmail.com / 123456).');
     }
   };
 

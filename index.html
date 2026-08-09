@@ -2572,8 +2572,8 @@
       if (err) err.textContent = "❌ Mật khẩu Admin không đúng! (Mặc định: 123456)";
     };
 
-    // Hàm mở Bảng Quản Trị Admin
-    window.handleOpenAdminDirect = function() {
+    // Hàm mở trực tiếp DOM Bảng Quản Trị Admin sau khi đã xác thực Super Admin
+    window.handleOpenAdminDirectHTML = function() {
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");
@@ -2602,6 +2602,30 @@
           console.warn("renderAdminDashboardUI warning:", err);
         }
       }
+    };
+
+    window.handleOpenAdminDirect = function() {
+      const currentRole = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+      const currentUsername = (localStorage.getItem("currentUserUsername") || "").toLowerCase();
+
+      const isAlreadySuperAdmin = (
+        currentRole === 'admin' &&
+        (currentUsername.includes('adminlahuong2904') || currentUsername.includes('lahuong') || currentUsername === 'admin')
+      );
+
+      // KHI CHƯA PHẢI SUPER ADMIN THỰC THỰC: BẮT BỘC PHẢI MỞ MODAL VÀ ĐIỀN THÔNG TIN ĐĂNG NHẬP ADMIN!
+      if (!isAlreadySuperAdmin) {
+        const modal = document.getElementById("admin-login-modal");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+          const emailInput = document.getElementById("admin-login-email");
+          if (emailInput) emailInput.value = "adminlahuong2904@gmail.com";
+        }
+        return false;
+      }
+
+      return window.handleOpenAdminDirectHTML();
     };
 
     window.openAdminDashboardView = window.handleOpenAdminDirect;
