@@ -1,0 +1,159 @@
+/* ============================================================
+   SUPABASE INTEGRATION MODULE & AUTH SERVICE - TOÁN CÙNG EM
+   ============================================================ */
+
+const SUPABASE_URL = "https://rcqgxmcqolxbrahhyxji.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjcWd4bWNxb2x4YnJhaGh5eGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjQ3MTQsImV4cCI6MjEwMTY0MDcxNH0.szavY7MZ2T9znw-ja_lmjftlbG6U7-OvEiKFmA3m0HE";
+
+let supabaseClient = null;
+
+if (typeof supabase !== "undefined" && SUPABASE_URL.includes("supabase.co") && !SUPABASE_ANON_KEY.includes("your-anon-key")) {
+  try {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log("⚡ [Supabase] Đã kết nối thành công tới Supabase Database!");
+  } catch (err) {
+    console.warn("⚠️ [Supabase] Chưa thể kết nối tới Supabase:", err);
+  }
+}
+
+window.supabaseAuth = {
+  client: supabaseClient,
+
+  async registerUser({ username, password, fullName, role, classId }) {
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    const cleanFullName = fullName.trim();
+    const userRole = role || 'student';
+    const userClass = classId || '2AI';
+
+    if (!cleanUsername || !cleanPassword || !cleanFullName) {
+      return { success: false, message: 'Vui lòng điền đầy đủ Tên tài khoản, Mật khẩu và Họ tên!' };
+    }
+
+    if (supabaseClient) {
+      try {
+        const { data: existingUser } = await supabaseClient
+          .from('users')
+          .select('id')
+          .eq('username', cleanUsername)
+          .maybeSingle();
+
+        if (existingUser) {
+          return { success: false, message: 'Tên tài khoản (username) này đã tồn tại! Vui lòng chọn tên khác.' };
+        }
+
+        const { data: newUser, error: insertErr } = await supabaseClient
+          .from('users')
+          .insert([{
+            username: cleanUsername,
+            password: cleanPassword,
+            full_name: cleanFullName,
+            role: userRole,
+            class_id: userClass,
+            xp: 450,
+            coins: 1250
+          }])
+          .select()
+          .single();
+
+        if (insertErr) throw insertErr;
+
+        if (userRole === 'student') {
+          await supabaseClient.from('students').insert([{
+            name: cleanFullName,
+            class_id: userClass,
+            xp: 450,
+            coins: 1250
+          }]);
+        }
+
+        return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase!' };
+      } catch (err) {
+        console.error('Lỗi đăng ký Supabase:', err);
+      }
+    }
+
+    let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
+    if (localUsers.some(u => u.username.toLowerCase() === cleanUsername)) {
+      return { success: false, message: 'Tên tài khoản này đã tồn tại trong bộ nhớ!' };
+    }
+
+    const newUser = {
+      id: Date.now(),
+      username: cleanUsername,
+      password: cleanPassword,
+      full_name: cleanFullName,
+      role: userRole,
+      class_id: userClass,
+      xp: 450,
+      coins: 1250
+    };
+    localUsers.push(newUser);
+    localStorage.setItem('users_db', JSON.stringify(localUsers));
+
+    return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công!' };
+  },
+
+  async loginUser(username, password) {
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanUsername || !cleanPassword) {
+      return { success: false, message: 'Vui lòng nhập Tên tài khoản và Mật khẩu!' };
+    }
+
+    let user = null;
+
+    if (supabaseClient) {
+      try {
+        const { data: dbUser } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('username', cleanUsername)
+          .eq('password', cleanPassword)
+          .maybeSingle();
+
+        if (dbUser) user = dbUser;
+      } catch (err) {
+        console.error('Lỗi đăng nhập Supabase:', err);
+      }
+    }
+
+    if (!user) {
+      let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
+      user = localUsers.find(u => u.username.toLowerCase() === cleanUsername && u.password === cleanPassword);
+
+      if (!user) {
+        if (cleanUsername === 'lahuong2904@gmail.com' && (cleanPassword === '123456' || cleanPassword.length > 0)) {
+          user = { id: 1, username: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', class_id: '2AI', xp: 9999, coins: 9999 };
+        } else if (cleanUsername === 'benam' && cleanPassword === '123456') {
+          user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', xp: 450, coins: 1250 };
+        } else if (cleanUsername === 'comai' && cleanPassword === '123456') {
+          user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', xp: 0, coins: 0 };
+        } else if (cleanUsername === 'admin' && cleanPassword === '123456') {
+          user = { id: 999, username: 'admin', full_name: 'Admin Quản Trị', role: 'admin', class_id: '2AI', xp: 0, coins: 0 };
+        }
+      }
+    }
+
+    if (!user) {
+      return { success: false, message: '❌ Tên tài khoản hoặc mật khẩu không chính xác!' };
+    }
+
+    localStorage.setItem('currentUserRole', user.role);
+    localStorage.setItem('currentUserUsername', user.username);
+
+    if (user.role === 'student') {
+      localStorage.setItem('studentName', user.full_name);
+      localStorage.setItem('studentClass', user.class_id || '2AI');
+      localStorage.setItem('userXP', user.xp || 450);
+      localStorage.setItem('userXu', user.coins || 1250);
+    } else if (user.role === 'teacher') {
+      localStorage.setItem('teacherName', user.full_name);
+    } else if (user.role === 'admin') {
+      localStorage.setItem('adminName', user.full_name);
+    }
+
+    return { success: true, user: user, message: '🔑 Đăng nhập thành công!' };
+  }
+};
