@@ -2717,11 +2717,14 @@
       console.log('Global Logout Executed - Resetting to Guest State');
 
       // 1. Xóa toàn bộ dữ liệu phiên lưu trữ (currentUser = null)
+      localStorage.removeItem("currentUser");
       localStorage.removeItem("currentUserRole");
       localStorage.removeItem("currentUserUsername");
       localStorage.removeItem("adminName");
       localStorage.removeItem("teacherName");
       localStorage.removeItem("studentName");
+      localStorage.removeItem("studentClassId");
+      localStorage.removeItem("userToken");
       localStorage.setItem("currentUserRole", "guest");
 
       // 2. Đóng và ẩn toàn bộ các modal

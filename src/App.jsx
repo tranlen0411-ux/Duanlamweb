@@ -87,19 +87,27 @@ export default function App() {
   const handleGlobalLogout = () => {
     console.log('Global Logout Executed - Resetting to Guest State');
 
-    // 1. Xóa toàn bộ dữ liệu phiên lưu trữ
+    // 1. Xóa sạch toàn bộ các key trong localStorage liên quan đến phiên làm việc
+    localStorage.removeItem("currentUser");
     localStorage.removeItem("currentUserRole");
     localStorage.removeItem("currentUserUsername");
     localStorage.removeItem("adminName");
     localStorage.removeItem("teacherName");
     localStorage.removeItem("studentName");
+    localStorage.removeItem("studentClassId");
+    localStorage.removeItem("userToken");
     localStorage.setItem("currentUserRole", "guest");
 
-    // 2. Set currentUser = null và đưa về trạng thái trang chủ Khách
+    // 2. Set currentUser = null và đưa ứng dụng về trạng thái trang chủ Khách
     setCurrentUser(null);
+
+    // 3. Đóng mọi modal đang mở
     setIsAuthModalOpen(false);
+
+    // 4. Reset activeTab về trang chủ mặc định
     setActiveTab('student-view');
 
+    // 5. Đồng bộ giao diện HTML và gỡ bỏ quyền
     if (typeof window.handleGlobalLogoutHTML === 'function') {
       window.handleGlobalLogoutHTML();
     }
