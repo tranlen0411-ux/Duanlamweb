@@ -79,12 +79,15 @@ export default function App() {
 
   // Hàm Đăng Xuất chung cho tất cả phân quyền (Học sinh, Giáo viên, Admin)
   const handleGlobalLogout = () => {
-    console.log('Global Logout Triggered');
+    console.log('Global Logout Executed Safely');
+
+    // 1. Xóa toàn bộ dữ liệu phiên lưu trữ
     localStorage.removeItem("currentUserRole");
     localStorage.removeItem("currentUserUsername");
     localStorage.removeItem("adminName");
     localStorage.removeItem("teacherName");
-    localStorage.setItem("currentUserRole", "guest");
+    localStorage.setItem("currentUserRole", "student");
+    localStorage.setItem("studentName", "Bé Nam");
 
     setCurrentUser({
       username: '',
@@ -95,12 +98,12 @@ export default function App() {
       coins: 1250
     });
     
-    setAuthMode('login');
-    setIsAuthModalOpen(true);
+    // 2. Đóng toàn bộ Modal và đưa về trang chủ học sinh (Tuyệt đối không bật modal đăng nhập)
+    setIsAuthModalOpen(false);
     setActiveTab('student-view');
 
-    if (typeof window.updateStudentViewPermissionsAndTeacherName === 'function') {
-      window.updateStudentViewPermissionsAndTeacherName();
+    if (typeof window.handleGlobalLogoutHTML === 'function') {
+      window.handleGlobalLogoutHTML();
     }
   };
 

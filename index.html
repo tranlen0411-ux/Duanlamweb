@@ -2675,13 +2675,23 @@
 
     // 6. Hàm Đăng Xuất chung trên Header cho tất cả phân quyền (Học sinh, Giáo viên, Admin)
     window.handleGlobalLogoutHTML = function() {
-      console.log('Global Logout Triggered');
+      console.log('Global Logout Executed Safely');
+
+      // 1. Xóa toàn bộ dữ liệu phiên lưu trữ
       localStorage.removeItem("currentUserRole");
       localStorage.removeItem("currentUserUsername");
       localStorage.removeItem("adminName");
       localStorage.removeItem("teacherName");
-      localStorage.setItem("currentUserRole", "guest");
+      localStorage.setItem("currentUserRole", "student");
+      localStorage.setItem("studentName", "Bé Nam");
 
+      // 2. Đóng và ẩn toàn bộ các modal đang mở (Tuyệt đối không bật bảng Đăng nhập Admin)
+      document.querySelectorAll(".modal-backdrop").forEach(modal => {
+        modal.style.display = "none";
+        modal.classList.remove("active");
+      });
+
+      // 3. Đưa giao diện về màn hình Trang chủ Học sinh ban đầu
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");
@@ -2690,18 +2700,14 @@
       if (teacherView) teacherView.style.display = "none";
       if (adminModule) adminModule.style.display = "none";
 
+      const userNameDisplay = document.getElementById("user-name-display");
+      if (userNameDisplay) userNameDisplay.textContent = "Bé Nam";
+
       if (typeof window.updateStudentViewPermissionsAndTeacherName === 'function') {
         window.updateStudentViewPermissionsAndTeacherName();
       }
 
-      const userNameDisplay = document.getElementById("user-name-display");
-      if (userNameDisplay) userNameDisplay.textContent = "Bé Nam";
-
-      if (typeof window.openAdminLoginModalQuick === 'function') {
-        window.openAdminLoginModalQuick();
-      } else if (typeof window.openModal === 'function') {
-        window.openModal('teacher-login-modal');
-      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     window.checkAdminPermission = function() {
