@@ -1530,12 +1530,12 @@
         <div class="history-table-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
             <h3 style="font-size: 1.4rem; font-weight: 900; margin: 0;">📜 Lịch Sử Bài Làm & Lời Nhắn Từ Giáo Viên</h3>
-            <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800; border: 2px solid #10b981; color: #047857;" onclick="nhapNhanXetGiaoVien()">
+            <button id="student-view-teacher-comment-btn" class="btn btn-outline" style="display: none; border-radius: 20px; font-weight: 800; border: 2px solid #10b981; color: #047857;" onclick="nhapNhanXetGiaoVien()">
               ✏️ Ghi / Sửa Nhận Xét (Dành Cho Giáo Viên)
             </button>
           </div>
 
-          <p style="font-size: 0.88rem; color: #0284c7; font-weight: 800; margin-bottom: 12px;">
+          <p id="student-view-teacher-tip" style="display: none; font-size: 0.88rem; color: #0284c7; font-weight: 800; margin-bottom: 12px;">
             💡 <em>Mẹo: Giáo viên có thể click trực tiếp vào ô Lời Nhắn của từng dòng dưới đây để chỉnh sửa nhận xét riêng cho lượt làm đó!</em>
           </p>
 
@@ -1558,7 +1558,7 @@
                 <td>
                   <span class="teacher-comment-italic">
                     "Con làm bài tuyệt vời! Tiếp tục phát huy nhé 🌟"
-                    <br><strong style="font-size: 0.85rem; color: #0284c7;">(Lời nhắn từ <span class="teacher-sign-name">Cô Mai</span>)</strong>
+                    <br><strong style="font-size: 0.85rem; color: #0284c7;">(Lời nhắn từ <span class="teacher-sign-name" id="assigned-teacher-name-span">Cô Mai</span>)</strong>
                   </span>
                 </td>
               </tr>
@@ -2633,8 +2633,41 @@
       console.log('Dang xuat ve Hoc sinh');
       localStorage.setItem("currentUserRole", "student");
       localStorage.setItem("studentName", "Bé Nam");
+      window.updateStudentViewPermissionsAndTeacherName();
       window.goToHomeTab();
     };
+
+    // 5. Hàm cập nhật phân quyền và Tên Giáo viên phụ trách từ CSDL Supabase
+    window.updateStudentViewPermissionsAndTeacherName = function() {
+      const currentRole = (localStorage.getItem("currentUserRole") || "student").toLowerCase();
+      const currentClassId = localStorage.getItem("studentClassId") || "2AI";
+
+      // Ẩn/hiện nút Ghi Nhận Xét & dòng Mẹo (Chỉ dành cho Giáo viên/Admin)
+      const teacherBtn = document.getElementById("student-view-teacher-comment-btn");
+      const teacherTip = document.getElementById("student-view-teacher-tip");
+      const isTeacherOrAdmin = (currentRole === 'teacher' || currentRole === 'admin');
+
+      if (teacherBtn) teacherBtn.style.display = isTeacherOrAdmin ? "inline-block" : "none";
+      if (teacherTip) teacherTip.style.display = isTeacherOrAdmin ? "block" : "none";
+
+      // Ánh xạ Giáo viên phụ trách theo lớp từ Supabase CSDL
+      const teacherMap = {
+        '2AI': 'Cô Mai',
+        '2A': 'Cô Hường',
+        '2B': 'Thầy Hùng',
+        '2C': 'Cô Lan'
+      };
+      const assignedTeacher = teacherMap[currentClassId] || 'Cô Mai';
+
+      // Cập nhật tên giáo viên lên tất cả các phần hiển thị
+      const teacherSpans = document.querySelectorAll(".teacher-sign-name, #assigned-teacher-name-span");
+      teacherSpans.forEach(el => {
+        el.textContent = assignedTeacher;
+      });
+    };
+
+    // Tự động kích hoạt khi nạp xong
+    window.updateStudentViewPermissionsAndTeacherName();
 
     window.checkAdminPermission = function() {
       const ADMIN_EMAIL = 'lahuong2904@gmail.com';
