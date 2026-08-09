@@ -2518,7 +2518,11 @@
       }
 
       const cleanUser = uVal.toLowerCase();
-      const isSuperAdminInput = (cleanUser === 'lahuong2904@gmail.com' || cleanUser === 'admin');
+      const isSuperAdminInput = (
+        cleanUser === 'adminlahuong2904@gmail.com' ||
+        cleanUser === 'lahuong2904@gmail.com' ||
+        cleanUser === 'admin'
+      );
 
       let isValidAdmin = false;
       let adminName = "Super Admin (Lã Hương)";
@@ -2527,7 +2531,7 @@
         isValidAdmin = true;
       } else if (window.supabaseAuth) {
         const res = await window.supabaseAuth.loginUser(uVal, pVal);
-        if (res.success && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase() === 'lahuong2904@gmail.com'))) {
+        if (res.success && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase().includes('lahuong')))) {
           isValidAdmin = true;
           adminName = res.user.full_name || adminName;
         }

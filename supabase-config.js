@@ -107,13 +107,17 @@ window.supabaseAuth = {
     if (supabaseClient) {
       try {
         // 1. Query trong bảng users Supabase CSDL theo username hoặc email với role === 'admin' hoặc student/teacher
-        const isSuperAdminInput = (cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'admin');
+        const isSuperAdminInput = (
+          cleanUsername === 'adminlahuong2904@gmail.com' ||
+          cleanUsername === 'lahuong2904@gmail.com' ||
+          cleanUsername === 'admin'
+        );
 
         if (isSuperAdminInput) {
           const { data: adminUsers } = await supabaseClient
             .from('users')
             .select('*')
-            .or(`username.eq.${cleanUsername},email.eq.${cleanUsername},username.eq.admin`)
+            .or(`username.eq.${cleanUsername},email.eq.${cleanUsername},username.eq.adminlahuong2904@gmail.com,username.eq.lahuong2904@gmail.com,username.eq.admin`)
             .eq('password', cleanPassword);
 
           if (adminUsers && adminUsers.length > 0) {
@@ -125,7 +129,7 @@ window.supabaseAuth = {
           const { data: dbUser } = await supabaseClient
             .from('users')
             .select('*')
-            .eq('username', cleanUsername)
+            .or(`username.eq.${cleanUsername},email.eq.${cleanUsername}`)
             .eq('password', cleanPassword)
             .maybeSingle();
 
@@ -142,11 +146,17 @@ window.supabaseAuth = {
       user = localUsers.find(u => (u.username.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword);
 
       if (!user) {
-        if ((cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'admin') && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
+        const isSuperAdminFallback = (
+          cleanUsername === 'adminlahuong2904@gmail.com' ||
+          cleanUsername === 'lahuong2904@gmail.com' ||
+          cleanUsername === 'admin'
+        );
+
+        if (isSuperAdminFallback && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
           user = { 
             id: 1, 
-            username: 'lahuong2904@gmail.com', 
-            email: 'lahuong2904@gmail.com',
+            username: cleanUsername, 
+            email: 'adminlahuong2904@gmail.com',
             full_name: 'Super Admin (Lã Hương)', 
             role: 'admin', 
             class_id: '2AI', 

@@ -152,9 +152,9 @@ export default function App() {
       return;
     }
 
-    // 1. Kiểm tra ưu tiên Super Admin lahuong2904@gmail.com với mật khẩu 123456
+    // 1. Kiểm tra ưu tiên Super Admin adminlahuong2904@gmail.com hoặc lahuong2904@gmail.com hoặc admin với mật khẩu 123456
     const isSuperAdminCreds = (
-      (email === 'lahuong2904@gmail.com' || email === 'admin') &&
+      (email === 'adminlahuong2904@gmail.com' || email === 'lahuong2904@gmail.com' || email === 'admin') &&
       (pass === '123456' || pass === 'admin123')
     );
 
@@ -166,8 +166,8 @@ export default function App() {
 
     const isValidAdmin = isSuperAdminCreds || (res && res.success && (
       res.user?.role === 'admin' ||
-      res.user?.username?.toLowerCase() === 'lahuong2904@gmail.com' ||
-      res.user?.email?.toLowerCase() === 'lahuong2904@gmail.com'
+      res.user?.username?.toLowerCase().includes('lahuong') ||
+      res.user?.email?.toLowerCase().includes('lahuong')
     ));
 
     if (isValidAdmin) {
