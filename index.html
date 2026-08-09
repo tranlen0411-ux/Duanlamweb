@@ -3112,19 +3112,36 @@
                 }
               }
 
-              commentCell.style.cursor = 'pointer';
-              commentCell.title = 'Bấm vào đây để sửa nhận xét cho lượt làm này';
-              
-              commentCell.onclick = function() {
-                openCommentModalForRow(storageKey, timeKey, commentCell);
-              };
+              const currentRole = (localStorage.getItem("currentUserRole") || "student").toLowerCase();
+              const isTeacherOrAdmin = (currentRole === "teacher" || currentRole === "admin");
+
+              if (isTeacherOrAdmin) {
+                commentCell.style.cursor = 'pointer';
+                commentCell.title = 'Bấm vào đây để sửa nhận xét cho lượt làm này';
+                commentCell.onclick = function() {
+                  openCommentModalForRow(storageKey, timeKey, commentCell);
+                };
+              } else {
+                commentCell.style.cursor = 'default';
+                commentCell.removeAttribute('title');
+                commentCell.onclick = null;
+              }
             }
           }
         });
       };
 
-      // MỞ HỘP THOẠI NHẬP NHẬN XÉT
+      // MỞ HỘP THOẠI NHẬP NHẬN XÉT (CHỈ DÀNH CHO GIÁO VIÊN HOẶC ADMIN)
       window.openCommentModalForRow = function (storageKey, timeKey, commentCell) {
+        const currentRole = (localStorage.getItem("currentUserRole") || "student").toLowerCase();
+        const isTeacherOrAdmin = (currentRole === "teacher" || currentRole === "admin");
+
+        // KHÓA CỨNG HỌC SINH TẠI ĐÂY: TUYỆT ĐỐI KHÔNG BẬT POPUP CHỈNH SỬA
+        if (!isTeacherOrAdmin) {
+          console.warn("⛔ Quyền hạn Học Sinh: Khóa cứng ở chế độ hiển thị văn bản (Read-only)!");
+          return false;
+        }
+
         activeCommentStorageKey = storageKey;
         activeCommentCell = commentCell;
 
@@ -3169,6 +3186,14 @@
       };
 
       window.nhapNhanXetGiaoVien = function () {
+        const currentRole = (localStorage.getItem("currentUserRole") || "student").toLowerCase();
+        const isTeacherOrAdmin = (currentRole === "teacher" || currentRole === "admin");
+
+        if (!isTeacherOrAdmin) {
+          alert("⛔ Bạn đang ở giao diện Học sinh (Chỉ đọc). Vui lòng đăng nhập Giáo viên hoặc Admin để ghi nhận xét!");
+          return false;
+        }
+
         const rows = document.querySelectorAll('#student-history-table-body tr');
         if (rows.length > 0) {
           const firstRowCells = rows[0].querySelectorAll('td');
@@ -3182,6 +3207,15 @@
       };
 
       window.saveTeacherCommentFromModal = function () {
+        const currentRole = (localStorage.getItem("currentUserRole") || "student").toLowerCase();
+        const isTeacherOrAdmin = (currentRole === "teacher" || currentRole === "admin");
+
+        if (!isTeacherOrAdmin) {
+          alert("⛔ Quyền hạn Học Sinh chỉ có chế độ xem (Read-only), không thể chỉnh sửa nhận xét!");
+          closeModal('teacher-comment-modal');
+          return false;
+        }
+
         const teacherName = localStorage.getItem('teacherName') || localStorage.getItem('currentTeacher') || 'Cô Mai';
         const commentInput = document.getElementById("input-teacher-comment-text");
         if (!commentInput) return;
