@@ -19,10 +19,6 @@ export default function App() {
   // Modal States
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register' | 'admin'
-  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
-  const [isAITutorOpen, setIsAITutorOpen] = useState(false);
-
-  // Active Tab View
   const [activeTab, setActiveTab] = useState('student-view'); // 'student-view' | 'teacher-view' | 'admin-view'
 
   // Form Inputs State
@@ -34,6 +30,11 @@ export default function App() {
   const [regRole, setRegRole] = useState('student');
   const [regClass, setRegClass] = useState('2AI');
   const [feedback, setFeedback] = useState({ message: '', isError: false });
+
+  // Admin Quick Login Inputs
+  const [adminEmailInput, setAdminEmailInput] = useState('lahuong2904@gmail.com');
+  const [adminPassInput, setAdminPassInput] = useState('123456');
+  const [adminLoginError, setAdminLoginError] = useState('');
 
   // Class Selection
   const [selectedClass, setSelectedClass] = useState('2AI');
@@ -54,6 +55,11 @@ export default function App() {
     loadSupabaseData();
   }, []);
 
+  const isSuperAdmin = currentUser && (
+    currentUser.username?.toLowerCase() === 'lahuong2904@gmail.com' ||
+    currentUser.role === 'admin'
+  );
+
   // Handle Login Submit
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -63,16 +69,43 @@ export default function App() {
 
     if (res.success) {
       setFeedback({ message: res.message, isError: false });
+      setCurrentUser({
+        username: res.user.username,
+        name: res.user.full_name || 'Bé Nam',
+        classId: res.user.class_id || '2AI',
+        role: res.user.role || 'student',
+        xp: res.user.xp || 450,
+        coins: res.user.coins || 1250
+      });
       setTimeout(() => {
         setIsAuthModalOpen(false);
-        if (res.user && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase() === 'lahuong2904@gmail.com'))) {
+        if (res.user.role === 'admin' || res.user.username?.toLowerCase() === 'lahuong2904@gmail.com') {
           setActiveTab('admin-view');
-        } else {
-          window.location.reload();
         }
       }, 600);
     } else {
       setFeedback({ message: res.message, isError: true });
+    }
+  };
+
+  // Handle Admin Direct Login
+  const handleAdminDirectLogin = async (e) => {
+    e.preventDefault();
+    setAdminLoginError('');
+
+    const res = await authService.loginUser(adminEmailInput, adminPassInput);
+    if (res.success && (res.user.role === 'admin' || res.user.username?.toLowerCase() === 'lahuong2904@gmail.com')) {
+      setCurrentUser({
+        username: res.user.username,
+        name: res.user.full_name || 'Super Admin (Lã Hương)',
+        classId: '2AI',
+        role: 'admin',
+        xp: 9999,
+        coins: 9999
+      });
+      setActiveTab('admin-view');
+    } else {
+      setAdminLoginError('❌ Mật khẩu hoặc tài khoản Admin chưa chính xác!');
     }
   };
 
@@ -121,8 +154,8 @@ export default function App() {
 
             <button 
               className="btn btn-student"
-              onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
-              style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 800 }}
+              onClick={() => { setActiveTab('student-view'); }}
+              style={{ background: activeTab === 'student-view' ? '#0284c7' : '#e0f2fe', color: activeTab === 'student-view' ? 'white' : '#0369a1', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 800, cursor: 'pointer' }}
             >
               👶 Học Sinh: {currentUser.name.includes('Admin') ? 'Bé Nam' : currentUser.name}
             </button>
@@ -130,7 +163,7 @@ export default function App() {
             <button 
               className="btn btn-teacher"
               onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
-              style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 900 }}
+              style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 900, cursor: 'pointer' }}
             >
               👩‍🏫 Giáo Viên
             </button>
@@ -138,7 +171,7 @@ export default function App() {
             <button 
               className="btn btn-admin"
               onClick={() => setActiveTab('admin-view')}
-              style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 900 }}
+              style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 900, cursor: 'pointer' }}
             >
               👑 Quản Trị Admin
             </button>
@@ -147,43 +180,90 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="app-container">
+      <main className="app-container" style={{ padding: '20px' }}>
         {activeTab === 'admin-view' ? (
           <div>
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button 
                 onClick={() => setActiveTab('student-view')}
-                style={{ padding: '8px 16px', borderRadius: '12px', background: '#f1f5f9', border: '1px solid #cbd5e1', cursor: 'pointer', fontWeight: 800 }}
+                style={{ padding: '10px 20px', borderRadius: '14px', background: '#f1f5f9', border: '1px solid #cbd5e1', cursor: 'pointer', fontWeight: 900, color: '#475569' }}
               >
                 🏠 Quay Lại Trang Chủ
               </button>
             </div>
-            <AdminDashboard currentUser={currentUser} />
+
+            {isSuperAdmin ? (
+              <AdminDashboard currentUser={currentUser} />
+            ) : (
+              <div style={{ maxWidth: '460px', margin: '40px auto', background: 'white', border: '4px solid #f87171', borderRadius: '24px', padding: '32px', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+                <span style={{ fontSize: '3.5rem' }}>👑</span>
+                <h3 style={{ fontSize: '1.55rem', fontWeight: 900, color: '#dc2626', margin: '10px 0 6px 0' }}>Đăng Nhập Super Admin</h3>
+                <p style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 700, margin: '0 0 20px 0' }}>
+                  Yêu cầu tài khoản quản trị tối cao <strong>lahuong2904@gmail.com</strong>
+                </p>
+
+                <form onSubmit={handleAdminDirectLogin}>
+                  <div style={{ marginBottom: '14px', textAlign: 'left' }}>
+                    <label style={{ fontWeight: 800, fontSize: '0.9rem', display: 'block', marginBottom: '4px' }}>Tài khoản Admin:</label>
+                    <input 
+                      type="text" 
+                      value={adminEmailInput} 
+                      onChange={e => setAdminEmailInput(e.target.value)} 
+                      required 
+                      style={{ width: '100%', padding: '10px', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 700, boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '16px', textAlign: 'left' }}>
+                    <label style={{ fontWeight: 800, fontSize: '0.9rem', display: 'block', marginBottom: '4px' }}>Mật khẩu Admin:</label>
+                    <input 
+                      type="password" 
+                      value={adminPassInput} 
+                      onChange={e => setAdminPassInput(e.target.value)} 
+                      required 
+                      style={{ width: '100%', padding: '10px', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 700, boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  {adminLoginError && (
+                    <div style={{ color: '#ef4444', fontWeight: 800, fontSize: '0.88rem', marginBottom: '14px' }}>
+                      {adminLoginError}
+                    </div>
+                  )}
+
+                  <button 
+                    type="submit" 
+                    style={{ width: '100%', padding: '14px', borderRadius: '25px', background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', border: 'none', fontWeight: 900, fontSize: '1.05rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)' }}
+                  >
+                    🔑 Đăng Nhập Super Admin Ngay
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="student-home-view">
-            <h2>Vương Quốc Trò Chơi Toán Học</h2>
-            <p>Tương tác vui nhộn, rèn luyện tư duy toán học cùng AI Ong Thông Thái!</p>
+          <div className="student-home-view" style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1e293b' }}>Vương Quốc Trò Chơi Toán Học</h2>
+            <p style={{ fontSize: '1.1rem', color: '#64748b', fontWeight: 700, marginTop: '8px' }}>Tương tác vui nhộn, rèn luyện tư duy toán học cùng AI Ong Thông Thái!</p>
           </div>
         )}
       </main>
 
       {/* Auth Modal Dialog */}
       {isAuthModalOpen && (
-        <div className="modal-backdrop active">
-          <div className="modal-card" style={{ maxWidth: '440px' }}>
-            <button className="modal-close" onClick={() => setIsAuthModalOpen(false)}>✕</button>
+        <div className="modal-backdrop active" style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="modal-card" style={{ background: 'white', borderRadius: '24px', padding: '28px', maxWidth: '440px', width: '100%', position: 'relative' }}>
+            <button className="modal-close" onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: '#f1f5f9', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer' }}>✕</button>
 
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
               <button 
                 onClick={() => setAuthMode('login')}
-                style={{ flex: 1, padding: '10px', borderRadius: '12px', border: 'none', background: authMode === 'login' ? '#2563eb' : '#f1f5f9', color: authMode === 'login' ? 'white' : '#475569', fontWeight: 900 }}
+                style={{ flex: 1, padding: '10px', borderRadius: '12px', border: 'none', background: authMode === 'login' ? '#2563eb' : '#f1f5f9', color: authMode === 'login' ? 'white' : '#475569', fontWeight: 900, cursor: 'pointer' }}
               >
                 🔑 Đăng Nhập
               </button>
               <button 
                 onClick={() => setAuthMode('register')}
-                style={{ flex: 1, padding: '10px', borderRadius: '12px', border: 'none', background: authMode === 'register' ? '#10b981' : '#f1f5f9', color: authMode === 'register' ? 'white' : '#475569', fontWeight: 900 }}
+                style={{ flex: 1, padding: '10px', borderRadius: '12px', border: 'none', background: authMode === 'register' ? '#10b981' : '#f1f5f9', color: authMode === 'register' ? 'white' : '#475569', fontWeight: 900, cursor: 'pointer' }}
               >
                 📝 Đăng Ký
               </button>
@@ -192,14 +272,14 @@ export default function App() {
             {authMode === 'login' ? (
               <form onSubmit={handleLoginSubmit}>
                 <div style={{ marginBottom: '12px', textAlign: 'left' }}>
-                  <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Tên tài khoản (Username/Email):</label>
+                  <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Tên tài khoản:</label>
                   <input 
                     type="text" 
                     value={loginUsername} 
                     onChange={e => setLoginUsername(e.target.value)} 
                     placeholder="Ví dụ: benam, lahuong2904@gmail.com"
                     required 
-                    style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div style={{ marginBottom: '16px', textAlign: 'left' }}>
@@ -210,7 +290,7 @@ export default function App() {
                     onChange={e => setLoginPassword(e.target.value)} 
                     placeholder="Nhập mật khẩu..."
                     required 
-                    style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                   />
                 </div>
 
@@ -220,7 +300,7 @@ export default function App() {
                   </div>
                 )}
 
-                <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '20px', background: '#2563eb', color: 'white', border: 'none', fontWeight: 900, fontSize: '1rem' }}>
+                <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '20px', background: '#2563eb', color: 'white', border: 'none', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' }}>
                   🔑 Đăng Nhập Ngay
                 </button>
               </form>
@@ -228,15 +308,15 @@ export default function App() {
               <form onSubmit={handleRegisterSubmit}>
                 <div style={{ marginBottom: '10px', textAlign: 'left' }}>
                   <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Họ và Tên:</label>
-                  <input type="text" value={regFullName} onChange={e => setRegFullName(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1' }} />
+                  <input type="text" value={regFullName} onChange={e => setRegFullName(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ marginBottom: '10px', textAlign: 'left' }}>
                   <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Tên tài khoản:</label>
-                  <input type="text" value={regUsername} onChange={e => setRegUsername(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1' }} />
+                  <input type="text" value={regUsername} onChange={e => setRegUsername(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ marginBottom: '10px', textAlign: 'left' }}>
                   <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Mật khẩu:</label>
-                  <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1' }} />
+                  <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
 
                 {feedback.message && (
@@ -245,7 +325,7 @@ export default function App() {
                   </div>
                 )}
 
-                <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '20px', background: '#10b981', color: 'white', border: 'none', fontWeight: 900 }}>
+                <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '20px', background: '#10b981', color: 'white', border: 'none', fontWeight: 900, cursor: 'pointer' }}>
                   📝 Đăng Ký Tài Khoản
                 </button>
               </form>
