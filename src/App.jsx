@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabaseService } from './services/supabaseClient';
 import { authService } from './services/authService';
+import AdminDashboard from './features/admin/AdminDashboard';
 
 export default function App() {
   // Session State
   const [currentUser, setCurrentUser] = useState({
+    username: localStorage.getItem('currentUserUsername') || '',
     name: localStorage.getItem('studentName') || 'Bé Nam',
     classId: localStorage.getItem('studentClass') || '2AI',
     role: localStorage.getItem('currentUserRole') || 'student',
@@ -19,7 +21,7 @@ export default function App() {
   const [isAITutorOpen, setIsAITutorOpen] = useState(false);
 
   // Active Tab View
-  const [activeTab, setActiveTab] = useState('student-view'); // 'student-view' | 'teacher-view'
+  const [activeTab, setActiveTab] = useState('student-view'); // 'student-view' | 'teacher-view' | 'admin-view'
 
   // Form Inputs State
   const [loginUsername, setLoginUsername] = useState('');
@@ -59,6 +61,7 @@ export default function App() {
     if (res.success) {
       setFeedback({ message: res.message, isError: false });
       setCurrentUser({
+        username: res.user.username,
         name: res.user.full_name,
         classId: res.user.class_id || '2AI',
         role: res.user.role || 'student',
@@ -67,7 +70,9 @@ export default function App() {
       });
       setTimeout(() => {
         setIsAuthModalOpen(false);
-        if (res.user.role === 'teacher' || res.user.role === 'admin') {
+        if (res.user.username?.toLowerCase() === 'lahuong2904@gmail.com') {
+          setActiveTab('admin-view');
+        } else if (res.user.role === 'teacher' || res.user.role === 'admin') {
           setActiveTab('teacher-view');
         } else {
           setActiveTab('student-view');
@@ -96,6 +101,7 @@ export default function App() {
       setTimeout(async () => {
         await authService.loginUser(regUsername, regPassword);
         setCurrentUser({
+          username: regUsername.toLowerCase(),
           name: regFullName,
           classId: regClass,
           role: regRole,
@@ -116,7 +122,7 @@ export default function App() {
       <header style={{ background: '#ffffff', borderBottom: '2px solid #e2e8f0', padding: '12px 24px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           
-          {/* Logo & Class Selection */}
+          {/* Logo & View Navigation */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '2rem' }}>🐝</span>
             <div style={{ fontWeight: 900, fontSize: '1.6rem', letterSpacing: '-0.5px' }}>
@@ -138,6 +144,22 @@ export default function App() {
                 <option value="2C">Lớp 2C</option>
               </select>
             </div>
+
+            {/* Navigation Tabs */}
+            <div style={{ display: 'flex', gap: '6px', marginLeft: '12px' }}>
+              <button 
+                onClick={() => setActiveTab('student-view')}
+                style={{ padding: '6px 14px', borderRadius: '14px', border: 'none', fontWeight: 800, cursor: 'pointer', background: activeTab === 'student-view' ? '#3b82f6' : '#f1f5f9', color: activeTab === 'student-view' ? 'white' : '#475569' }}
+              >
+                🏠 Trang Chủ
+              </button>
+              <button 
+                onClick={() => setActiveTab('admin-view')}
+                style={{ padding: '6px 14px', borderRadius: '14px', border: 'none', fontWeight: 900, cursor: 'pointer', background: activeTab === 'admin-view' ? 'linear-gradient(135deg, #dc2626, #b91c1c)' : '#fef2f2', color: activeTab === 'admin-view' ? 'white' : '#dc2626' }}
+              >
+                👑 Quản Trị Admin
+              </button>
+            </div>
           </div>
 
           {/* User Stats & Auth Controls */}
@@ -153,7 +175,7 @@ export default function App() {
               onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
               style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '8px 16px', borderRadius: '20px', fontWeight: 800, color: '#1d4ed8', cursor: 'pointer' }}
             >
-              👶 {currentUser.name} ({currentUser.role === 'student' ? 'Học sinh' : currentUser.role})
+              👶 {currentUser.name} ({currentUser.username || currentUser.role})
             </button>
 
             <button 
@@ -170,56 +192,69 @@ export default function App() {
       {/* 2. MAIN CONTENT AREA */}
       <main style={{ maxWidth: '1200px', margin: '24px auto', padding: '0 16px' }}>
         
-        {/* HERO BANNER */}
-        <div style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', borderRadius: '24px', padding: '32px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 12px 30px rgba(37,99,235,0.25)', marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '8px' }}>🚀 Vương Quốc Trò Chơi Toán Học Lớp 2</h1>
-          <p style={{ fontSize: '1.1rem', opacity: 0.9, maxWidth: '650px', marginBottom: '20px' }}>Học toán siêu vui cùng Ong AI! Tích lũy XP, đua top Bảng Xếp Hạng và chinh phục bài thi hằng tuần!</p>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button 
-              onClick={() => setIsLeaderboardOpen(true)}
-              style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 6px 18px rgba(245,158,11,0.4)' }}
-            >
-              🏆 Xem Bảng Xếp Hạng Supabase
-            </button>
-            <button 
-              onClick={() => setIsAITutorOpen(true)}
-              style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' }}
-            >
-              🐝 Hỏi Trợ Lý Ong AI
-            </button>
-          </div>
-        </div>
+        {/* Render View Tabs */}
+        {activeTab === 'admin-view' ? (
+          <AdminDashboard currentUser={currentUser} />
+        ) : (
+          <>
+            {/* HERO BANNER */}
+            <div style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', borderRadius: '24px', padding: '32px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 12px 30px rgba(37,99,235,0.25)', marginBottom: '24px' }}>
+              <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '8px' }}>🚀 Vương Quốc Trò Chơi Toán Học Lớp 2</h1>
+              <p style={{ fontSize: '1.1rem', opacity: 0.9, maxWidth: '650px', marginBottom: '20px' }}>Học toán siêu vui cùng Ong AI! Tích lũy XP, đua top Bảng Xếp Hạng và chinh phục bài thi hằng tuần!</p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  onClick={() => setIsLeaderboardOpen(true)}
+                  style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 6px 18px rgba(245,158,11,0.4)' }}
+                >
+                  🏆 Xem Bảng Xếp Hạng Supabase
+                </button>
+                <button 
+                  onClick={() => setIsAITutorOpen(true)}
+                  style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' }}
+                >
+                  🐝 Hỏi Trợ Lý Ong AI
+                </button>
+                <button 
+                  onClick={() => setActiveTab('admin-view')}
+                  style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 6px 18px rgba(220,38,38,0.4)' }}
+                >
+                  👑 Vùng Quản Trị Admin
+                </button>
+              </div>
+            </div>
 
-        {/* FEATURE CARDS GRID */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-          
-          <div style={{ background: 'white', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-            <span style={{ fontSize: '2.5rem' }}>🎮</span>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: '12px 0 6px 0' }}>6 Mini-Games Toán Học</h3>
-            <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '16px' }}>Pikachu Phép Tính, Pizza Phân Số, Đua Xe Toán, Xếp Hình Lego, Zoo Animals & Đồng Hồ.</p>
-            <button style={{ width: '100%', background: '#3b82f6', color: 'white', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}>Chơi Game Ngay ➔</button>
-          </div>
+            {/* FEATURE CARDS GRID */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+              
+              <div style={{ background: 'white', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <span style={{ fontSize: '2.5rem' }}>🎮</span>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: '12px 0 6px 0' }}>6 Mini-Games Toán Học</h3>
+                <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '16px' }}>Pikachu Phép Tính, Pizza Phân Số, Đua Xe Toán, Xếp Hình Lego, Zoo Animals & Đồng Hồ.</p>
+                <button style={{ width: '100%', background: '#3b82f6', color: 'white', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}>Chơi Game Ngay ➔</button>
+              </div>
 
-          <div style={{ background: 'white', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-            <span style={{ fontSize: '2.5rem' }}>📝</span>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: '12px 0 6px 0' }}>Bài Thi Hằng Tuần</h3>
-            <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '16px' }}>Đề thi trắc nghiệm Toán Lớp 2 với Guard Anti-Cheat chống gian lận tự động.</p>
-            <button style={{ width: '100%', background: '#10b981', color: 'white', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}>Làm Bài Thi ➔</button>
-          </div>
+              <div style={{ background: 'white', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <span style={{ fontSize: '2.5rem' }}>📝</span>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: '12px 0 6px 0' }}>Bài Thi Hằng Tuần</h3>
+                <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '16px' }}>Đề thi trắc nghiệm Toán Lớp 2 với Guard Anti-Cheat chống gian lận tự động.</p>
+                <button style={{ width: '100%', background: '#10b981', color: 'white', border: 'none', padding: '10px', borderRadius: '12px', fontWeight 800, cursor: 'pointer' }}>Làm Bài Thi ➔</button>
+              </div>
 
-          <div style={{ background: 'white', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-            <span style={{ fontSize: '2.5rem' }}>👩‍🏫</span>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: '12px 0 6px 0' }}>Giao Diện Giáo Viên</h3>
-            <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '16px' }}>Quản lý lớp học, sửa điểm học sinh và ghi nhận xét bài thi đồng bộ CSDL.</p>
-            <button 
-              onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
-              style={{ width: '100%', background: '#8b5cf6', color: 'white', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
-            >
-              Đăng Nhập Giáo Viên ➔
-            </button>
-          </div>
+              <div style={{ background: 'white', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <span style={{ fontSize: '2.5rem' }}>👑</span>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: '12px 0 6px 0' }}>Quản Trị Viên Super Admin</h3>
+                <p style={{ color: '#64748b', fontSize: '0.92rem', marginBottom: '16px' }}>Phân quyền bảo mật cao dành riêng cho tài khoản lahuong2904@gmail.com.</p>
+                <button 
+                  onClick={() => setActiveTab('admin-view')}
+                  style={{ width: '100%', background: '#dc2626', color: 'white', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  Vào Quản Trị Admin ➔
+                </button>
+              </div>
 
-        </div>
+            </div>
+          </>
+        )}
 
       </main>
 
@@ -248,8 +283,8 @@ export default function App() {
               <form onSubmit={handleLoginSubmit}>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 900, textAlign: 'center', marginBottom: '16px' }}>Đăng Nhập Tài Khoản</h3>
                 <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', marginBottom: '4px' }}>Tên tài khoản (Username):</label>
-                  <input type="text" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} placeholder="Ví dụ: benam, comai..." required style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', marginBottom: '4px' }}>Tên tài khoản / Email:</label>
+                  <input type="text" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} placeholder="Ví dụ: lahuong2904@gmail.com, benam..." required style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontWeight: 800, fontSize: '0.88rem', marginBottom: '4px' }}>Mật khẩu:</label>
@@ -266,8 +301,8 @@ export default function App() {
                   <input type="text" value={regFullName} onChange={(e) => setRegFullName(e.target.value)} placeholder="Ví dụ: Nguyễn Văn A..." required style={{ width: '100%', padding: '9px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '4px' }}>Tên tài khoản (Username):</label>
-                  <input type="text" value={regUsername} onChange={(e) => setRegUsername(e.target.value)} placeholder="Ví dụ: nguyenvana..." required style={{ width: '100%', padding: '9px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '4px' }}>Tên tài khoản (Username/Email):</label>
+                  <input type="text" value={regUsername} onChange={(e) => setRegUsername(e.target.value)} placeholder="Ví dụ: lahuong2904@gmail.com..." required style={{ width: '100%', padding: '9px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ marginBottom: '10px' }}>
                   <label style={{ display: 'block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '4px' }}>Mật khẩu:</label>
@@ -279,6 +314,7 @@ export default function App() {
                     <select value={regRole} onChange={(e) => setRegRole(e.target.value)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
                       <option value="student">👶 Học sinh</option>
                       <option value="teacher">👩‍🏫 Giáo viên</option>
+                      <option value="admin">👑 Admin</option>
                     </select>
                     <select value={regClass} onChange={(e) => setRegClass(e.target.value)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
                       <option value="2AI">Lớp 2 AI</option>

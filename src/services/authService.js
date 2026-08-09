@@ -77,6 +77,7 @@ export const authService = {
         localStorage.setItem('studentName', user.full_name);
         localStorage.setItem('studentClass', user.class_id || '2AI');
         localStorage.setItem('currentUserRole', user.role);
+        localStorage.setItem('currentUserUsername', user.username);
         localStorage.setItem('userXP', user.xp || 450);
         localStorage.setItem('userXu', user.coins || 1250);
 

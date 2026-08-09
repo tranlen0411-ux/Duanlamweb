@@ -120,6 +120,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Thêm tài khoản người dùng mẫu vào bảng users
 INSERT INTO users (username, password, full_name, role, class_id, xp, coins) VALUES
+('lahuong2904@gmail.com', '123456', 'Super Admin (Lã Hương)', 'admin', '2AI', 9999, 9999),
 ('benam', '123456', 'Bé Nam', 'student', '2AI', 450, 1250),
 ('vubaoan', '123456', 'Vũ Bảo An', 'student', '2AI', 2100, 1250),
 ('comai', '123456', 'Cô Mai', 'teacher', '2A', 0, 0),
