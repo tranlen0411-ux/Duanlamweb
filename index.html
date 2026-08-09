@@ -2676,6 +2676,10 @@
       const guestNotice = document.getElementById("guest-welcome-notice");
       if (guestNotice) guestNotice.style.display = isGuest ? "block" : "none";
 
+      // Ẩn/hiện Lưới Nhiệm Vụ và Lịch Sử Bài Làm cá nhân của Học sinh khi ở Chế Độ Khách
+      const studentGrid = document.querySelector(".home-tasks-grid");
+      if (studentGrid) studentGrid.style.display = isGuest ? "none" : "grid";
+
       const userNameDisplay = document.getElementById("user-name-display");
       if (userNameDisplay) {
         if (isGuest) {

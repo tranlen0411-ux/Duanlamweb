@@ -201,16 +201,23 @@ export default function App() {
             <span className="starburst-badge">Lớp {selectedClass} AI</span>
             
             <div className="user-profile-pill">
-              <span className="user-stat-chip xp">⚡ {currentUser.xp} XP</span>
-              <span className="user-stat-chip coins">🪙 {currentUser.coins} Xu</span>
+              <span className="user-stat-chip xp">⚡ {currentUser ? currentUser.xp : 0} XP</span>
+              <span className="user-stat-chip coins">🪙 {currentUser ? currentUser.coins : 0} Xu</span>
             </div>
 
             <button 
               className="btn btn-student"
-              onClick={() => { setActiveTab('student-view'); }}
+              onClick={() => { 
+                if (!currentUser) {
+                  setAuthMode('login');
+                  setIsAuthModalOpen(true);
+                } else {
+                  setActiveTab('student-view');
+                }
+              }}
               style={{ background: activeTab === 'student-view' ? '#0284c7' : '#e0f2fe', color: activeTab === 'student-view' ? 'white' : '#0369a1', borderRadius: '20px', padding: '8px 16px', border: 'none', fontWeight: 800, cursor: 'pointer' }}
             >
-              👶 Học Sinh: {currentUser.name.includes('Admin') ? 'Bé Nam' : currentUser.name}
+              👶 Học Sinh: {currentUser ? (currentUser.name?.includes('Admin') ? 'Bé Nam' : currentUser.name) : 'Khách (Chưa ĐN)'}
             </button>
 
             <button 
