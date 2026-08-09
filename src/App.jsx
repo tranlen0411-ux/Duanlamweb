@@ -328,10 +328,10 @@ export default function App() {
                   <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Tên tài khoản:</label>
                   <input 
                     type="text" 
+                    name="loginUsername"
                     value={loginUsername} 
                     onChange={e => setLoginUsername(e.target.value)} 
                     placeholder="Ví dụ: benam, lahuong2904@gmail.com"
-                    required 
                     style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                   />
                 </div>
@@ -339,10 +339,10 @@ export default function App() {
                   <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Mật khẩu:</label>
                   <input 
                     type="password" 
+                    name="loginPassword"
                     value={loginPassword} 
                     onChange={e => setLoginPassword(e.target.value)} 
                     placeholder="Nhập mật khẩu..."
-                    required 
                     style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                   />
                 </div>
@@ -361,15 +361,15 @@ export default function App() {
               <form onSubmit={handleRegisterSubmit}>
                 <div style={{ marginBottom: '10px', textAlign: 'left' }}>
                   <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Họ và Tên:</label>
-                  <input type="text" value={regFullName} onChange={e => setRegFullName(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                  <input type="text" name="regFullName" value={regFullName} onChange={e => setRegFullName(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ marginBottom: '10px', textAlign: 'left' }}>
                   <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Tên tài khoản:</label>
-                  <input type="text" value={regUsername} onChange={e => setRegUsername(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                  <input type="text" name="regUsername" value={regUsername} onChange={e => setRegUsername(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ marginBottom: '10px', textAlign: 'left' }}>
                   <label style={{ fontWeight: 800, display: 'block', marginBottom: '4px' }}>Mật khẩu:</label>
-                  <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                  <input type="password" name="regPassword" value={regPassword} onChange={e => setRegPassword(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
 
                 {feedback.message && (
