@@ -3528,37 +3528,86 @@
             }
           }
 
-          // 2. ĐĂNG NHẬP GIÁO VIÊN
+          // 2. ĐĂNG NHẬP GIÁO VIÊN - TRUY VẤN VÀO BẢNG USERS CỦA SUPABASE CSDL (BỌC TRY...CATCH & KIỂM TRA DATA.LENGTH > 0 / MAYBESINGLE)
+          try {
+            if (window.supabaseAuth && typeof window.supabaseAuth.loginUser === 'function') {
+              const res = await window.supabaseAuth.loginUser(usernameVal, passVal);
+
+              if (res && res.success && res.user && (res.user.role === 'teacher' || res.user.role === 'admin')) {
+                localStorage.setItem("currentUserRole", res.user.role);
+                localStorage.setItem("currentUserUsername", res.user.username || usernameVal.toLowerCase());
+                localStorage.setItem("currentTeacherId", res.user.id || "teacher_1");
+                localStorage.setItem("teacherName", res.user.full_name || "Cô Mai");
+                localStorage.setItem("teacherClass", res.user.class_id || "2A");
+                localStorage.setItem("currentUser", JSON.stringify({ id: res.user.id, name: res.user.full_name || "Cô Mai", role: res.user.role }));
+
+                if (err) err.textContent = '';
+                closeModal('teacher-login-modal');
+
+                if (res.user.role === 'admin') {
+                  openAdminDashboardView();
+                } else {
+                  if (typeof switchTeacherDashboardView === 'function') {
+                    switchTeacherDashboardView();
+                  } else {
+                    const studentView = document.getElementById("student-view-container");
+                    const teacherView = document.getElementById("teacher-view-container");
+                    if (studentView) studentView.style.display = "none";
+                    if (teacherView) teacherView.style.display = "block";
+                  }
+                }
+                return;
+              } else if (res && !res.success) {
+                if (err) err.textContent = res.message || '❌ Tên đăng nhập hoặc mật khẩu Giáo viên không chính xác!';
+                if (modalBox) {
+                  modalBox.classList.add("modal-shake");
+                  setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+                }
+                return;
+              }
+            }
+          } catch (teacherAuthErr) {
+            console.error('[Supabase Teacher Auth Exception]:', teacherAuthErr);
+          }
+
+          // Fallback tài khoản Giáo viên cục bộ
           const foundTeacher = (typeof teacherAccounts !== "undefined")
             ? teacherAccounts.find(t => t.username.toLowerCase() === usernameVal.toLowerCase())
             : null;
 
-          if (!foundTeacher || foundTeacher.password !== passVal) {
-            if (err) err.textContent = '❌ Tên đăng nhập hoặc mật khẩu không đúng!';
-            if (modalBox) {
-              modalBox.classList.add("modal-shake");
-              setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+          if (foundTeacher && foundTeacher.password === passVal) {
+            if (foundTeacher.active === false) {
+              if (err) err.textContent = '🔒 Tài khoản giáo viên này đã bị khóa!';
+              if (modalBox) {
+                modalBox.classList.add("modal-shake");
+                setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
+              }
+              return;
+            }
+
+            localStorage.setItem("currentUserRole", "teacher");
+            localStorage.setItem('currentTeacherId', foundTeacher.id);
+            localStorage.setItem('teacherName', foundTeacher.displayName);
+            localStorage.setItem('currentUser', JSON.stringify({ id: foundTeacher.id, name: foundTeacher.displayName, role: 'teacher' }));
+
+            if (err) err.textContent = '';
+            closeModal('teacher-login-modal');
+            if (typeof switchTeacherDashboardView === 'function') {
+              switchTeacherDashboardView();
+            } else {
+              const studentView = document.getElementById("student-view-container");
+              const teacherView = document.getElementById("teacher-view-container");
+              if (studentView) studentView.style.display = "none";
+              if (teacherView) teacherView.style.display = "block";
             }
             return;
           }
 
-          if (foundTeacher.active === false) {
-            if (err) err.textContent = '🔒 Tài khoản giáo viên này đã bị khóa!';
-            if (modalBox) {
-              modalBox.classList.add("modal-shake");
-              setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
-            }
-            return;
+          if (err) err.textContent = '❌ Tên đăng nhập hoặc mật khẩu Giáo viên không chính xác!';
+          if (modalBox) {
+            modalBox.classList.add("modal-shake");
+            setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
           }
-
-          localStorage.setItem("currentUserRole", "teacher");
-          localStorage.setItem('currentTeacherId', foundTeacher.id);
-          localStorage.setItem('teacherName', foundTeacher.displayName);
-          localStorage.setItem('currentUser', JSON.stringify({ id: foundTeacher.id, name: foundTeacher.displayName, role: 'teacher' }));
-
-          if (err) err.textContent = '';
-          closeModal('teacher-login-modal');
-          switchTeacherDashboardView();
         });
       }
 
