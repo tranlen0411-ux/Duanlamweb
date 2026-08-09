@@ -256,9 +256,35 @@ export default function App() {
 
             <AdminDashboard currentUser={{ username: 'lahuong2904@gmail.com', role: 'admin', name: 'Super Admin (Lã Hương)' }} />
           </div>
+        ) : !currentUser ? (
+          /* TRẠNG THÁI KHÁCH (CHƯA ĐĂNG NHẬP / CURRENTUSER === NULL): ẨN TOÀN BỘ NỘI DUNG HỌC SINH CÁ NHÂN */
+          <div className="guest-welcome-area" style={{ textAlign: 'center', padding: '36px 20px', background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '2px solid #93c5fd', borderRadius: '24px', boxShadow: '0 8px 24px rgba(37,99,235,0.08)', marginBottom: '30px' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '8px' }}>👋</div>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1e40af', margin: '0 0 10px 0' }}>Vương Quốc Trò Chơi Toán Học</h2>
+            <p style={{ fontSize: '1.1rem', color: '#1e3a8a', fontWeight: 700, maxWidth: '640px', margin: '0 auto 24px auto' }}>
+              Bạn đang ở chế độ Khách (Chưa đăng nhập). Vui lòng Đăng Nhập tài khoản Học Sinh hoặc Giáo Viên để tham gia rèn luyện tư duy toán học cùng AI Ong Thông Thái, lưu kết quả bài thi và tích điểm XP!
+            </p>
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button 
+                className="btn btn-primary"
+                onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
+                style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: 'white', border: 'none', borderRadius: '20px', padding: '12px 28px', fontSize: '1.05rem', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}
+              >
+                🔑 Đăng Nhập Học Sinh / Giáo Viên
+              </button>
+              <button 
+                className="btn btn-secondary"
+                onClick={handleOpenAdminDirect}
+                style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', border: 'none', borderRadius: '20px', padding: '12px 28px', fontSize: '1.05rem', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 14px rgba(220,38,38,0.35)' }}
+              >
+                👑 Đăng Nhập Super Admin
+              </button>
+            </div>
+          </div>
         ) : (
-          <div className="student-home-view" style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1e293b' }}>Vương Quốc Trò Chơi Toán Học</h2>
+          /* TRẠNG THÁI ĐÃ ĐĂNG NHẬP (CURRENTUSER HỢP LỆ): HIỂN THỊ ĐẦY ĐỦ KHU VỰC HỌC SINH */
+          <div className="student-home-view" style={{ textAlign: 'center', padding: '20px' }}>
+            <h2 style={{ fontSize: '2.2rem', fontWeight 900, color: '#1e293b' }}>Vương Quốc Trò Chơi Toán Học</h2>
             <p style={{ fontSize: '1.1rem', color: '#64748b', fontWeight: 700, marginTop: '8px' }}>Tương tác vui nhộn, rèn luyện tư duy toán học cùng AI Ong Thông Thái!</p>
           </div>
         )}
