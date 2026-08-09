@@ -1586,8 +1586,8 @@
           <button class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 20px; font-weight: 800;" onclick="openTeacherLoginModal()">
             🔄 Đổi Tài Khoản / Admin
           </button>
-          <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800;" id="logout-teacher-btn">
-            👦 Đăng xuất (Về Học sinh)
+          <button class="btn btn-outline" style="border-radius: 20px; font-weight: 800; cursor: pointer;" id="logout-teacher-btn" onclick="logoutTeacher()">
+            👨‍🎓 Đăng xuất (Về Học sinh)
           </button>
         </div>
       </div>
@@ -2591,6 +2591,50 @@
     };
 
     window.openAdminDashboardView = window.handleOpenAdminDirect;
+
+    // 1. Hàm quay lại trang chủ
+    window.goToHomeTab = function() {
+      console.log('Quay lai trang chu');
+      const studentView = document.getElementById("student-view-container");
+      const teacherView = document.getElementById("teacher-view-container");
+      const adminModule = document.getElementById("admin-system-control-module");
+
+      if (studentView) studentView.style.display = "block";
+      if (teacherView) teacherView.style.display = "none";
+      if (adminModule) adminModule.style.display = "none";
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.openStudentViewHome = window.goToHomeTab;
+
+    // 2. Hàm ghi nhận xét bài thi
+    window.nhapNhanXetGiaoVien = function() {
+      console.log('Mo khu vuc ghi nhan xet bai thi');
+      window.handleOpenAdminDirect();
+      window.switchAdminSubTab('exams');
+    };
+
+    // 3. Hàm mở modal Đổi tài khoản / Admin
+    window.openTeacherLoginModal = function() {
+      console.log('Mo modal Doi Tai Khoan / Admin');
+      if (typeof window.openAdminLoginModalQuick === 'function') {
+        window.openAdminLoginModalQuick();
+      } else {
+        const modal = document.getElementById("admin-login-modal");
+        if (modal) {
+          modal.style.display = "flex";
+          modal.classList.add("active");
+        }
+      }
+    };
+
+    // 4. Hàm đăng xuất về Học sinh
+    window.logoutTeacher = function() {
+      console.log('Dang xuat ve Hoc sinh');
+      localStorage.setItem("currentUserRole", "student");
+      localStorage.setItem("studentName", "Bé Nam");
+      window.goToHomeTab();
+    };
 
     window.checkAdminPermission = function() {
       const ADMIN_EMAIL = 'lahuong2904@gmail.com';

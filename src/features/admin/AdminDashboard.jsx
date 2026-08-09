@@ -165,9 +165,53 @@ export default function AdminDashboard({ currentUser }) {
           </div>
         </div>
 
-        <button onClick={loadAdminData} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer' }}>
-          🔄 Tải Bật Dữ Liệu Live
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => {
+              if (typeof window.goToHomeTab === 'function') window.goToHomeTab();
+              else window.location.hash = '#home';
+            }} 
+            style={{ background: '#10b981', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '14px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 10px rgba(16,185,129,0.3)' }}
+          >
+            🏠 Quay Lại Trang Chủ & Nhiệm Vụ
+          </button>
+
+          <button 
+            onClick={() => {
+              setAdminTab('scores');
+              if (typeof window.nhapNhanXetGiaoVien === 'function') window.nhapNhanXetGiaoVien();
+            }} 
+            style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '14px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 10px rgba(59,130,246,0.3)' }}
+          >
+            ✏️ Ghi Nhận Xét Bài Thi
+          </button>
+
+          <button 
+            onClick={() => {
+              if (typeof window.openTeacherLoginModal === 'function') window.openTeacherLoginModal();
+            }} 
+            style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '14px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 10px rgba(139,92,246,0.3)' }}
+          >
+            🔑 Đổi Tài Khoản / Admin
+          </button>
+
+          <button 
+            onClick={() => {
+              if (typeof window.logoutTeacher === 'function') window.logoutTeacher();
+              else {
+                localStorage.setItem('currentUserRole', 'student');
+                window.location.reload();
+              }
+            }} 
+            style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '10px 16px', borderRadius: '14px', fontWeight: 900, cursor: 'pointer' }}
+          >
+            👨‍🎓 Đăng Xuất (Về Học sinh)
+          </button>
+
+          <button onClick={loadAdminData} style={{ background: '#0284c7', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '14px', fontWeight: 900, cursor: 'pointer' }}>
+            🔄 Tải Lại Dữ Liệu Live
+          </button>
+        </div>
       </div>
 
       {message && (
