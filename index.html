@@ -2719,7 +2719,7 @@
       // NÂNG CẤP BẮT EVENT SUBMIT FORM ĐĂNG NHẬP GIÁO VIÊN & ADMIN
       const teacherForm = document.querySelector('#form-login-teacher');
       if (teacherForm) {
-        teacherForm.addEventListener('submit', function(e) {
+        teacherForm.addEventListener('submit', async function(e) {
           e.preventDefault();
           const teacherInputEl = document.querySelector('#teacher-name');
           const teacherPassEl = document.querySelector('#teacher-password-input');
