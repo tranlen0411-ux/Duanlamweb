@@ -2570,7 +2570,6 @@
 
     // Hàm mở Bảng Quản Trị Admin
     window.handleOpenAdminDirect = function() {
-      // Đã xác thực hoặc mở trực tiếp Bảng Quản Trị Admin
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");
@@ -2588,19 +2587,16 @@
       if (deniedBox) deniedBox.style.display = "none";
       if (grantedBox) grantedBox.style.display = "block";
 
-      if (typeof window.renderAdminDashboardUI === 'function') {
-        window.renderAdminDashboardUI();
-      }
-    };
-
       if (typeof window.switchAdminSubTab === 'function') {
         window.switchAdminSubTab('users');
       }
 
-      try {
-        window.renderAdminDashboardUI();
-      } catch (err) {
-        console.warn("renderAdminDashboardUI warning:", err);
+      if (typeof window.renderAdminDashboardUI === 'function') {
+        try {
+          window.renderAdminDashboardUI();
+        } catch (err) {
+          console.warn("renderAdminDashboardUI warning:", err);
+        }
       }
     };
 
