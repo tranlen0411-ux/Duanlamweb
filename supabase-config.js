@@ -25,6 +25,8 @@ window.supabaseAuth = {
     const cleanFullName = fullName.trim();
     const userRole = role || 'student';
     const userClass = classId || '2AI';
+    const initialStatus = (userRole === 'teacher') ? 'pending' : 'approved';
+    const isUserActive = (userRole !== 'teacher');
 
     if (!cleanUsername || !cleanPassword || !cleanFullName) {
       return { success: false, message: 'Vui lòng điền đầy đủ Tên tài khoản, Mật khẩu và Họ tên!' };
@@ -50,8 +52,10 @@ window.supabaseAuth = {
             full_name: cleanFullName,
             role: userRole,
             class_id: userClass,
-            xp: 450,
-            coins: 1250
+            xp: (userRole === 'teacher') ? 0 : 450,
+            coins: (userRole === 'teacher') ? 0 : 1250,
+            status: initialStatus,
+            active: isUserActive
           }])
           .select()
           .single();
@@ -65,6 +69,15 @@ window.supabaseAuth = {
             xp: 450,
             coins: 1250
           }]);
+        }
+
+        if (userRole === 'teacher') {
+          return { 
+            success: true, 
+            user: newUser, 
+            isPending: true,
+            message: '🎉 Đăng ký tài khoản Giáo viên thành công! Tài khoản đang ở trạng thái CHỜ ADMIN PHÊ DUYỆT. Vui lòng chờ Super Admin kích hoạt tài khoản trước khi đăng nhập!' 
+          };
         }
 
         return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase!' };
@@ -85,11 +98,22 @@ window.supabaseAuth = {
       full_name: cleanFullName,
       role: userRole,
       class_id: userClass,
-      xp: 450,
-      coins: 1250
+      xp: (userRole === 'teacher') ? 0 : 450,
+      coins: (userRole === 'teacher') ? 0 : 1250,
+      status: initialStatus,
+      active: isUserActive
     };
     localUsers.push(newUser);
     localStorage.setItem('users_db', JSON.stringify(localUsers));
+
+    if (userRole === 'teacher') {
+      return { 
+        success: true, 
+        user: newUser, 
+        isPending: true,
+        message: '🎉 Đăng ký tài khoản Giáo viên thành công! Tài khoản đang ở trạng thái CHỜ ADMIN PHÊ DUYỆT. Vui lòng chờ Super Admin kích hoạt tài khoản trước khi đăng nhập!' 
+      };
+    }
 
     return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công!' };
   },
@@ -151,17 +175,33 @@ window.supabaseAuth = {
 
       if (!user) {
         if (cleanUsername === 'comai' && (cleanPassword === '123456' || cleanPassword === 'comai123')) {
-          user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', xp: 0, coins: 0 };
+          user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', status: 'approved', active: true, xp: 0, coins: 0 };
         } else if ((cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'adminlahuong2904@gmail.com' || cleanUsername === 'admin') && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
-          user = { id: 1, username: 'lahuong2904@gmail.com', email: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', class_id: '2AI', xp: 9999, coins: 9999 };
+          user = { id: 1, username: 'lahuong2904@gmail.com', email: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', status: 'approved', active: true, class_id: '2AI', xp: 9999, coins: 9999 };
         } else if (cleanUsername === 'benam' && cleanPassword === '123456') {
-          user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', xp: 450, coins: 1250 };
+          user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', status: 'approved', active: true, xp: 450, coins: 1250 };
         }
       }
     }
 
     if (!user) {
       return { success: false, message: '❌ Tên tài khoản hoặc mật khẩu không chính xác!' };
+    }
+
+    // KIỂM TRA PHÊ DUYỆT TÀI KHOẢN GIÁO VIÊN (PENDING / REJECTED)
+    if (user.role === 'teacher') {
+      if (user.status === 'pending' || user.active === false) {
+        return { 
+          success: false, 
+          message: '⏳ Tài khoản Giáo viên của bạn đang CHỜ ADMIN PHÊ DUYỆT! Vui lòng liên hệ Super Admin (lahuong2904@gmail.com) để được kích hoạt tài khoản.' 
+        };
+      }
+      if (user.status === 'rejected') {
+        return { 
+          success: false, 
+          message: '⛔ Tài khoản Giáo viên của bạn đã bị TỪ CHỐI kích hoạt! Vui lòng liên hệ Super Admin.' 
+        };
+      }
     }
 
     try {

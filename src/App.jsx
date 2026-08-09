@@ -179,11 +179,19 @@ export default function App() {
 
     if (res.success) {
       setFeedback({ message: res.message, isError: false });
-      setTimeout(() => {
-        setAuthMode('login');
-        setLoginUsername(regUsername);
-        setLoginPassword(regPassword);
-      }, 800);
+      if (regRole === 'teacher') {
+        setTimeout(() => {
+          setAuthMode('login');
+          setLoginUsername(regUsername);
+          setLoginPassword(regPassword);
+        }, 2000);
+      } else {
+        setTimeout(() => {
+          setAuthMode('login');
+          setLoginUsername(regUsername);
+          setLoginPassword(regPassword);
+        }, 800);
+      }
     } else {
       setFeedback({ message: res.message, isError: true });
     }

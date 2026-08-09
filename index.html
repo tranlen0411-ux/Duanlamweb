@@ -1859,23 +1859,52 @@
           </div>
         </div>
 
-        <!-- 5 Tab Mô-đun Quản Lý -->
+        <!-- 6 Tab Mô-đun Quản Lý -->
         <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
           <button class="admin-tab-btn active" id="btn-admin-tab-users" onclick="switchAdminSubTab('users')" style="padding: 10px 18px; border-radius: 14px; border: none; font-weight: 900; cursor: pointer; background: #2563eb; color: white;">
             👥 1. Người Dùng & Mật Khẩu
           </button>
+          <button class="admin-tab-btn" id="btn-admin-tab-pending-teachers" onclick="switchAdminSubTab('pending-teachers')" style="padding: 10px 18px; border-radius: 14px; border: none; font-weight: 900; cursor: pointer; background: #fef3c7; color: #d97706; border: 1px solid #fde68a;">
+            ⏳ 2. Phê Duyệt Giáo Viên Mới <span id="pending-teacher-badge" style="background: #ef4444; color: white; border-radius: 10px; padding: 2px 8px; font-size: 11px; margin-left: 4px;">0</span>
+          </button>
           <button class="admin-tab-btn" id="btn-admin-tab-classes" onclick="switchAdminSubTab('classes')" style="padding: 10px 18px; border-radius: 14px; border: none; font-weight: 900; cursor: pointer; background: #f1f5f9; color: #475569;">
-            🏫 2. Quản Lý Lớp Học
+            🏫 3. Quản Lý Lớp Học
           </button>
           <button class="admin-tab-btn" id="btn-admin-tab-students" onclick="switchAdminSubTab('students')" style="padding: 10px 18px; border-radius: 14px; border: none; font-weight: 900; cursor: pointer; background: #f1f5f9; color: #475569;">
-            👶 3. Học Sinh & Điểm XP/Xu
+            👶 4. Học Sinh & Điểm XP/Xu
           </button>
           <button class="admin-tab-btn" id="btn-admin-tab-exams" onclick="switchAdminSubTab('exams')" style="padding: 10px 18px; border-radius: 14px; border: none; font-weight: 900; cursor: pointer; background: #f1f5f9; color: #475569;">
-            📝 4. Bài Thi & Lời Nhận Xét
+            📝 5. Bài Thi & Lời Nhận Xét
           </button>
           <button class="admin-tab-btn" id="btn-admin-tab-anticheat" onclick="switchAdminSubTab('anticheat')" style="padding: 10px 18px; border-radius: 14px; border: none; font-weight: 900; cursor: pointer; background: #f1f5f9; color: #475569;">
-            🛡️ 5. Nhật Ký Anti-Cheat
+            🛡️ 6. Nhật Ký Anti-Cheat
           </button>
+        </div>
+
+        <!-- MÔ-ĐUN 2: PHÊ DUYỆT TÀI KHOẢN GIÁO VIÊN MỚI -->
+        <div id="admin-panel-pending-teachers" class="admin-panel-content" style="display: none;">
+          <div style="background: #fffbeb; padding: 16px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #fef3c7;">
+            <h4 style="margin: 0 0 6px 0; font-weight: 900; color: #b45309; font-size: 1.1rem;">⏳ Danh Sách Tài Khoản Giáo Viên Đăng Ký Mới Đang Chờ Admin Phê Duyệt</h4>
+            <p style="margin: 0; font-size: 0.88rem; color: #92400e; font-weight: 700;">
+              Chỉ các tài khoản Giáo viên được Admin bấm nút <strong>Phê Duyệt (Approve)</strong> mới có thể đăng nhập vào hệ thống.
+            </p>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
+              <thead>
+                <tr style="background: #fef3c7; color: #92400e; border-bottom: 2px solid #fde68a;">
+                  <th style="padding: 10px;">STT</th>
+                  <th style="padding: 10px;">TÀI KHOẢN (USERNAME)</th>
+                  <th style="padding: 10px;">HỌ VÀ TÊN GIÁO VIÊN</th>
+                  <th style="padding: 10px;">LỚP PHỤ TRÁCH</th>
+                  <th style="padding: 10px;">TRẠNG THÁI</th>
+                  <th style="padding: 10px; text-align: center;">HÀNH ĐỘNG PHÊ DUYỆT</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-admin-pending-teachers"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- MÔ-ĐUN 1: QUẢN LÝ NGƯỜI DÙNG & TÀI KHOẢN -->
@@ -2834,23 +2863,79 @@
 
     window.switchAdminSubTab = function(tabName) {
       activeAdminSubTab = tabName;
-      const tabs = ['users', 'classes', 'students', 'exams', 'anticheat'];
+      const tabs = ['users', 'pending-teachers', 'classes', 'students', 'exams', 'anticheat'];
       tabs.forEach(t => {
         const btn = document.getElementById(`btn-admin-tab-${t}`);
         const panel = document.getElementById(`admin-panel-${t}`);
         if (btn) {
           if (t === tabName) {
-            btn.style.background = t === 'anticheat' ? '#dc2626' : '#2563eb';
+            btn.style.background = t === 'anticheat' ? '#dc2626' : t === 'pending-teachers' ? '#d97706' : '#2563eb';
             btn.style.color = 'white';
           } else {
-            btn.style.background = '#f1f5f9';
-            btn.style.color = '#475569';
+            btn.style.background = t === 'pending-teachers' ? '#fef3c7' : '#f1f5f9';
+            btn.style.color = t === 'pending-teachers' ? '#d97706' : '#475569';
           }
         }
         if (panel) {
           panel.style.display = (t === tabName) ? 'block' : 'none';
         }
       });
+    };
+
+    window.handleApproveTeacher = async function(username) {
+      if (!username) return;
+      try {
+        if (window.supabaseAuth && window.supabaseAuth.client) {
+          await window.supabaseAuth.client
+            .from('users')
+            .update({ status: 'approved', active: true })
+            .eq('username', username);
+        }
+
+        let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
+        localUsers = localUsers.map(u => {
+          if (u.username.toLowerCase() === username.toLowerCase()) {
+            return { ...u, status: 'approved', active: true };
+          }
+          return u;
+        });
+        localStorage.setItem('users_db', JSON.stringify(localUsers));
+
+        alert(`✅ Đã PHÊ DUYỆT thành công tài khoản Giáo viên: ${username}! Tài khoản hiện đã được kích hoạt để đăng nhập.`);
+        window.renderAdminDashboardUI();
+      } catch (err) {
+        console.error('[Approve Teacher Error]:', err);
+        alert('❌ Có lỗi xảy ra khi phê duyệt tài khoản Giáo viên.');
+      }
+    };
+
+    window.handleRejectTeacher = async function(username) {
+      if (!username) return;
+      if (!confirm(`Bạn có chắc chắn muốn TỪ CHỐI kích hoạt tài khoản Giáo viên "${username}"?`)) return;
+
+      try {
+        if (window.supabaseAuth && window.supabaseAuth.client) {
+          await window.supabaseAuth.client
+            .from('users')
+            .update({ status: 'rejected', active: false })
+            .eq('username', username);
+        }
+
+        let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
+        localUsers = localUsers.map(u => {
+          if (u.username.toLowerCase() === username.toLowerCase()) {
+            return { ...u, status: 'rejected', active: false };
+          }
+          return u;
+        });
+        localStorage.setItem('users_db', JSON.stringify(localUsers));
+
+        alert(`⛔ Đã TỪ CHỐI tài khoản Giáo viên: ${username}.`);
+        window.renderAdminDashboardUI();
+      } catch (err) {
+        console.error('[Reject Teacher Error]:', err);
+        alert('❌ Có lỗi xảy ra khi từ chối tài khoản Giáo viên.');
+      }
     };
 
     window.renderAdminDashboardUI = async function() {
@@ -2860,12 +2945,22 @@
         const { data } = await window.supabaseAuth.client.from('users').select('*').order('id');
         users = data || [];
       }
+
+      let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
+      if (localUsers.length > 0) {
+        localUsers.forEach(lu => {
+          if (!users.some(u => u.username.toLowerCase() === lu.username.toLowerCase())) {
+            users.push(lu);
+          }
+        });
+      }
+
       if (!users.length) {
         users = [
-          { id: 1, username: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', class_id: '2AI' },
-          { id: 2, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI' },
-          { id: 3, username: 'vubaoan', full_name: 'Vũ Bảo An', role: 'student', class_id: '2AI' },
-          { id: 4, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A' }
+          { id: 1, username: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', status: 'approved', active: true, class_id: '2AI' },
+          { id: 2, username: 'benam', full_name: 'Bé Nam', role: 'student', status: 'approved', active: true, class_id: '2AI' },
+          { id: 3, username: 'vubaoan', full_name: 'Vũ Bảo An', role: 'student', status: 'approved', active: true, class_id: '2AI' },
+          { id: 4, username: 'comai', full_name: 'Cô Mai', role: 'teacher', status: 'approved', active: true, class_id: '2A' }
         ];
       }
 
@@ -2887,6 +2982,48 @@
             </td>
           </tr>
         `).join('');
+      }
+
+      // 2. Tải danh sách Giáo Viên CHỜ PHÊ DUYỆT (pending)
+      const pendingTeachers = users.filter(u => u.role === 'teacher' && (u.status === 'pending' || u.active === false));
+      const pendingBadge = document.getElementById("pending-teacher-badge");
+      if (pendingBadge) pendingBadge.textContent = pendingTeachers.length;
+
+      const tbodyPending = document.getElementById("tbody-admin-pending-teachers");
+      if (tbodyPending) {
+        if (pendingTeachers.length === 0) {
+          tbodyPending.innerHTML = `
+            <tr>
+              <td colspan="6" style="padding: 20px; text-align: center; color: #059669; font-weight: 800; font-size: 0.95rem;">
+                🎉 Hiện không có tài khoản Giáo viên nào đang chờ phê duyệt.
+              </td>
+            </tr>
+          `;
+        } else {
+          tbodyPending.innerHTML = pendingTeachers.map((t, idx) => `
+            <tr style="border-bottom: 1px solid #fef3c7; background: #fffdf5;">
+              <td style="padding: 10px; font-weight: 800;">${idx + 1}</td>
+              <td style="padding: 10px; font-weight: 900; color: #1e293b;">${t.username}</td>
+              <td style="padding: 10px; font-weight: 800; color: #2563eb;">${t.full_name || t.name || 'Giáo viên'}</td>
+              <td style="padding: 10px; font-weight: 800;">${t.class_id || '2A'}</td>
+              <td style="padding: 10px;">
+                <span style="padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 900; background: #fef3c7; color: #d97706; border: 1px solid #fde68a;">
+                  ⏳ Chờ Duyệt (Pending)
+                </span>
+              </td>
+              <td style="padding: 10px; text-align: center;">
+                <div style="display: flex; gap: 6px; justify-content: center;">
+                  <button onclick="handleApproveTeacher('${t.username}')" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    ✅ Phê Duyệt
+                  </button>
+                  <button onclick="handleRejectTeacher('${t.username}')" style="background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    ❌ Từ Chối
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `).join('');
+        }
       }
 
       // 2. Tải Classes
@@ -3089,14 +3226,23 @@
 
       if (res.success) {
         if (feedback) {
-          feedback.style.color = "#10b981";
+          feedback.style.color = role === 'teacher' ? '#d97706' : '#10b981';
           feedback.textContent = res.message;
         }
-        setTimeout(async () => {
-          await window.supabaseAuth.loginUser(username, password);
-          closeModal("teacher-login-modal");
-          location.reload();
-        }, 1000);
+
+        if (role === 'teacher') {
+          setTimeout(() => {
+            switchLoginMode('teacher');
+            const err = document.getElementById("teacher-login-error");
+            if (err) err.textContent = "⏳ Tài khoản Giáo viên của bạn đã tạo thành công và đang CHỜ SUPER ADMIN PHÊ DUYỆT!";
+          }, 2500);
+        } else {
+          setTimeout(async () => {
+            await window.supabaseAuth.loginUser(username, password);
+            closeModal("teacher-login-modal");
+            location.reload();
+          }, 1000);
+        }
       } else {
         if (feedback) {
           feedback.style.color = "#ef4444";
