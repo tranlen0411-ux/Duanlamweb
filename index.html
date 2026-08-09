@@ -2668,7 +2668,7 @@
 
     // 5. Hàm cập nhật phân quyền và Tên Giáo viên phụ trách từ CSDL Supabase
     window.updateStudentViewPermissionsAndTeacherName = function() {
-      const currentRole = (localStorage.getItem("currentUserRole") || "student").toLowerCase();
+      const currentRole = (localStorage.getItem("currentUserRole") || "guest").toLowerCase();
       const currentClassId = localStorage.getItem("studentClassId") || "2AI";
       const isGuest = (currentRole === 'guest' || !currentRole || currentRole === 'null');
 
@@ -2676,9 +2676,16 @@
       const guestNotice = document.getElementById("guest-welcome-notice");
       if (guestNotice) guestNotice.style.display = isGuest ? "block" : "none";
 
-      // Ẩn/hiện Lưới Nhiệm Vụ và Lịch Sử Bài Làm cá nhân của Học sinh khi ở Chế Độ Khách
+      // Ẩn hoàn toàn Thanh Nút Chuyển Tab (Đấu Trường, Bảng Xếp Hạng, Lịch Sử...) khi ở Chế Độ Khách
+      const tabNavBar = document.querySelector(".tab-navigation-bar");
+      if (tabNavBar) tabNavBar.style.display = isGuest ? "none" : "flex";
+
+      // Ẩn Lưới Nhiệm Vụ & Lịch Sử Bài Làm cá nhân của Học sinh khi ở Chế Độ Khách
       const studentGrid = document.querySelector(".home-tasks-grid");
       if (studentGrid) studentGrid.style.display = isGuest ? "none" : "grid";
+
+      const historySection = document.getElementById("tab-history-feedback");
+      if (historySection) historySection.style.display = isGuest ? "none" : "block";
 
       const userNameDisplay = document.getElementById("user-name-display");
       if (userNameDisplay) {
