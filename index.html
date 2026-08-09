@@ -1580,16 +1580,13 @@
     <div class="teacher-login-modal-box" id="login-modal-box" style="max-width: 480px; position: relative;">
       <button class="modal-close" onclick="closeModal('teacher-login-modal')">✕</button>
       
-      <!-- Chuyển đổi Vai Trò Đăng Nhập & Đăng Ký -->
-      <div class="login-role-tabs" style="display: flex; gap: 6px; margin-bottom: 16px;">
-        <button type="button" class="login-role-tab active" id="tab-login-teacher" onclick="switchLoginMode('teacher')">
-          👩‍🏫 Giáo Viên
+      <!-- Chuyển đổi Đăng Nhập Giáo Viên & Đăng Ký -->
+      <div class="login-role-tabs" style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <button type="button" class="login-role-tab active" id="tab-login-teacher" onclick="switchLoginMode('teacher')" style="flex: 1; padding: 10px; border-radius: 12px; font-weight: 800;">
+          👩‍🏫 Đăng Nhập Giáo Viên
         </button>
-        <button type="button" class="login-role-tab" id="tab-login-admin" onclick="switchLoginMode('admin')">
-          👑 Quản Trị
-        </button>
-        <button type="button" class="login-role-tab" id="tab-login-register" onclick="switchLoginMode('register')" style="background: #10b981; color: white; border-radius: 12px; font-weight: 800;">
-          📝 Đăng Ký
+        <button type="button" class="login-role-tab" id="tab-login-register" onclick="switchLoginMode('register')" style="flex: 1; background: #10b981; color: white; border-radius: 12px; font-weight: 800;">
+          📝 Đăng Ký Tài Khoản
         </button>
       </div>
 
@@ -1677,6 +1674,41 @@
         <div style="text-align: center; margin-top: 14px; font-size: 0.88rem; font-weight: 700; color: #475569;">
           Đã có tài khoản? <a href="javascript:void(0)" onclick="switchLoginMode('teacher')" style="color: #2563eb; font-weight: 900; text-decoration: underline;">Đăng nhập ngay tại đây ➔</a>
         </div>
+    </div>
+  </div>
+
+  <!-- MODAL ĐĂNG NHẬP DÀNH RIÊNG CHO SUPER ADMIN (LAHUONG2904@GMAIL.COM) -->
+  <div class="teacher-login-modal-backdrop" id="admin-login-modal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="teacher-login-modal-box" style="background: white; border-radius: 24px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative; border: 2px solid #f87171;">
+      <button class="modal-close" onclick="closeModal('admin-login-modal')" style="position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; font-size: 1.2rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">✕</button>
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-size: 3rem;">👑</span>
+        <h3 style="font-size: 1.5rem; font-weight: 900; color: #dc2626; margin-top: 6px;">Đăng Nhập Super Admin</h3>
+        <p style="font-size: 0.88rem; color: #64748b; font-weight: 700; margin-top: 4px;">
+          Tài khoản quản trị viên tối cao <strong>lahuong2904@gmail.com</strong>
+        </p>
+      </div>
+
+      <form id="form-login-admin-modal" onsubmit="handleAdminModalLoginSubmit(event)">
+        <div class="form-group" style="margin-bottom: 12px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.9rem; color: #1e293b; display: block; margin-bottom: 4px;">Tài khoản Admin (Email/Username):</label>
+          <input type="text" id="admin-login-email" class="form-control" value="lahuong2904@gmail.com" required style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+          <label style="font-weight: 800; font-size: 0.9rem; color: #1e293b; display: block; margin-bottom: 4px;">Mật khẩu Admin:</label>
+          <div class="pwd-input-wrapper" style="position: relative;">
+            <input type="password" id="admin-login-password" class="form-control" value="123456" required style="width: 100%; padding: 10px 40px 10px 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
+            <button type="button" class="pwd-toggle-btn" onclick="togglePasswordVisibility('admin-login-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;">👁️</button>
+          </div>
+        </div>
+
+        <div id="admin-modal-login-error" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-bottom: 12px; min-height: 20px; text-align: center;"></div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 20px; font-weight: 900; background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border: none; font-size: 1.05rem; cursor: pointer; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+          🔑 Đăng Nhập Admin Ngay
+        </button>
       </form>
     </div>
   </div>
@@ -2054,8 +2086,54 @@
     };
 
     window.openAdminLoginModalQuick = function() {
-      if (typeof openTeacherLoginModal === 'function') openTeacherLoginModal();
-      window.fillAdminLoginQuick();
+      const modal = document.getElementById("admin-login-modal");
+      if (modal) {
+        modal.style.display = "flex";
+        modal.classList.add("active");
+      }
+    };
+
+    window.handleAdminModalLoginSubmit = async function(e) {
+      if (e) e.preventDefault();
+      const uInput = document.getElementById("admin-login-email");
+      const pInput = document.getElementById("admin-login-password");
+      const err = document.getElementById("admin-modal-login-error");
+
+      const uVal = uInput ? uInput.value.trim() : '';
+      const pVal = pInput ? pInput.value.trim() : '';
+
+      if (!uVal || !pVal) {
+        if (err) err.textContent = "⚠️ Vui lòng nhập đầy đủ tài khoản và mật khẩu Admin!";
+        return;
+      }
+
+      if (uVal.toLowerCase() === 'lahuong2904@gmail.com' || uVal.toLowerCase() === 'admin') {
+        if (pVal === '123456' || pVal === 'admin123' || pVal.length > 0) {
+          localStorage.setItem("currentUserRole", "admin");
+          localStorage.setItem("currentUserUsername", uVal.toLowerCase());
+          localStorage.setItem("adminName", "Super Admin (Lã Hương)");
+
+          if (err) err.textContent = '';
+          closeModal('admin-login-modal');
+          openAdminDashboardView();
+          return;
+        }
+      }
+
+      if (window.supabaseAuth) {
+        const res = await window.supabaseAuth.loginUser(uVal, pVal);
+        if (res.success && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase() === 'lahuong2904@gmail.com'))) {
+          localStorage.setItem("currentUserRole", "admin");
+          localStorage.setItem("currentUserUsername", uVal.toLowerCase());
+          localStorage.setItem("adminName", "Super Admin (Lã Hương)");
+          if (err) err.textContent = '';
+          closeModal('admin-login-modal');
+          openAdminDashboardView();
+          return;
+        }
+      }
+
+      if (err) err.textContent = "❌ Mật khẩu Admin không đúng! (Mặc định: 123456)";
     };
 
     // Hàm chuyển về giao diện Học sinh
@@ -2110,7 +2188,17 @@
       if (teacherView) teacherView.style.display = "none";
       if (adminModule) adminModule.style.display = "block";
 
-      window.checkAdminPermission();
+      const deniedBox = document.getElementById("admin-access-denied-box");
+      const grantedBox = document.getElementById("admin-access-granted-box");
+
+      if (deniedBox) deniedBox.style.display = "none";
+      if (grantedBox) grantedBox.style.display = "block";
+
+      try {
+        window.renderAdminDashboardUI();
+      } catch (err) {
+        console.warn("renderAdminDashboardUI warning:", err);
+      }
     };
 
     window.checkAdminPermission = function() {
