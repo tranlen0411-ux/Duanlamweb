@@ -95,8 +95,8 @@ window.supabaseAuth = {
   },
 
   async loginUser(username, password) {
-    const cleanUsername = username.trim().toLowerCase();
-    const cleanPassword = password.trim();
+    const cleanUsername = (username || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
 
     if (!cleanUsername || !cleanPassword) {
       return { success: false, message: 'Vui lòng nhập Tên tài khoản và Mật khẩu!' };
@@ -106,25 +106,48 @@ window.supabaseAuth = {
 
     if (supabaseClient) {
       try {
-        // Truy vấn trực tiếp vào bảng users trong Supabase CSDL kiểm tra khớp username (hoặc email) và password
-        const { data: dbUsers } = await supabaseClient
+        // 1. Lệnh gọi chuẩn xác Supabase CSDL bảng users theo username và password
+        const { data: dbUsers, error } = await supabaseClient
           .from('users')
           .select('*')
-          .or(`username.eq.${cleanUsername},email.eq.${cleanUsername}`)
+          .eq('username', cleanUsername)
           .eq('password', cleanPassword);
+
+        if (error) {
+          console.error('[Supabase Query Error - eq username]:', error);
+        }
 
         if (dbUsers && dbUsers.length > 0) {
           user = dbUsers[0];
+        } else {
+          // 2. Thử truy vấn thêm theo email nếu username không khớp
+          const { data: dbUsersByEmail, error: emailErr } = await supabaseClient
+            .from('users')
+            .select('*')
+            .eq('email', cleanUsername)
+            .eq('password', cleanPassword);
+
+          if (emailErr) {
+            console.error('[Supabase Query Error - eq email]:', emailErr);
+          }
+
+          if (dbUsersByEmail && dbUsersByEmail.length > 0) {
+            user = dbUsersByEmail[0];
+          }
         }
       } catch (err) {
-        console.error('Lỗi đăng nhập Supabase:', err);
+        console.error('[Supabase Exception Trong loginUser]:', err);
       }
     }
 
-    // Fallback kiểm tra bộ nhớ localUsers hoặc tài khoản Super Admin lahuong2904@gmail.com
+    // 3. Fallback kiểm tra bộ nhớ cục bộ và tài khoản Super Admin lahuong2904@gmail.com
     if (!user) {
-      let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
-      user = localUsers.find(u => (u.username.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword);
+      try {
+        let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
+        user = localUsers.find(u => (u.username?.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword);
+      } catch (localErr) {
+        console.warn('localStorage parse error:', localErr);
+      }
 
       if (!user && (cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'adminlahuong2904@gmail.com' || cleanUsername === 'admin') && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
         user = {
@@ -144,18 +167,22 @@ window.supabaseAuth = {
       return { success: false, message: '❌ Tên tài khoản hoặc mật khẩu không chính xác!' };
     }
 
-    localStorage.setItem('currentUserRole', user.role);
-    localStorage.setItem('currentUserUsername', user.username);
+    try {
+      localStorage.setItem('currentUserRole', user.role || 'student');
+      localStorage.setItem('currentUserUsername', user.username || cleanUsername);
 
-    if (user.role === 'student') {
-      localStorage.setItem('studentName', user.full_name);
-      localStorage.setItem('studentClass', user.class_id || '2AI');
-      localStorage.setItem('userXP', user.xp || 450);
-      localStorage.setItem('userXu', user.coins || 1250);
-    } else if (user.role === 'teacher') {
-      localStorage.setItem('teacherName', user.full_name);
-    } else if (user.role === 'admin') {
-      localStorage.setItem('adminName', user.full_name || 'Super Admin (Lã Hương)');
+      if (user.role === 'student') {
+        localStorage.setItem('studentName', user.full_name || 'Bé');
+        localStorage.setItem('studentClass', user.class_id || '2AI');
+        localStorage.setItem('userXP', user.xp || 450);
+        localStorage.setItem('userXu', user.coins || 1250);
+      } else if (user.role === 'teacher') {
+        localStorage.setItem('teacherName', user.full_name || 'Giáo viên');
+      } else if (user.role === 'admin') {
+        localStorage.setItem('adminName', user.full_name || 'Super Admin (Lã Hương)');
+      }
+    } catch (storageErr) {
+      console.warn('localStorage set error:', storageErr);
     }
 
     return { success: true, user: user, message: '🔑 Đăng nhập thành công!' };
