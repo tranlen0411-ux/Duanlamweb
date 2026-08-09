@@ -121,21 +121,34 @@ export default function App() {
     const res = await authService.loginUser(loginUsername, loginPassword);
 
     if (res.success) {
-      setFeedback({ message: res.message, isError: false });
+      const isUserAdmin = (
+        res.user.role === 'admin' ||
+        res.user.username?.toLowerCase() === 'lahuong2904@gmail.com' ||
+        res.user.email?.toLowerCase() === 'lahuong2904@gmail.com'
+      );
+
       setCurrentUser({
         username: res.user.username,
-        name: res.user.full_name || 'Bé Nam',
+        name: res.user.full_name || (isUserAdmin ? 'Super Admin (Lã Hương)' : 'Bé Nam'),
         classId: res.user.class_id || '2AI',
-        role: res.user.role || 'student',
-        xp: res.user.xp || 450,
-        coins: res.user.coins || 1250
+        role: isUserAdmin ? 'admin' : (res.user.role || 'student'),
+        xp: res.user.xp || (isUserAdmin ? 9999 : 450),
+        coins: res.user.coins || (isUserAdmin ? 9999 : 1250)
       });
+
+      setFeedback({ message: res.message, isError: false });
+
       setTimeout(() => {
         setIsAuthModalOpen(false);
-        if (res.user.role === 'admin' || res.user.username?.toLowerCase() === 'lahuong2904@gmail.com') {
+        if (isUserAdmin) {
           setActiveTab('admin-view');
+          if (typeof window.handleOpenAdminDirect === 'function') {
+            window.handleOpenAdminDirect();
+          }
+        } else {
+          setActiveTab('student-view');
         }
-      }, 600);
+      }, 500);
     } else {
       setFeedback({ message: res.message, isError: true });
     }
@@ -147,7 +160,13 @@ export default function App() {
     setAdminLoginError('');
 
     const res = await authService.loginUser(adminEmailInput, adminPassInput);
-    if (res.success && (res.user.role === 'admin' || res.user.username?.toLowerCase() === 'lahuong2904@gmail.com')) {
+    const isUserAdmin = res.success && (
+      res.user.role === 'admin' ||
+      res.user.username?.toLowerCase() === 'lahuong2904@gmail.com' ||
+      res.user.email?.toLowerCase() === 'lahuong2904@gmail.com'
+    );
+
+    if (isUserAdmin) {
       setCurrentUser({
         username: res.user.username,
         name: res.user.full_name || 'Super Admin (Lã Hương)',
@@ -157,6 +176,9 @@ export default function App() {
         coins: 9999
       });
       setActiveTab('admin-view');
+      if (typeof window.handleOpenAdminDirect === 'function') {
+        window.handleOpenAdminDirect();
+      }
     } else {
       setAdminLoginError('❌ Mật khẩu hoặc tài khoản Admin chưa chính xác!');
     }

@@ -106,32 +106,57 @@ window.supabaseAuth = {
 
     if (supabaseClient) {
       try {
-        const { data: dbUser } = await supabaseClient
-          .from('users')
-          .select('*')
-          .eq('username', cleanUsername)
-          .eq('password', cleanPassword)
-          .maybeSingle();
+        // 1. Query trong bảng users Supabase CSDL theo username hoặc email với role === 'admin' hoặc student/teacher
+        const isSuperAdminInput = (cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'admin');
 
-        if (dbUser) user = dbUser;
+        if (isSuperAdminInput) {
+          const { data: adminUsers } = await supabaseClient
+            .from('users')
+            .select('*')
+            .or(`username.eq.${cleanUsername},email.eq.${cleanUsername},username.eq.admin`)
+            .eq('password', cleanPassword);
+
+          if (adminUsers && adminUsers.length > 0) {
+            user = adminUsers.find(u => u.role === 'admin') || adminUsers[0];
+          }
+        }
+
+        if (!user) {
+          const { data: dbUser } = await supabaseClient
+            .from('users')
+            .select('*')
+            .eq('username', cleanUsername)
+            .eq('password', cleanPassword)
+            .maybeSingle();
+
+          if (dbUser) user = dbUser;
+        }
       } catch (err) {
         console.error('Lỗi đăng nhập Supabase:', err);
       }
     }
 
+    // 2. Fallback nếu Supabase chưa phản hồi hoặc tài khoản Super Admin cục bộ
     if (!user) {
       let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
-      user = localUsers.find(u => u.username.toLowerCase() === cleanUsername && u.password === cleanPassword);
+      user = localUsers.find(u => (u.username.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword);
 
       if (!user) {
-        if (cleanUsername === 'lahuong2904@gmail.com' && (cleanPassword === '123456' || cleanPassword.length > 0)) {
-          user = { id: 1, username: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', class_id: '2AI', xp: 9999, coins: 9999 };
+        if ((cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'admin') && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
+          user = { 
+            id: 1, 
+            username: 'lahuong2904@gmail.com', 
+            email: 'lahuong2904@gmail.com',
+            full_name: 'Super Admin (Lã Hương)', 
+            role: 'admin', 
+            class_id: '2AI', 
+            xp: 9999, 
+            coins: 9999 
+          };
         } else if (cleanUsername === 'benam' && cleanPassword === '123456') {
           user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', xp: 450, coins: 1250 };
         } else if (cleanUsername === 'comai' && cleanPassword === '123456') {
           user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', xp: 0, coins: 0 };
-        } else if (cleanUsername === 'admin' && cleanPassword === '123456') {
-          user = { id: 999, username: 'admin', full_name: 'Admin Quản Trị', role: 'admin', class_id: '2AI', xp: 0, coins: 0 };
         }
       }
     }
