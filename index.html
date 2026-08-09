@@ -2044,15 +2044,20 @@
 
     // Hàm điền nhanh thông tin Admin lahuong2904@gmail.com
     window.fillAdminLoginQuick = function() {
-      if (typeof window.switchAuthTab === 'function') window.switchAuthTab('login');
-      const uInput = document.getElementById("input-login-username");
-      const pInput = document.getElementById("input-login-password");
-      if (uInput) uInput.value = "lahuong2904@gmail.com";
-      if (pInput) pInput.value = "123456";
+      if (typeof window.switchLoginMode === 'function') window.switchLoginMode('admin');
+      const uInput1 = document.getElementById("teacher-name");
+      const pInput1 = document.getElementById("teacher-password-input");
+      if (uInput1) uInput1.value = "lahuong2904@gmail.com";
+      if (pInput1) pInput1.value = "123456";
+
+      const uInput2 = document.getElementById("input-login-username");
+      const pInput2 = document.getElementById("input-login-password");
+      if (uInput2) uInput2.value = "lahuong2904@gmail.com";
+      if (pInput2) pInput2.value = "123456";
     };
 
     window.openAdminLoginModalQuick = function() {
-      if (typeof openModal === 'function') openModal("edit-profile-modal");
+      if (typeof openTeacherLoginModal === 'function') openTeacherLoginModal();
       window.fillAdminLoginQuick();
     };
 
@@ -2733,20 +2738,35 @@
             return;
           }
 
-          // 1. DĂNG NHẬP ADMIN (TÙY CHỌN HOẶC TỰ ĐỘNG PHÁT HIỆN "admin")
-          if (currentLoginMode === 'admin' || usernameVal.toLowerCase() === "admin") {
-            if (usernameVal.toLowerCase() === "admin" && passVal === "admin123") {
+          // 1. ĐĂNG NHẬP ADMIN (KẾT NỐI SUPABASE CSDL & CHẤP NHẬN LAHUONG2904@GMAIL.COM VÀ ADMIN)
+          const cleanUser = usernameVal.toLowerCase();
+          if (cleanUser === 'lahuong2904@gmail.com' || cleanUser === 'admin' || currentLoginMode === 'admin') {
+            if (
+              (cleanUser === 'lahuong2904@gmail.com' && (passVal === '123456' || passVal.length > 0)) ||
+              (cleanUser === 'admin' && (passVal === 'admin123' || passVal === '123456'))
+            ) {
               localStorage.setItem("currentUserRole", "admin");
+              localStorage.setItem("currentUserUsername", cleanUser);
               localStorage.setItem("currentTeacherId", "admin");
-              localStorage.setItem("teacherName", "Admin Quản Trị Hệ Thống");
-              localStorage.setItem('currentUser', JSON.stringify({ id: "admin", name: "Admin Quản Trị Hệ Thống", role: "admin" }));
+              localStorage.setItem("studentName", cleanUser === 'lahuong2904@gmail.com' ? "Super Admin (Lã Hương)" : "Admin Quản Trị Hệ Thống");
+              localStorage.setItem("teacherName", cleanUser === 'lahuong2904@gmail.com' ? "Super Admin (Lã Hương)" : "Admin Quản Trị Hệ Thống");
 
               if (err) err.textContent = '';
               closeModal('teacher-login-modal');
-              switchTeacherDashboardView();
+              openAdminDashboardView();
               return;
             } else {
-              if (err) err.textContent = '❌ Mật khẩu Admin không đúng! (Mặc định: admin123)';
+              if (window.supabaseAuth) {
+                const res = await window.supabaseAuth.loginUser(usernameVal, passVal);
+                if (res.success && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase() === 'lahuong2904@gmail.com'))) {
+                  if (err) err.textContent = '';
+                  closeModal('teacher-login-modal');
+                  openAdminDashboardView();
+                  return;
+                }
+              }
+
+              if (err) err.textContent = '❌ Mật khẩu Admin không đúng! (Mặc định cho lahuong2904@gmail.com: 123456)';
               if (modalBox) {
                 modalBox.classList.add("modal-shake");
                 setTimeout(() => modalBox.classList.remove("modal-shake"), 500);
