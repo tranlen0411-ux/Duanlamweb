@@ -2103,23 +2103,23 @@
         </p>
       </div>
 
-      <form id="form-login-admin-modal" onsubmit="handleAdminModalLoginSubmit(event)">
+      <form id="form-login-admin-modal" onsubmit="event.preventDefault(); handleAdminModalLoginSubmit(event); return false;">
         <div class="form-group" style="margin-bottom: 14px; text-align: left;">
           <label style="font-weight: 800; font-size: 0.9rem; color: #1e293b; display: block; margin-bottom: 4px;">Tài khoản Admin (Email/Username):</label>
-          <input type="text" id="admin-login-email" class="form-control" value="lahuong2904@gmail.com" required style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
+          <input type="text" id="admin-login-email" name="adminLoginEmail" class="form-control" value="lahuong2904@gmail.com" required style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
         </div>
 
         <div class="form-group" style="margin-bottom: 16px; text-align: left;">
           <label style="font-weight: 800; font-size: 0.9rem; color: #1e293b; display: block; margin-bottom: 4px;">Mật khẩu Admin:</label>
           <div class="pwd-input-wrapper" style="position: relative;">
-            <input type="password" id="admin-login-password" class="form-control" value="123456" required style="width: 100%; padding: 10px 40px 10px 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
+            <input type="password" id="admin-login-password" name="adminLoginPassword" class="form-control" value="123456" required style="width: 100%; padding: 10px 40px 10px 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
             <button type="button" class="pwd-toggle-btn" onclick="togglePasswordVisibility('admin-login-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;">👁️</button>
           </div>
         </div>
 
         <div id="admin-modal-login-error" style="color: #ef4444; font-weight: 800; font-size: 0.88rem; margin-bottom: 14px; min-height: 20px; text-align: center;"></div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; border-radius: 25px; font-weight: 900; background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border: none; font-size: 1.05rem; cursor: pointer; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        <button type="button" onclick="handleAdminModalLoginSubmit(event)" class="btn btn-primary" style="width: 100%; padding: 14px; border-radius: 25px; font-weight: 900; background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border: none; font-size: 1.05rem; cursor: pointer; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
           🔑 Đăng Nhập Admin Ngay
         </button>
       </form>
@@ -2491,6 +2491,14 @@
       if (pInput2) pInput2.value = "123456";
     };
 
+    // Global Catch Handler cho tất cả Unhandled Promise Rejections (Triệt tiêu hoàn toàn lỗi Uncaught (in promise) từ trình duyệt hoặc tiện ích mở rộng)
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('[Caught Global Unhandled Rejection]:', event ? event.reason : 'undefined');
+      if (event && typeof event.preventDefault === 'function') {
+        try { event.preventDefault(); } catch (err) {}
+      }
+    });
+
     window.openAdminLoginModalQuick = function() {
       if (typeof window.openModal === 'function') {
         window.openModal('admin-login-modal');
@@ -2503,96 +2511,106 @@
       }
     };
 
-    window.handleAdminModalLoginSubmit = async function(e) {
+    window.handleAdminModalLoginSubmit = function(e) {
       if (e) {
         try { e.preventDefault(); } catch (err) {}
       }
-      const uInput = document.getElementById("admin-login-email");
-      const pInput = document.getElementById("admin-login-password");
-      const err = document.getElementById("admin-modal-login-error");
 
-      const uVal = uInput ? uInput.value.trim() : '';
-      const pVal = pInput ? pInput.value.trim() : '';
-
-      if (!uVal || !pVal) {
-        if (err) err.textContent = "⚠️ Vui lòng nhập đầy đủ tài khoản và mật khẩu Admin!";
-        return false;
-      }
-
-      const cleanUser = uVal.toLowerCase();
-      const isSuperAdminInput = (
-        cleanUser === 'lahuong2904@gmail.com' ||
-        cleanUser === 'adminlahuong2904@gmail.com' ||
-        cleanUser === 'admin'
-      );
-
-      let isValidAdmin = false;
-      let adminName = "Super Admin (Lã Hương)";
-
-      // 1. Kiểm tra tức thì tài khoản Super Admin lahuong2904@gmail.com với mật khẩu 123456
-      if (isSuperAdminInput && (pVal === '123456' || pVal === 'admin123' || pVal.length > 0)) {
-        isValidAdmin = true;
-      } else if (window.supabaseAuth && typeof window.supabaseAuth.loginUser === 'function') {
+      (async () => {
         try {
-          const res = await window.supabaseAuth.loginUser(uVal, pVal);
-          if (res && res.success && res.user && (res.user.role === 'student' || res.user.role === 'teacher')) {
-            if (err) err.textContent = "⛔ Từ chối truy cập! Tài khoản Học sinh / Giáo viên không có quyền quản trị Admin.";
-            return false;
+          const uInput = document.getElementById("admin-login-email");
+          const pInput = document.getElementById("admin-login-password");
+          const err = document.getElementById("admin-modal-login-error");
+
+          const uVal = uInput ? uInput.value.trim() : '';
+          const pVal = pInput ? pInput.value.trim() : '';
+
+          if (!uVal || !pVal) {
+            if (err) err.textContent = "⚠️ Vui lòng nhập đầy đủ tài khoản và mật khẩu Admin!";
+            return;
           }
-          if (res && res.success && res.user && res.user.role === 'admin') {
+
+          const cleanUser = uVal.toLowerCase();
+          const isSuperAdminInput = (
+            cleanUser === 'lahuong2904@gmail.com' ||
+            cleanUser === 'adminlahuong2904@gmail.com' ||
+            cleanUser === 'admin'
+          );
+
+          let isValidAdmin = false;
+          let adminName = "Super Admin (Lã Hương)";
+
+          // 1. Kiểm tra tức thì tài khoản Super Admin lahuong2904@gmail.com với mật khẩu 123456
+          if (isSuperAdminInput && (pVal === '123456' || pVal === 'admin123' || pVal.length > 0)) {
             isValidAdmin = true;
-            adminName = res.user.full_name || adminName;
+          } else if (window.supabaseAuth && typeof window.supabaseAuth.loginUser === 'function') {
+            try {
+              const res = await window.supabaseAuth.loginUser(uVal, pVal);
+              if (res && res.success && res.user && (res.user.role === 'student' || res.user.role === 'teacher')) {
+                if (err) err.textContent = "⛔ Từ chối truy cập! Tài khoản Học sinh / Giáo viên không có quyền quản trị Admin.";
+                return;
+              }
+              if (res && res.success && res.user && res.user.role === 'admin') {
+                isValidAdmin = true;
+                adminName = res.user.full_name || adminName;
+              }
+            } catch (authErr) {
+              console.error("[Supabase Auth Error]:", authErr);
+            }
           }
-        } catch (authErr) {
-          console.warn("Supabase Auth Warning:", authErr);
-        }
-      }
 
-      if (isValidAdmin) {
-        localStorage.setItem("currentUserRole", "admin");
-        localStorage.setItem("currentUserUsername", cleanUser);
-        localStorage.setItem("adminName", adminName);
+          if (isValidAdmin) {
+            localStorage.setItem("currentUserRole", "admin");
+            localStorage.setItem("currentUserUsername", cleanUser);
+            localStorage.setItem("adminName", adminName);
 
-        if (err) err.textContent = '';
-        if (typeof window.closeModal === 'function') {
-          window.closeModal('admin-login-modal');
-        } else {
-          const modal = document.getElementById("admin-login-modal");
-          if (modal) {
-            modal.style.display = "none";
-            modal.classList.remove("active");
+            if (err) err.textContent = '';
+            if (typeof window.closeModal === 'function') {
+              window.closeModal('admin-login-modal');
+            } else {
+              const modal = document.getElementById("admin-login-modal");
+              if (modal) {
+                modal.style.display = "none";
+                modal.classList.remove("active");
+              }
+            }
+
+            // Bật Bảng Quản Trị Admin trên DOM & gọi window.renderAdminDashboardUI()
+            const studentView = document.getElementById("student-view-container");
+            const teacherView = document.getElementById("teacher-view-container");
+            const adminModule = document.getElementById("admin-system-control-module");
+
+            if (studentView) studentView.style.display = "none";
+            if (teacherView) teacherView.style.display = "block";
+            if (adminModule) {
+              adminModule.style.display = "block";
+              adminModule.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            const deniedBox = document.getElementById("admin-access-denied-box");
+            const grantedBox = document.getElementById("admin-access-granted-box");
+            if (deniedBox) deniedBox.style.display = "none";
+            if (grantedBox) grantedBox.style.display = "block";
+
+            if (typeof window.renderAdminDashboardUI === 'function') {
+              try {
+                window.renderAdminDashboardUI();
+              } catch (renderErr) {
+                console.error("[renderAdminDashboardUI Error]:", renderErr);
+              }
+            }
+
+            return;
           }
+
+          if (err) err.textContent = "⛔ Từ chối truy cập! Tên tài khoản hoặc mật khẩu Admin không đúng (mặc định: lahuong2904@gmail.com / 123456).";
+        } catch (mainErr) {
+          console.error("[Admin Modal Submit Exception]:", mainErr);
         }
+      })().catch(unhandledAsync => {
+        console.error("[Async Admin Submit Error Caught]:", unhandledAsync);
+      });
 
-        // Bật Bảng Quản Trị Admin trên DOM & gọi window.renderAdminDashboardUI()
-        const studentView = document.getElementById("student-view-container");
-        const teacherView = document.getElementById("teacher-view-container");
-        const adminModule = document.getElementById("admin-system-control-module");
-
-        if (studentView) studentView.style.display = "none";
-        if (teacherView) teacherView.style.display = "block";
-        if (adminModule) {
-          adminModule.style.display = "block";
-          adminModule.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        const deniedBox = document.getElementById("admin-access-denied-box");
-        const grantedBox = document.getElementById("admin-access-granted-box");
-        if (deniedBox) deniedBox.style.display = "none";
-        if (grantedBox) grantedBox.style.display = "block";
-
-        if (typeof window.renderAdminDashboardUI === 'function') {
-          try {
-            window.renderAdminDashboardUI();
-          } catch (renderErr) {
-            console.warn("renderAdminDashboardUI warning:", renderErr);
-          }
-        }
-
-        return false;
-      }
-
-      if (err) err.textContent = "⛔ Từ chối truy cập! Tên tài khoản hoặc mật khẩu Admin không đúng (mặc định: lahuong2904@gmail.com / 123456).";
       return false;
     };
 
