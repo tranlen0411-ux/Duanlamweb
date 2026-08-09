@@ -2890,6 +2890,13 @@
             .from('users')
             .update({ status: 'approved', active: true })
             .eq('username', username);
+
+          try {
+            await window.supabaseAuth.client
+              .from('teachers')
+              .update({ status: 'approved', active: true })
+              .eq('username', username);
+          } catch (tErr) {}
         }
 
         let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
@@ -2919,6 +2926,13 @@
             .from('users')
             .update({ status: 'rejected', active: false })
             .eq('username', username);
+
+          try {
+            await window.supabaseAuth.client
+              .from('teachers')
+              .update({ status: 'rejected', active: false })
+              .eq('username', username);
+          } catch (tErr) {}
         }
 
         let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
@@ -3026,13 +3040,28 @@
         }
       }
 
-      // 2. Tải Classes
-      let classes = [
-        { id: '2AI', name: 'Lớp 2 AI' },
-        { id: '2A', name: 'Lớp 2A' },
-        { id: '2B', name: 'Lớp 2B' },
-        { id: '2C', name: 'Lớp 2C' }
-      ];
+      // 3. Tải Classes từ CSDL Supabase
+      let classes = [];
+      if (window.supabaseAuth && window.supabaseAuth.client) {
+        try {
+          const { data: dbClasses } = await window.supabaseAuth.client.from('classes').select('*').order('id');
+          if (dbClasses && dbClasses.length) {
+            classes = dbClasses;
+          }
+        } catch (clsErr) {
+          console.warn('[Classes Query Notice]:', clsErr);
+        }
+      }
+
+      if (!classes.length) {
+        classes = [
+          { id: '2AI', name: 'Lớp 2 AI' },
+          { id: '2A', name: 'Lớp 2A' },
+          { id: '2B', name: 'Lớp 2B' },
+          { id: '2C', name: 'Lớp 2C' }
+        ];
+      }
+
       const gridClasses = document.getElementById("admin-classes-grid");
       if (gridClasses) {
         gridClasses.innerHTML = classes.map(c => `
@@ -3046,7 +3075,7 @@
         `).join('');
       }
 
-      // 3. Tải Students
+      // 4. Tải Students
       let students = (typeof globalStudents !== 'undefined' && globalStudents.length) ? globalStudents : [
         { id: 101, name: 'Vũ Bảo An', classId: '2AI', xp: 2100, coins: 1250 },
         { id: 102, name: 'Bé Nam', classId: '2AI', xp: 1950, coins: 1250 },
@@ -3069,7 +3098,7 @@
         `).join('');
       }
 
-      // 4. Tải Bài Thi
+      // 5. Tải Bài Thi
       let exams = [
         { student_name: 'Bé Nam', quiz_title: 'Bài kiểm tra Tuần 1', score: '10/10', exam_time: '5 phút', teacher_comment: 'Xuất sắc!' },
         { student_name: 'Vũ Bảo An', quiz_title: 'Bài kiểm tra Tuần 1', score: '9.5/10', exam_time: '6 phút', teacher_comment: 'Làm bài rất tốt' }
@@ -3112,19 +3141,49 @@
       }
     };
 
-    window.handleAdminCreateClassSubmit = function() {
-      const id = document.getElementById("admin-input-class-id").value;
-      const name = document.getElementById("admin-input-class-name").value;
-      if (id && name) {
-        alert('✅ Đã thêm lớp mới ' + name + '!');
+    window.handleAdminCreateClassSubmit = async function() {
+      const idInput = document.getElementById("admin-input-class-id");
+      const nameInput = document.getElementById("admin-input-class-name");
+      const id = idInput ? idInput.value.trim() : '';
+      const name = nameInput ? nameInput.value.trim() : '';
+
+      if (!id || !name) {
+        alert('⚠️ Vui lòng nhập đầy đủ Mã lớp và Tên lớp!');
+        return;
+      }
+
+      try {
+        if (window.supabaseAuth && window.supabaseAuth.client) {
+          const { error } = await window.supabaseAuth.client
+            .from('classes')
+            .upsert([{ id: id, name: name }], { onConflict: 'id' });
+
+          if (error) {
+            console.error('[Supabase Class Upsert Error]:', error);
+          }
+        }
+        alert('✅ Đã thêm lớp mới "' + name + '" (' + id + ') trực tiếp vào CSDL Supabase!');
+        if (idInput) idInput.value = '';
+        if (nameInput) nameInput.value = '';
         window.renderAdminDashboardUI();
+      } catch (err) {
+        console.error('[Create Class Exception]:', err);
+        alert('❌ Có lỗi khi lưu lớp học lên CSDL.');
       }
     };
 
-    window.handleAdminDeleteClass = function(id) {
-      if (confirm('Xóa lớp học ' + id + '?')) {
-        alert('🗑️ Đã xóa lớp học!');
+    window.handleAdminDeleteClass = async function(id) {
+      if (!id) return;
+      if (!confirm('Bạn có chắc muốn xóa lớp học ' + id + ' khỏi CSDL Supabase?')) return;
+
+      try {
+        if (window.supabaseAuth && window.supabaseAuth.client) {
+          await window.supabaseAuth.client.from('classes').delete().eq('id', id);
+        }
+        alert('🗑️ Đã xóa lớp học ' + id + ' khỏi Supabase!');
         window.renderAdminDashboardUI();
+      } catch (err) {
+        console.error('[Delete Class Exception]:', err);
       }
     };
 
