@@ -1827,12 +1827,15 @@
       <button class="modal-close" onclick="closeModal('edit-profile-modal')">✕</button>
       
       <!-- Chuyển Đổi Tab: Đăng Nhập vs Đăng Ký -->
-      <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
-        <button type="button" id="tab-auth-login" onclick="switchAuthTab('login')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 900; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; cursor: pointer;">
+      <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+        <button type="button" id="tab-auth-login" onclick="switchAuthTab('login')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 900; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; cursor: pointer;">
           🔑 Đăng Nhập
         </button>
-        <button type="button" id="tab-auth-register" onclick="switchAuthTab('register')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 900; background: #f1f5f9; color: #475569; cursor: pointer;">
-          📝 Đăng Ký Tài Khoản
+        <button type="button" id="tab-auth-register" onclick="switchAuthTab('register')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 900; background: #f1f5f9; color: #475569; cursor: pointer;">
+          📝 Đăng Ký
+        </button>
+        <button type="button" id="tab-auth-admin" onclick="fillAdminLoginQuick()" style="flex: 1.2; padding: 10px; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 900; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; cursor: pointer;">
+          👑 Admin Quick-Login
         </button>
       </div>
 
@@ -1976,8 +1979,12 @@
           }
           setTimeout(() => {
             closeModal("edit-profile-modal");
-            location.reload();
-          }, 800);
+            if (res.user && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase() === 'lahuong2904@gmail.com'))) {
+              window.openAdminDashboardView();
+            } else {
+              location.reload();
+            }
+          }, 600);
         } else {
           if (feedback) {
             feedback.style.color = "#ef4444";
@@ -2035,12 +2042,42 @@
       }
     }
 
+    // Hàm điền nhanh thông tin Admin lahuong2904@gmail.com
+    window.fillAdminLoginQuick = function() {
+      if (typeof window.switchAuthTab === 'function') window.switchAuthTab('login');
+      const uInput = document.getElementById("input-login-username");
+      const pInput = document.getElementById("input-login-password");
+      if (uInput) uInput.value = "lahuong2904@gmail.com";
+      if (pInput) pInput.value = "123456";
+    };
+
+    window.openAdminLoginModalQuick = function() {
+      if (typeof openModal === 'function') openModal("edit-profile-modal");
+      window.fillAdminLoginQuick();
+    };
+
     // ============================================================
     // QUẢN TRỊ VIÊN SUPER ADMIN (LAHUONG2904@GMAIL.COM) LOGIC
     // ============================================================
     let activeAdminSubTab = 'users';
 
     window.openAdminDashboardView = function() {
+      const ADMIN_EMAIL = 'lahuong2904@gmail.com';
+      const currentRole = localStorage.getItem('currentUserRole') || '';
+      const currentUsername = (localStorage.getItem('currentUserUsername') || '').toLowerCase();
+      const currentStudentName = (localStorage.getItem('studentName') || '').toLowerCase();
+
+      const isSuperAdmin = (
+        currentUsername === ADMIN_EMAIL ||
+        currentStudentName === ADMIN_EMAIL ||
+        currentRole === 'admin'
+      );
+
+      if (!isSuperAdmin) {
+        window.openAdminLoginModalQuick();
+        return;
+      }
+
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");

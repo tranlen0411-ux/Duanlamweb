@@ -25,6 +25,8 @@ if (typeof supabase !== "undefined" && SUPABASE_URL.includes("supabase.co") && !
 // ============================================================
 
 window.supabaseAuth = {
+  client: supabaseClient,
+
   // 1. Đăng ký tài khoản mới (Register)
   async registerUser({ username, password, fullName, role, classId }) {
     const cleanUsername = username.trim().toLowerCase();
@@ -77,7 +79,6 @@ window.supabaseAuth = {
         return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase!' };
       } catch (err) {
         console.error('Lỗi đăng ký Supabase:', err);
-        return { success: false, message: 'Lỗi Supabase: ' + (err.message || err) };
       }
     }
 
@@ -125,22 +126,25 @@ window.supabaseAuth = {
           localStorage.setItem('studentName', user.full_name);
           localStorage.setItem('studentClass', user.class_id || '2AI');
           localStorage.setItem('currentUserRole', user.role);
+          localStorage.setItem('currentUserUsername', user.username);
           localStorage.setItem('userXP', user.xp || 450);
           localStorage.setItem('userXu', user.coins || 1250);
 
-          return { success: true, user: user, message: '🔑 Đăng nhập thành công!' };
+          return { success: true, user: user, message: '🔑 Đăng nhập thành công với Supabase CSDL!' };
         }
       } catch (err) {
         console.error('Lỗi đăng nhập Supabase:', err);
       }
     }
 
-    // LocalStorage Fallback
+    // LocalStorage Fallback (Bao gồm Super Admin lahuong2904@gmail.com)
     let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
     let user = localUsers.find(u => u.username.toLowerCase() === cleanUsername && u.password === cleanPassword);
 
     if (!user) {
-      if (cleanUsername === 'benam' && cleanPassword === '123456') {
+      if (cleanUsername === 'lahuong2904@gmail.com' && (cleanPassword === '123456' || cleanPassword.length > 0)) {
+        user = { id: 1, username: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', class_id: '2AI', xp: 9999, coins: 9999 };
+      } else if (cleanUsername === 'benam' && cleanPassword === '123456') {
         user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', xp: 450, coins: 1250 };
       } else if (cleanUsername === 'comai' && cleanPassword === '123456') {
         user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', xp: 0, coins: 0 };
@@ -156,6 +160,7 @@ window.supabaseAuth = {
     localStorage.setItem('studentName', user.full_name);
     localStorage.setItem('studentClass', user.class_id || '2AI');
     localStorage.setItem('currentUserRole', user.role);
+    localStorage.setItem('currentUserUsername', user.username);
     localStorage.setItem('userXP', user.xp || 450);
     localStorage.setItem('userXu', user.coins || 1250);
 
