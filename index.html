@@ -2703,6 +2703,11 @@
       const userNameDisplay = document.getElementById("user-name-display");
       if (userNameDisplay) userNameDisplay.textContent = "Bé Nam";
 
+      if (typeof window.activatePanel === 'function') {
+        const homeTabBtn = document.getElementById("tab-btn-home");
+        window.activatePanel("tab-home-tasks", homeTabBtn);
+      }
+
       if (typeof window.updateStudentViewPermissionsAndTeacherName === 'function') {
         window.updateStudentViewPermissionsAndTeacherName();
       }
