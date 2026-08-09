@@ -106,70 +106,47 @@ window.supabaseAuth = {
 
     if (supabaseClient) {
       try {
-        // 1. Query trong bảng users Supabase CSDL theo username hoặc email với role === 'admin' hoặc student/teacher
-        const isSuperAdminInput = (
-          cleanUsername === 'adminlahuong2904@gmail.com' ||
-          cleanUsername === 'lahuong2904@gmail.com' ||
-          cleanUsername === 'admin'
-        );
+        // 1. Truy vấn linh hoạt trực tiếp trong bảng users của CSDL Supabase theo username hoặc email và password
+        const { data: dbUsers } = await supabaseClient
+          .from('users')
+          .select('*')
+          .or(`username.eq.${cleanUsername},email.eq.${cleanUsername}`)
+          .eq('password', cleanPassword);
 
-        if (isSuperAdminInput) {
-          const { data: adminUsers } = await supabaseClient
-            .from('users')
-            .select('*')
-            .or(`username.eq.${cleanUsername},email.eq.${cleanUsername},username.eq.adminlahuong2904@gmail.com,username.eq.lahuong2904@gmail.com,username.eq.admin`)
-            .eq('password', cleanPassword);
-
-          if (adminUsers && adminUsers.length > 0) {
-            user = adminUsers.find(u => u.role === 'admin') || adminUsers[0];
-          }
-        }
-
-        if (!user) {
-          const { data: dbUser } = await supabaseClient
-            .from('users')
-            .select('*')
-            .or(`username.eq.${cleanUsername},email.eq.${cleanUsername}`)
-            .eq('password', cleanPassword)
-            .maybeSingle();
-
-          if (dbUser) user = dbUser;
+        if (dbUsers && dbUsers.length > 0) {
+          user = dbUsers[0];
         }
       } catch (err) {
         console.error('Lỗi đăng nhập Supabase:', err);
       }
     }
 
-    // 2. Fallback nếu Supabase chưa phản hồi hoặc tài khoản Super Admin cục bộ
+    // 2. Fallback kiểm tra bộ nhớ localUsers nếu chưa kết nối được Supabase
     if (!user) {
       let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
       user = localUsers.find(u => (u.username.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword);
-
-      if (!user) {
-        const isSuperAdminFallback = (
-          cleanUsername === 'adminlahuong2904@gmail.com' ||
-          cleanUsername === 'lahuong2904@gmail.com' ||
-          cleanUsername === 'admin'
-        );
-
-        if (isSuperAdminFallback && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
-          user = { 
-            id: 1, 
-            username: cleanUsername, 
-            email: 'adminlahuong2904@gmail.com',
-            full_name: 'Super Admin (Lã Hương)', 
-            role: 'admin', 
-            class_id: '2AI', 
-            xp: 9999, 
-            coins: 9999 
-          };
-        } else if (cleanUsername === 'benam' && cleanPassword === '123456') {
-          user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', xp: 450, coins: 1250 };
-        } else if (cleanUsername === 'comai' && cleanPassword === '123456') {
-          user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', xp: 0, coins: 0 };
-        }
-      }
     }
+
+    if (!user) {
+      return { success: false, message: '❌ Tên tài khoản hoặc mật khẩu không chính xác!' };
+    }
+
+    localStorage.setItem('currentUserRole', user.role);
+    localStorage.setItem('currentUserUsername', user.username);
+
+    if (user.role === 'student') {
+      localStorage.setItem('studentName', user.full_name);
+      localStorage.setItem('studentClass', user.class_id || '2AI');
+      localStorage.setItem('userXP', user.xp || 450);
+      localStorage.setItem('userXu', user.coins || 1250);
+    } else if (user.role === 'teacher') {
+      localStorage.setItem('teacherName', user.full_name);
+    } else if (user.role === 'admin') {
+      localStorage.setItem('adminName', user.full_name || 'Quản Trị Viên Hệ Thống');
+    }
+
+    return { success: true, user: user, message: '🔑 Đăng nhập thành công!' };
+  }
 
     if (!user) {
       return { success: false, message: '❌ Tên tài khoản hoặc mật khẩu không chính xác!' };

@@ -2517,59 +2517,51 @@
         return;
       }
 
-      const cleanUser = uVal.toLowerCase();
-      const isSuperAdminInput = (
-        cleanUser === 'adminlahuong2904@gmail.com' ||
-        cleanUser === 'lahuong2904@gmail.com' ||
-        cleanUser === 'admin'
-      );
-
-      let isValidAdmin = false;
-      let adminName = "Super Admin (Lã Hương)";
-
-      if (isSuperAdminInput && (pVal === '123456' || pVal === 'admin123' || pVal.length > 0)) {
-        isValidAdmin = true;
-      } else if (window.supabaseAuth) {
+      if (window.supabaseAuth) {
         const res = await window.supabaseAuth.loginUser(uVal, pVal);
-        if (res.success && (res.user.role === 'admin' || (res.user.username && res.user.username.toLowerCase().includes('lahuong')))) {
-          isValidAdmin = true;
-          adminName = res.user.full_name || adminName;
+
+        // Chặn tuyệt đối nếu tài khoản đăng nhập là Học sinh hoặc Giáo viên thường
+        if (res.success && res.user && (res.user.role === 'student' || res.user.role === 'teacher')) {
+          if (err) err.textContent = "⛔ Từ chối truy cập! Tài khoản này là Học sinh / Giáo viên thường, không có quyền quản trị Admin.";
+          return;
+        }
+
+        // Bất kỳ tài khoản nào được lưu trữ là admin / quản trị viên trên CSDL Supabase đều được phép đăng nhập thành công
+        if (res.success && res.user && res.user.role === 'admin') {
+          const adminName = res.user.full_name || "Quản Trị Viên Hệ Thống";
+          localStorage.setItem("currentUserRole", "admin");
+          localStorage.setItem("currentUserUsername", res.user.username || uVal.toLowerCase());
+          localStorage.setItem("adminName", adminName);
+
+          if (err) err.textContent = '';
+          closeModal('admin-login-modal');
+
+          // Bật Bảng Quản Trị Admin trên DOM & gọi window.renderAdminDashboardUI()
+          const studentView = document.getElementById("student-view-container");
+          const teacherView = document.getElementById("teacher-view-container");
+          const adminModule = document.getElementById("admin-system-control-module");
+
+          if (studentView) studentView.style.display = "none";
+          if (teacherView) teacherView.style.display = "block";
+          if (adminModule) {
+            adminModule.style.display = "block";
+            adminModule.scrollIntoView({ behavior: 'smooth' });
+          }
+
+          const deniedBox = document.getElementById("admin-access-denied-box");
+          const grantedBox = document.getElementById("admin-access-granted-box");
+          if (deniedBox) deniedBox.style.display = "none";
+          if (grantedBox) grantedBox.style.display = "block";
+
+          if (typeof window.renderAdminDashboardUI === 'function') {
+            window.renderAdminDashboardUI();
+          }
+
+          return;
         }
       }
 
-      if (isValidAdmin) {
-        localStorage.setItem("currentUserRole", "admin");
-        localStorage.setItem("currentUserUsername", cleanUser);
-        localStorage.setItem("adminName", adminName);
-
-        if (err) err.textContent = '';
-        closeModal('admin-login-modal');
-
-        // Bật Bảng Quản Trị Admin trên DOM
-        const studentView = document.getElementById("student-view-container");
-        const teacherView = document.getElementById("teacher-view-container");
-        const adminModule = document.getElementById("admin-system-control-module");
-
-        if (studentView) studentView.style.display = "none";
-        if (teacherView) teacherView.style.display = "block";
-        if (adminModule) {
-          adminModule.style.display = "block";
-          adminModule.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        const deniedBox = document.getElementById("admin-access-denied-box");
-        const grantedBox = document.getElementById("admin-access-granted-box");
-        if (deniedBox) deniedBox.style.display = "none";
-        if (grantedBox) grantedBox.style.display = "block";
-
-        if (typeof window.renderAdminDashboardUI === 'function') {
-          window.renderAdminDashboardUI();
-        }
-
-        return;
-      }
-
-      if (err) err.textContent = "❌ Mật khẩu Admin không đúng! (Mặc định: 123456)";
+      if (err) err.textContent = "⛔ Từ chối truy cập! Tên tài khoản hoặc mật khẩu Admin không đúng trên Supabase CSDL.";
     };
 
     // Hàm mở trực tiếp DOM Bảng Quản Trị Admin sau khi đã xác thực Super Admin
@@ -2606,21 +2598,15 @@
 
     window.handleOpenAdminDirect = function() {
       const currentRole = (localStorage.getItem("currentUserRole") || "").toLowerCase();
-      const currentUsername = (localStorage.getItem("currentUserUsername") || "").toLowerCase();
 
-      const isAlreadySuperAdmin = (
-        currentRole === 'admin' &&
-        (currentUsername.includes('adminlahuong2904') || currentUsername.includes('lahuong') || currentUsername === 'admin')
-      );
-
-      // KHI CHƯA PHẢI SUPER ADMIN THỰC THỰC: BẮT BỘC PHẢI MỞ MODAL VÀ ĐIỀN THÔNG TIN ĐĂNG NHẬP ADMIN!
-      if (!isAlreadySuperAdmin) {
+      // Bắt buộc phải qua form đăng nhập thành công (role === 'admin') mới được vào trang Admin
+      if (currentRole !== 'admin') {
         const modal = document.getElementById("admin-login-modal");
         if (modal) {
           modal.style.display = "flex";
           modal.classList.add("active");
           const emailInput = document.getElementById("admin-login-email");
-          if (emailInput) emailInput.value = "adminlahuong2904@gmail.com";
+          if (emailInput) emailInput.value = "";
         }
         return false;
       }

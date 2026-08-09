@@ -63,16 +63,10 @@ export default function App() {
   // Kiểm soát bảo mật phân quyền khi bấm nút Quản Trị Admin
   const handleOpenAdminDirect = () => {
     const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
-    const username = (localStorage.getItem("currentUserUsername") || "").toLowerCase();
 
-    const isAlreadySuperAdmin = (
-      (role === 'admin' || currentUser?.role === 'admin') &&
-      (username.includes('adminlahuong2904') || username.includes('lahuong') || username === 'admin' || currentUser?.username?.includes('lahuong'))
-    );
-
-    // KHI CHƯA PHẢI SUPER ADMIN THỰC THỰC: CHẶN VÀ BẮT BỘC MỞ POPUP ĐĂNG NHẬP ADMIN!
-    if (!isAlreadySuperAdmin) {
-      setAdminEmailInput('adminlahuong2904@gmail.com');
+    // Bắt buộc phải qua bước điền đúng thông tin đăng nhập Admin thành công (role === 'admin') mới cho vào trang Admin
+    if (role !== 'admin' && currentUser?.role !== 'admin') {
+      setAdminEmailInput('');
       setAdminPassInput('');
       setAdminLoginError('');
       setAuthMode('admin');
@@ -86,7 +80,7 @@ export default function App() {
     }
   };
 
-  // Handle Admin Direct Login - Xác thực bảo mật Super Admin chuẩn Supabase CSDL
+  // Handle Admin Direct Login - Truy vấn trực tiếp Supabase linh hoạt theo role 'admin'
   const handleAdminDirectLogin = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setAdminLoginError('');
@@ -99,33 +93,27 @@ export default function App() {
       return;
     }
 
-    // 1. CHẶN VÀ TỪ CHỐI NẾU TÀI KHOẢN LÀ HỌC SINH HOẶC GIÁO VIÊN THƯỜNG
+    // 1. Truy vấn trực tiếp vào CSDL Supabase
     let res = null;
     if (authService && authService.loginUser) {
       res = await authService.loginUser(email, pass);
     }
 
+    // 2. Chặn tuyệt đối tài khoản học sinh hoặc giáo viên thường
     if (res && res.user && (res.user.role === 'student' || res.user.role === 'teacher')) {
-      setAdminLoginError('⛔ Từ chối truy cập! Tài khoản Học sinh / Giáo viên không có quyền quản trị Admin. Vui lòng đăng nhập bằng Super Admin (adminlahuong2904@gmail.com).');
+      setAdminLoginError('⛔ Từ chối truy cập! Tài khoản này là Học sinh / Giáo viên thường, không có quyền quản trị Admin.');
       return;
     }
 
-    // 2. XÁC THỰC CHÍNH XÁC TÀI KHOẢN SUPER ADMIN (adminlahuong2904@gmail.com / lahuong2904@gmail.com VỚI MẬT KHẨU 123456)
-    const isSuperAdminCreds = (
-      (email === 'adminlahuong2904@gmail.com' || email === 'lahuong2904@gmail.com' || email === 'admin') &&
-      (pass === '123456' || pass === 'admin123')
-    );
-
-    const isValidAdmin = isSuperAdminCreds || (res && res.success && res.user?.role === 'admin');
-
-    if (isValidAdmin) {
+    // 3. Cho phép bất kỳ tài khoản nào có role === 'admin' trong CSDL Supabase
+    if (res && res.success && res.user && res.user.role === 'admin') {
       const adminUser = {
-        username: email || 'adminlahuong2904@gmail.com',
-        name: (res && res.user && res.user.full_name) ? res.user.full_name : 'Super Admin (Lã Hương)',
-        classId: '2AI',
+        username: res.user.username || email,
+        name: res.user.full_name || 'Quản Trị Viên Hệ Thống',
+        classId: res.user.class_id || '2AI',
         role: 'admin',
-        xp: 9999,
-        coins: 9999
+        xp: res.user.xp || 9999,
+        coins: res.user.coins || 9999
       };
 
       // Lưu thông tin phiên làm việc vào localStorage
@@ -137,7 +125,7 @@ export default function App() {
       setActiveTab('admin-view');
       setIsAuthModalOpen(false);
 
-      // Bật Bảng Quản Trị Admin trên giao diện DOM
+      // Tự động ẩn giao diện học sinh, bật module quản trị & gọi window.renderAdminDashboardUI()
       const studentView = document.getElementById("student-view-container");
       const teacherView = document.getElementById("teacher-view-container");
       const adminModule = document.getElementById("admin-system-control-module");
@@ -158,7 +146,7 @@ export default function App() {
         window.renderAdminDashboardUI();
       }
     } else {
-      setAdminLoginError('⛔ Từ chối truy cập! Sai tài khoản hoặc mật khẩu Admin (yêu cầu: adminlahuong2904@gmail.com / 123456).');
+      setAdminLoginError('⛔ Từ chối truy cập! Tên tài khoản hoặc mật khẩu Admin không chính xác trên Supabase CSDL.');
     }
   };
 
