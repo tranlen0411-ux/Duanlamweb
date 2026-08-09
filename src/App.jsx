@@ -205,53 +205,7 @@ export default function App() {
               </button>
             </div>
 
-            {isSuperAdmin ? (
-              <AdminDashboard currentUser={currentUser} />
-            ) : (
-              <div style={{ maxWidth: '460px', margin: '40px auto', background: 'white', border: '4px solid #f87171', borderRadius: '24px', padding: '32px', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-                <span style={{ fontSize: '3.5rem' }}>👑</span>
-                <h3 style={{ fontSize: '1.55rem', fontWeight: 900, color: '#dc2626', margin: '10px 0 6px 0' }}>Đăng Nhập Super Admin</h3>
-                <p style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 700, margin: '0 0 20px 0' }}>
-                  Yêu cầu tài khoản quản trị tối cao <strong>lahuong2904@gmail.com</strong>
-                </p>
-
-                <form onSubmit={handleAdminDirectLogin}>
-                  <div style={{ marginBottom: '14px', textAlign: 'left' }}>
-                    <label style={{ fontWeight: 800, fontSize: '0.9rem', display: 'block', marginBottom: '4px' }}>Tài khoản Admin:</label>
-                    <input 
-                      type="text" 
-                      value={adminEmailInput} 
-                      onChange={e => setAdminEmailInput(e.target.value)} 
-                      required 
-                      style={{ width: '100%', padding: '10px', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 700, boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '16px', textAlign: 'left' }}>
-                    <label style={{ fontWeight: 800, fontSize: '0.9rem', display: 'block', marginBottom: '4px' }}>Mật khẩu Admin:</label>
-                    <input 
-                      type="password" 
-                      value={adminPassInput} 
-                      onChange={e => setAdminPassInput(e.target.value)} 
-                      required 
-                      style={{ width: '100%', padding: '10px', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 700, boxSizing: 'border-box' }}
-                    />
-                  </div>
-
-                  {adminLoginError && (
-                    <div style={{ color: '#ef4444', fontWeight: 800, fontSize: '0.88rem', marginBottom: '14px' }}>
-                      {adminLoginError}
-                    </div>
-                  )}
-
-                  <button 
-                    type="submit" 
-                    style={{ width: '100%', padding: '14px', borderRadius: '25px', background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', border: 'none', fontWeight: 900, fontSize: '1.05rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)' }}
-                  >
-                    🔑 Đăng Nhập Super Admin Ngay
-                  </button>
-                </form>
-              </div>
-            )}
+            <AdminDashboard currentUser={{ username: 'lahuong2904@gmail.com', role: 'admin', name: 'Super Admin (Lã Hương)' }} />
           </div>
         ) : (
           <div className="student-home-view" style={{ textAlign: 'center', padding: '40px 20px' }}>
