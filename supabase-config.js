@@ -35,7 +35,7 @@ window.supabaseAuth = {
     }
   },
 
-  async registerUser({ username, password, fullName, role, classId }) {
+  async registerUser({ username, password, fullName, role, classId, status, active }) {
     const cleanUsername = username.trim().toLowerCase();
     const cleanPassword = password.trim();
     const cleanFullName = fullName.trim();
@@ -44,8 +44,9 @@ window.supabaseAuth = {
     // Đảm bảo classId không bao giờ là chuỗi rỗng '' (tránh lỗi khóa ngoại FK 23503)
     let cleanClassId = (classId && classId.trim() !== '') ? classId.trim() : '2AI';
 
-    const initialStatus = (userRole === 'teacher') ? 'pending' : 'approved';
-    const isUserActive = (userRole !== 'teacher');
+    // Nếu Admin khởi tạo trực tiếp thì dùng status/active truyền vào, nếu đăng ký qua web thì mặc định 'pending' & false
+    const initialStatus = (status !== undefined) ? status : 'pending';
+    const isUserActive = (active !== undefined) ? active : false;
 
     if (!cleanUsername || !cleanPassword || !cleanFullName) {
       return { success: false, message: 'Vui lòng điền đầy đủ Tên tài khoản, Mật khẩu và Họ tên!' };
@@ -121,21 +122,23 @@ window.supabaseAuth = {
 
         if (insertErr) throw insertErr;
 
-        // 2. Nếu là Học sinh: Lưu tiếp dữ liệu vào bảng students
+        // 2. Nếu là Học sinh: Lưu dữ liệu vào bảng students trên Supabase
         if (userRole === 'student') {
           try {
             await supabaseClient.from('students').insert([{
               name: cleanFullName,
               class_id: cleanClassId,
               xp: 450,
-              coins: 1250
+              coins: 1250,
+              status: initialStatus,
+              active: isUserActive
             }]);
           } catch (stErr) {
             console.warn('[Notice inserting into students table]:', stErr);
           }
         }
 
-        // 3. Nếu là Giáo viên: Lưu trực tiếp dữ liệu vào bảng teachers trên Supabase
+        // 3. Nếu là Giáo viên: Lưu dữ liệu trực tiếp vào bảng teachers trên Supabase
         if (userRole === 'teacher') {
           try {
             await supabaseClient.from('teachers').insert([{
@@ -144,22 +147,24 @@ window.supabaseAuth = {
               full_name: cleanFullName,
               displayName: cleanFullName,
               role: 'teacher',
-              status: 'pending',
-              active: false
+              status: initialStatus,
+              active: isUserActive
             }]);
           } catch (tErr) {
             console.warn('[Notice inserting into teachers table]:', tErr);
           }
+        }
 
+        if (initialStatus === 'pending') {
           return { 
             success: true, 
             user: newUser, 
             isPending: true,
-            message: '🎉 Đăng ký tài khoản Giáo viên thành công! Thông tin đã được lưu trực tiếp vào CSDL (bảng teachers & users). Vui lòng chờ Super Admin duyệt tài khoản trước khi đăng nhập!' 
+            message: `🎉 Đăng ký tài khoản ${userRole === 'teacher' ? 'Giáo viên' : 'Học sinh'} thành công! Thông tin đã được đẩy lên Supabase ở trạng thái CHỜ ADMIN PHÊ DUYỆT. Vui lòng chờ Super Admin kích hoạt tài khoản trước khi đăng nhập!` 
           };
         }
 
-        return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản Học sinh thành công trên Supabase!' };
+        return { success: true, user: newUser, message: '🎉 Thêm tài khoản mới thành công trên Supabase CSDL!' };
       } catch (err) {
         console.error('Lỗi đăng ký Supabase:', err);
       }

@@ -14,6 +14,26 @@
   <!-- Supabase JS Client SDK & System Core All-In-One Script -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    // --- KHỞI TẠO AN TOÀN TOÀN CỤC (CHỐNG LỖI UNDEFINED & TRÙNG LẶP) ---
+    window.globalStudents = window.globalStudents || [];
+    window.teacherAccounts = window.teacherAccounts || [];
+    window.studentClassMap = window.studentClassMap || {};
+
+    // Chỉ định nghĩa khi chưa có biến nào tồn tại trước đó để tránh lỗi Identifier has already been declared
+    if (typeof SUPABASE_URL === 'undefined') {
+      var SUPABASE_URL = "https://rcqgxmcqolxbrahhyxji.supabase.co";
+      var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjcWd4bWNxb2x4YnJhaGh5eGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjQ3MTQsImV4cCI6MjEwMTY0MDcxNH0.szavY7MZ2T9znw-ja_lmjftlbG6U7-OvEiKFmA3m0HE";
+    }
+
+    // Khởi tạo client Supabase an toàn nếu thư viện đã sẵn sàng
+    if (typeof supabase !== 'undefined' && !window.supabaseClient) {
+      try {
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      } catch (e) {
+        console.warn("Không thể khởi tạo Supabase client:", e);
+      }
+    }
+
     /* ============================================================
        TOÁN CÙNG EM - ALL-IN-ONE BUNDLED CORE ENGINE
        ============================================================ */
@@ -5863,5 +5883,6 @@
     }
   };
   </script>
+  <script src="supabase-config.js"></script>
 </body>
 </html>
