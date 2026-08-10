@@ -2360,6 +2360,52 @@
     </div>
   </div>
 
+  <!-- MODAL XEM CHI TIẾT BÀI LÀM VÀ NHẬN XÉT CỦA HỌC SINH -->
+  <div class="modal-backdrop" id="modal-student-submission-detail" style="display: none;">
+    <div class="modal-card" style="max-width: 580px; width: 92%; max-height: 90vh; overflow-y: auto; position: relative; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 2px solid #e2e8f0; background: #ffffff; padding: 24px;">
+      <button class="modal-close" onclick="closeModal('modal-student-submission-detail')" style="position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; font-size: 20px; font-weight: bold; cursor: pointer; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b;">✕</button>
+      
+      <div style="text-align: center; margin-bottom: 16px; border-bottom: 2px dashed #e2e8f0; padding-bottom: 14px;">
+        <span style="font-size: 2.8rem;">📄</span>
+        <h3 style="font-size: 1.35rem; font-weight: 900; color: #1e293b; margin: 6px 0 2px 0;">Chi Tiết Bài Làm & Nhận Xét</h3>
+        <p id="submission-modal-subtitle" style="font-size: 0.88rem; color: #0284c7; font-weight: 800; margin: 0;">Học sinh: -- | Lớp: --</p>
+      </div>
+
+      <!-- Khối tóm tắt kết quả -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px; margin-bottom: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+          <div><strong>Tên bài thi:</strong> <span id="detail-quiz-title" style="color: #0284c7; font-weight: bold;">--</span></div>
+          <div><strong>Điểm số:</strong> <span id="detail-score" style="color: #059669; font-weight: bold;">--</span></div>
+          <div><strong>Thời gian làm:</strong> <span id="detail-exam-time" style="color: #475569; font-weight: bold;">--</span></div>
+          <div><strong>Chống gian lận:</strong> <span id="detail-anticheat" style="color: #047857; font-weight: bold;">✅ Trung thực</span></div>
+        </div>
+      </div>
+
+      <!-- Danh sách câu hỏi chi tiết -->
+      <div style="margin-bottom: 16px;">
+        <label style="font-weight: 800; font-size: 0.9rem; color: #334155; display: block; margin-bottom: 8px;">📋 Kết quả câu trả lời chi tiết:</label>
+        <div id="detail-questions-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; background: #fafafa; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1;"></div>
+      </div>
+
+      <!-- Khối nhận xét của Giáo viên -->
+      <div style="margin-bottom: 16px;">
+        <label style="font-weight: 800; font-size: 0.9rem; color: #334155; display: block; margin-bottom: 6px;">✏️ Lời nhắn nhận xét từ Giáo viên:</label>
+        <input type="hidden" id="hidden-submission-score-id" value="" />
+        <input type="hidden" id="hidden-submission-student-id" value="" />
+        <textarea id="input-submission-teacher-comment" class="form-control" rows="3" placeholder="Chưa có nhận xét." style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; box-sizing: border-box;"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-primary" style="flex: 1; padding: 12px; border-radius: 20px; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; cursor: pointer;" onclick="saveSubmissionTeacherComment()">
+          💾 Lưu Nhận Xét
+        </button>
+        <button type="button" class="btn btn-secondary" style="padding: 12px 18px; border-radius: 20px; font-weight: 800; background: #e2e8f0; color: #475569; border: none; cursor: pointer;" onclick="closeModal('modal-student-submission-detail')">
+          ✕ Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- POPUP MINI-GAME ANIMATED HTML HOÀN CHỈNH CHO CẢ 6 TRÒ CHƠI TƯƠNG TÁC -->
   <div class="custom-game-backdrop" id="custom-game-backdrop">
     <div class="custom-game-modal">
