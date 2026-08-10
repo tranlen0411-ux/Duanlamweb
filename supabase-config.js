@@ -98,6 +98,7 @@ window.supabaseAuth = {
       // 3. Nếu là giáo viên -> Insert thêm vào bảng teachers để duyệt
       if (userRole === 'teacher') {
         const { error: teacherErr } = await activeClient.from('teachers').insert([{
+          id: Date.now(), // Thêm dòng này để tránh lỗi null value cột id
           username: cleanUsername,
           display_name: cleanFullName,
           assigned_classes: [userClass],
