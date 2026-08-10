@@ -185,7 +185,7 @@
     window.supabaseAuth = {
       client: supabaseClient,
 
-      // 1. Đăng ký tài khoản mới (Register) chuẩn theo cấu trúc bảng Supabase
+      // 1. Đăng ký tài khoản mới (Register)
       async registerUser({ username, password, fullName, role, classId }) {
         const cleanUsername = (username || '').trim().toLowerCase();
         const cleanPassword = (password || '').trim();
@@ -214,7 +214,7 @@
             return { success: false, message: 'Tên tài khoản (username) này đã tồn tại! Vui lòng chọn tên khác.' };
           }
 
-          // 1. Insert vào bảng users chung
+          // 1. Insert duy nhất vào bảng users chung (lưu cả giáo viên và học sinh)
           const { data: newUser, error: insertErr } = await activeClient
             .from('users')
             .insert([{
@@ -233,7 +233,7 @@
             return { success: false, message: 'Lỗi CSDL (Users): ' + insertErr.message };
           }
 
-          // 2. Nếu là học sinh -> Insert thêm vào bảng students
+          // 2. Nếu là học sinh -> Insert thêm vào bảng students (nếu cần thiết cho game)
           if (userRole === 'student') {
             await activeClient.from('students').insert([{
               name: cleanFullName,
@@ -243,24 +243,7 @@
             }]);
           }
 
-          // 3. Nếu là giáo viên -> Insert đúng chuẩn các cột của bảng teachers (id kiểu text, display_name, assigned_classes)
-          if (userRole === 'teacher') {
-            const customTeacherId = 'gv_' + cleanUsername; // Tạo id kiểu text cho bảng teachers
-            const { error: teacherErr } = await activeClient.from('teachers').insert([{
-              id: customTeacherId,
-              username: cleanUsername,
-              password: cleanPassword,
-              display_name: cleanFullName,
-              assigned_classes: [userClass],
-              is_active: false // Chờ quản trị viên phê duyệt
-            }]);
-
-            if (teacherErr) {
-              console.warn('Lỗi chèn vào bảng teachers:', teacherErr);
-            }
-          }
-
-          return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công! Tài khoản giáo viên đang chờ phê duyệt.' };
+          return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase!' };
         } catch (err) {
           return { success: false, message: 'Lỗi hệ thống: ' + err.message };
         }
