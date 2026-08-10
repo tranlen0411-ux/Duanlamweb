@@ -35,6 +35,7 @@ window.supabaseAuth = {
     }
   },
 
+  // 1. Đăng ký tài khoản mới (Register)
   async registerUser({ username, password, fullName, role, classId }) {
     const cleanUsername = (username || '').trim().toLowerCase();
     const cleanPassword = (password || '').trim();
@@ -63,7 +64,7 @@ window.supabaseAuth = {
         return { success: false, message: 'Tên tài khoản này đã tồn tại! Vui lòng chọn tên khác.' };
       }
 
-      // Insert vào bảng users chung
+      // 1. Insert vào bảng users chung
       const { data: newUser, error: insertErr } = await activeClient
         .from('users')
         .insert([{
@@ -73,7 +74,9 @@ window.supabaseAuth = {
           role: userRole,
           class_id: userRole === 'student' ? userClass : null,
           xp: 450,
-          coins: 1250
+          coins: 1250,
+          status: userRole === 'teacher' ? 'pending' : 'approved',
+          active: userRole === 'teacher' ? false : true
         }])
         .select()
         .single();
@@ -82,7 +85,7 @@ window.supabaseAuth = {
         return { success: false, message: 'Lỗi CSDL: ' + insertErr.message };
       }
 
-      // Nếu là học sinh -> Insert thêm vào bảng students
+      // 2. Nếu là học sinh -> Insert thêm vào bảng students
       if (userRole === 'student') {
         await activeClient.from('students').insert([{
           name: cleanFullName,
@@ -90,6 +93,25 @@ window.supabaseAuth = {
           xp: 450,
           coins: 1250
         }]);
+      }
+
+      // 3. Nếu là giáo viên -> Insert vào bảng teachers với id kiểu TEXT hợp lệ tránh lỗi not-null
+      if (userRole === 'teacher') {
+        const teacherTextId = 'gv_' + cleanUsername;
+        const { error: teacherErr } = await activeClient.from('teachers').insert([{
+          id: teacherTextId,
+          username: cleanUsername,
+          password: cleanPassword,
+          display_name: cleanFullName,
+          assigned_classes: [userClass],
+          is_active: false,
+          role: 'teacher'
+        }]);
+        if (teacherErr) console.warn('[Notice inserting teachers table]:', teacherErr);
+      }
+
+      if (userRole === 'teacher') {
+        return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản Giáo viên thành công! Vui lòng chờ Admin phê duyệt.' };
       }
 
       return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công!' };

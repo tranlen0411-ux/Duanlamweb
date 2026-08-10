@@ -213,7 +213,7 @@
             return { success: false, message: 'Tên tài khoản này đã tồn tại! Vui lòng chọn tên khác.' };
           }
 
-          // Insert vào bảng users chung
+          // 1. Insert vào bảng users chung
           const { data: newUser, error: insertErr } = await activeClient
             .from('users')
             .insert([{
@@ -223,7 +223,9 @@
               role: userRole,
               class_id: userRole === 'student' ? userClass : null,
               xp: 450,
-              coins: 1250
+              coins: 1250,
+              status: userRole === 'teacher' ? 'pending' : 'approved',
+              active: userRole === 'teacher' ? false : true
             }])
             .select()
             .single();
@@ -232,7 +234,7 @@
             return { success: false, message: 'Lỗi CSDL: ' + insertErr.message };
           }
 
-          // Nếu là học sinh -> Insert thêm vào bảng students
+          // 2. Nếu là học sinh -> Insert thêm vào bảng students
           if (userRole === 'student') {
             await activeClient.from('students').insert([{
               name: cleanFullName,
@@ -240,6 +242,25 @@
               xp: 450,
               coins: 1250
             }]);
+          }
+
+          // 3. Nếu là giáo viên -> Insert vào bảng teachers với id kiểu TEXT hợp lệ không null
+          if (userRole === 'teacher') {
+            const teacherTextId = 'gv_' + cleanUsername;
+            const { error: teacherErr } = await activeClient.from('teachers').insert([{
+              id: teacherTextId,
+              username: cleanUsername,
+              password: cleanPassword,
+              display_name: cleanFullName,
+              assigned_classes: [userClass],
+              is_active: false,
+              role: 'teacher'
+            }]);
+            if (teacherErr) console.warn('[Notice inserting teachers table]:', teacherErr);
+          }
+
+          if (userRole === 'teacher') {
+            return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản Giáo viên thành công! Vui lòng chờ Admin phê duyệt.' };
           }
 
           return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công!' };
@@ -261,6 +282,7 @@
 
         if (activeClient) {
           try {
+            // 1. Kiểm tra trong bảng users
             const { data: dbUsers } = await activeClient
               .from('users')
               .select('*')
@@ -270,13 +292,35 @@
             if (dbUsers && dbUsers.length > 0) {
               user = dbUsers[0];
             } else {
+              // Try email
               const { data: dbUsersByEmail } = await activeClient
                 .from('users')
                 .select('*')
                 .eq('email', cleanUsername)
                 .eq('password', cleanPassword);
+
               if (dbUsersByEmail && dbUsersByEmail.length > 0) {
                 user = dbUsersByEmail[0];
+              } else {
+                // 2. Thử truy vấn bảng teachers nếu không tìm thấy trong users
+                const { data: dbTeachers } = await activeClient
+                  .from('teachers')
+                  .select('*')
+                  .eq('username', cleanUsername)
+                  .eq('password', cleanPassword);
+
+                if (dbTeachers && dbTeachers.length > 0) {
+                  const t = dbTeachers[0];
+                  user = {
+                    id: t.id,
+                    username: t.username,
+                    full_name: t.display_name,
+                    role: 'teacher',
+                    class_id: (t.assigned_classes && t.assigned_classes[0]) ? t.assigned_classes[0] : '2A',
+                    status: t.is_active !== false ? 'approved' : 'pending',
+                    active: t.is_active !== false
+                  };
+                }
               }
             }
           } catch (err) { console.error('Lỗi Supabase login:', err); }
@@ -4670,9 +4714,34 @@
       }
 
       // Render Bảng Quản Lý Giáo Viên Cho Admin
-      window.renderAdminTeacherTable = function() {
+      window.renderAdminTeacherTable = async function() {
         const tbody = document.getElementById("admin-teacher-table-body");
         if (!tbody) return;
+
+        const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+        if (activeClient) {
+          try {
+            const { data: dbTeachers, error } = await activeClient
+              .from('teachers')
+              .select('*')
+              .order('created_at', { ascending: true });
+
+            if (!error && dbTeachers && dbTeachers.length > 0) {
+              window.teacherAccounts = dbTeachers.map(t => ({
+                id: t.id,
+                username: t.username,
+                password: t.password || "123456",
+                displayName: t.display_name || t.username,
+                assignedClasses: t.assigned_classes || [],
+                classes: t.assigned_classes || [],
+                active: t.is_active !== false,
+                role: t.role || 'teacher'
+              }));
+            }
+          } catch (err) {
+            console.warn('[Supabase renderAdminTeacherTable Error]:', err);
+          }
+        }
 
         tbody.innerHTML = teacherAccounts.map((t) => {
           const assignedNames = (t.assignedClasses || t.classes || []).map(cId => {
@@ -4770,7 +4839,7 @@
         }
       };
 
-      window.saveAdminTeacherForm = function () {
+      window.saveAdminTeacherForm = async function () {
         const tId = document.getElementById("input-admin-teacher-id").value;
         const displayName = document.getElementById("input-admin-teacher-displayname").value.trim();
         const username = document.getElementById("input-admin-teacher-username").value.trim();
@@ -4782,6 +4851,7 @@
         }
 
         const checkedClasses = Array.from(document.querySelectorAll(".admin-class-cb:checked")).map(cb => cb.value);
+        const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
 
         if (tId) {
           const teacher = teacherAccounts.find(t => t.id === tId);
@@ -4792,60 +4862,140 @@
             teacher.assignedClasses = checkedClasses;
             teacher.classes = checkedClasses;
           }
+          if (activeClient) {
+            try {
+              await activeClient.from('teachers').update({
+                display_name: displayName,
+                username: username,
+                password: password,
+                assigned_classes: checkedClasses
+              }).eq('id', tId);
+
+              await activeClient.from('users').update({
+                full_name: displayName,
+                username: username,
+                password: password
+              }).eq('username', username);
+            } catch (err) {
+              console.warn('[Supabase Update Teacher Error]:', err);
+            }
+          }
         } else {
           if (teacherAccounts.some(t => t.username.toLowerCase() === username.toLowerCase())) {
             alert("Tên tài khoản này đã tồn tại! Vui lòng chọn tên khác.");
             return;
           }
 
-          teacherAccounts.push({
-            id: "teacher_" + Date.now(),
+          const newTextId = "teacher_" + Date.now();
+          const newTeacherObj = {
+            id: newTextId,
             username: username,
             password: password,
             displayName: displayName,
             assignedClasses: checkedClasses,
             classes: checkedClasses,
             active: true
-          });
+          };
+          teacherAccounts.push(newTeacherObj);
+
+          if (activeClient) {
+            try {
+              // 1. Ghi trực tiếp vào public.teachers tương thích với text ID
+              await activeClient.from('teachers').insert([{
+                id: newTextId,
+                username: username,
+                password: password,
+                display_name: displayName,
+                assigned_classes: checkedClasses,
+                is_active: true,
+                role: 'teacher'
+              }]);
+
+              // 2. Đồng bộ thêm vào public.users để đăng nhập
+              await activeClient.from('users').insert([{
+                username: username,
+                password: password,
+                full_name: displayName,
+                role: 'teacher',
+                class_id: checkedClasses[0] || '2A',
+                status: 'approved',
+                active: true
+              }]);
+            } catch (err) {
+              console.warn('[Supabase Insert Teacher Error]:', err);
+            }
+          }
         }
 
         localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
         closeModal("modal-admin-teacher-form");
-        renderAdminTeacherTable();
-        renderClassOptions();
-        if (typeof handleClassChange === "function") {
-          handleClassChange(document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL");
-        }
+        window.renderAdminTeacherTable();
+        if (typeof renderClassOptions === 'function') renderClassOptions();
       };
 
-      window.changeTeacherPassword = function(tId) {
+      window.changeTeacherPassword = async function(tId) {
         const teacher = teacherAccounts.find(t => t.id === tId);
         if (!teacher) return;
         const newPass = prompt(`Nhập mật khẩu mới cho ${teacher.displayName} (${teacher.username}):`, teacher.password || "123456");
         if (newPass && newPass.trim() !== "") {
-          teacher.password = newPass.trim();
+          const cleanPass = newPass.trim();
+          teacher.password = cleanPass;
+
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+          if (activeClient) {
+            try {
+              await activeClient.from('teachers').update({ password: cleanPass }).eq('id', tId);
+              await activeClient.from('users').update({ password: cleanPass }).eq('username', teacher.username);
+            } catch (err) {
+              console.warn('[Supabase Change Pass Error]:', err);
+            }
+          }
+
           localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
           alert(`Đã cập nhật mật khẩu mới cho ${teacher.displayName}!`);
-          renderAdminTeacherTable();
+          window.renderAdminTeacherTable();
         }
       };
 
-      window.toggleTeacherActive = function(tId) {
+      window.toggleTeacherActive = async function(tId) {
         const teacher = teacherAccounts.find(t => t.id === tId);
         if (!teacher) return;
-        teacher.active = (teacher.active === false) ? true : false;
+        const newActive = (teacher.active === false) ? true : false;
+        teacher.active = newActive;
+
+        const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+        if (activeClient) {
+          try {
+            await activeClient.from('teachers').update({ is_active: newActive }).eq('id', tId);
+            await activeClient.from('users').update({ active: newActive, status: newActive ? 'approved' : 'pending' }).eq('username', teacher.username);
+          } catch (err) {
+            console.warn('[Supabase Toggle Active Error]:', err);
+          }
+        }
+
         localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
-        renderAdminTeacherTable();
+        window.renderAdminTeacherTable();
       };
 
-      window.deleteTeacherAccount = function(tId) {
+      window.deleteTeacherAccount = async function(tId) {
         const teacher = teacherAccounts.find(t => t.id === tId);
         if (!teacher) return;
         if (confirm(`Bạn có chắc muốn xóa tài khoản giáo viên "${teacher.displayName}"?`)) {
           teacherAccounts = teacherAccounts.filter(t => t.id !== tId);
+
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+          if (activeClient) {
+            try {
+              await activeClient.from('teachers').delete().eq('id', tId);
+              await activeClient.from('users').delete().eq('username', teacher.username);
+            } catch (err) {
+              console.warn('[Supabase Delete Teacher Error]:', err);
+            }
+          }
+
           localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
-          renderAdminTeacherTable();
-          renderClassOptions();
+          window.renderAdminTeacherTable();
+          if (typeof renderClassOptions === 'function') renderClassOptions();
         }
       };
 
