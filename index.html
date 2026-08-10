@@ -4607,65 +4607,7 @@
         { studentId: 104, score: "10/10", time: "10 phút" }
       ];
 
-      let teacherAccounts = [
-        {
-          id: "gv001",
-          username: "comai",
-          password: "123456",
-          displayName: "Cô Mai",
-          assignedClasses: ["2A", "2B"],
-          classes: ["2A", "2B"],
-          active: true
-        },
-        {
-          id: "gv002",
-          username: "cohuong",
-          password: "123456",
-          displayName: "Cô Hương",
-          assignedClasses: ["2A"],
-          classes: ["2A"],
-          active: true
-        },
-        {
-          id: "gv003",
-          username: "thayhung",
-          password: "123456",
-          displayName: "Thầy Hùng",
-          assignedClasses: ["2B"],
-          classes: ["2B"],
-          active: true
-        },
-        {
-          id: "gv004",
-          username: "colan",
-          password: "123456",
-          displayName: "Cô Lan",
-          assignedClasses: ["2C"],
-          classes: ["2C"],
-          active: true
-        },
-        {
-          id: "gv005",
-          username: "demo",
-          password: "demo",
-          displayName: "Giáo viên Demo",
-          assignedClasses: ["2A"],
-          classes: ["2A"],
-          active: true
-        }
-      ];
-
-      const storedTeacherAccounts = localStorage.getItem("teacherAccounts");
-      if (storedTeacherAccounts) {
-        try {
-          const parsed = JSON.parse(storedTeacherAccounts);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            teacherAccounts = parsed;
-          }
-        } catch(e){}
-      } else {
-        localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
-      }
+      let teacherAccounts = [];
 
       function isAdmin() {
         return localStorage.getItem("currentUserRole") === "admin";
@@ -4726,8 +4668,8 @@
               .select('*')
               .order('created_at', { ascending: true });
 
-            if (!error && dbTeachers && dbTeachers.length > 0) {
-              window.teacherAccounts = dbTeachers.map(t => ({
+            if (!error) {
+              window.teacherAccounts = (dbTeachers || []).map(t => ({
                 id: t.id,
                 username: t.username,
                 password: t.password || "123456",
@@ -4743,29 +4685,39 @@
           }
         }
 
-        tbody.innerHTML = teacherAccounts.map((t) => {
-          const assignedNames = (t.assignedClasses || t.classes || []).map(cId => {
-            const cls = globalClasses.find(c => c.id === cId);
-            return cls ? cls.name : cId;
-          }).join(', ');
-
-          const isLocked = t.active === false;
-
-          return `
-            <tr style="border-bottom:1px solid #e2e8f0; background:${isLocked ? '#fef2f2' : '#ffffff'};">
-              <td style="padding:10px; font-weight:bold; color:#1e293b;">${t.displayName}</td>
-              <td style="padding:10px; color:#475569;"><code>${t.username}</code></td>
-              <td style="padding:10px;"><span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">${assignedNames || 'Chưa phân lớp'}</span></td>
-              <td style="padding:10px;">${isLocked ? '<span style="color:#ef4444; font-weight:bold;">🔒 Đã khóa</span>' : '<span style="color:#10b981; font-weight:bold;">🟢 Hoạt động</span>'}</td>
-              <td style="padding:10px; text-align:center; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
-                <button onclick="openEditTeacherModal('${t.id}')" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">✏️ Sửa Lớp</button>
-                <button onclick="changeTeacherPassword('${t.id}')" style="background:#fef3c7; color:#d97706; border:1px solid #fde68a; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">🔑 Đổi Mật Khẩu</button>
-                <button onclick="toggleTeacherActive('${t.id}')" style="background:${isLocked ? '#dcfce7' : '#fee2e2'}; color:${isLocked ? '#15803d' : '#b91c1c'}; border:1px solid #cbd5e1; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">${isLocked ? '🔓 Mở khóa' : '🔒 Khóa'}</button>
-                <button onclick="deleteTeacherAccount('${t.id}')" style="background:#fef2f2; color:#ef4444; border:1px solid #fecaca; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">🗑️ Xóa</button>
+        if (!teacherAccounts || teacherAccounts.length === 0) {
+          tbody.innerHTML = `
+            <tr style="border-bottom:1px solid #e2e8f0; background:#f8fafc;">
+              <td colspan="5" style="padding:20px; text-align:center; color:#64748b; font-weight:800; font-size:14px;">
+                📋 Chưa có tài khoản Giáo viên nào trong CSDL Supabase (public.teachers). Nhấn nút "➕ Thêm Giáo Viên Mới" để tạo!
               </td>
             </tr>
           `;
-        }).join('');
+        } else {
+          tbody.innerHTML = teacherAccounts.map((t) => {
+            const assignedNames = (t.assignedClasses || t.classes || []).map(cId => {
+              const cls = globalClasses.find(c => c.id === cId);
+              return cls ? cls.name : cId;
+            }).join(', ');
+
+            const isLocked = t.active === false;
+
+            return `
+              <tr style="border-bottom:1px solid #e2e8f0; background:${isLocked ? '#fef2f2' : '#ffffff'};">
+                <td style="padding:10px; font-weight:bold; color:#1e293b;">${t.displayName}</td>
+                <td style="padding:10px; color:#475569;"><code>${t.username}</code></td>
+                <td style="padding:10px;"><span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">${assignedNames || 'Chưa phân lớp'}</span></td>
+                <td style="padding:10px;">${isLocked ? '<span style="color:#ef4444; font-weight:bold;">🔒 Đã khóa</span>' : '<span style="color:#10b981; font-weight:bold;">🟢 Hoạt động</span>'}</td>
+                <td style="padding:10px; text-align:center; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                  <button onclick="openEditTeacherModal('${t.id}')" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">✏️ Sửa Lớp</button>
+                  <button onclick="changeTeacherPassword('${t.id}')" style="background:#fef3c7; color:#d97706; border:1px solid #fde68a; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">🔑 Đổi Mật Khẩu</button>
+                  <button onclick="toggleTeacherActive('${t.id}')" style="background:${isLocked ? '#dcfce7' : '#fee2e2'}; color:${isLocked ? '#15803d' : '#b91c1c'}; border:1px solid #cbd5e1; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">${isLocked ? '🔓 Mở khóa' : '🔒 Khóa'}</button>
+                  <button onclick="deleteTeacherAccount('${t.id}')" style="background:#fef2f2; color:#ef4444; border:1px solid #fecaca; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">🗑️ Xóa</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
 
         const classTbody = document.getElementById("admin-class-table-body");
         if (classTbody) {
@@ -4886,32 +4838,26 @@
             return;
           }
 
-          const newTextId = "teacher_" + Date.now();
-          const newTeacherObj = {
-            id: newTextId,
-            username: username,
-            password: password,
-            displayName: displayName,
-            assignedClasses: checkedClasses,
-            classes: checkedClasses,
-            active: true
-          };
-          teacherAccounts.push(newTeacherObj);
-
           if (activeClient) {
             try {
-              // 1. Ghi trực tiếp vào public.teachers tương thích với text ID
-              await activeClient.from('teachers').insert([{
-                id: newTextId,
+              const insertPayload = {
                 username: username,
                 password: password,
                 display_name: displayName,
                 assigned_classes: checkedClasses,
                 is_active: true,
                 role: 'teacher'
-              }]);
+              };
 
-              // 2. Đồng bộ thêm vào public.users để đăng nhập
+              // 1. Thử insert để database tự sinh ID (nếu có default)
+              const { error: insErr } = await activeClient.from('teachers').insert([insertPayload]);
+              if (insErr) {
+                // Nếu database không tự sinh ID (not null constraint), tự cấp ID text 'teacher_' + Date.now()
+                insertPayload.id = "teacher_" + Date.now();
+                await activeClient.from('teachers').insert([insertPayload]);
+              }
+
+              // 2. Đồng bộ thêm vào public.users để cho phép đăng nhập
               await activeClient.from('users').insert([{
                 username: username,
                 password: password,
@@ -4927,9 +4873,8 @@
           }
         }
 
-        localStorage.setItem("teacherAccounts", JSON.stringify(teacherAccounts));
         closeModal("modal-admin-teacher-form");
-        window.renderAdminTeacherTable();
+        await window.renderAdminTeacherTable();
         if (typeof renderClassOptions === 'function') renderClassOptions();
       };
 
