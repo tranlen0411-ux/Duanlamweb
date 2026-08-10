@@ -2910,14 +2910,17 @@
     window.handleGlobalLogoutHTML = function() {
       console.log('Global Logout Executed - Resetting to Guest State');
 
-      // 1. Xóa toàn bộ dữ liệu phiên lưu trữ (currentUser = null)
+      // 1. Xóa toàn bộ dữ liệu phiên lưu trữ của người dùng hiện tại
       localStorage.removeItem("currentUser");
       localStorage.removeItem("currentUserRole");
       localStorage.removeItem("currentUserUsername");
+      localStorage.removeItem("currentTeacherId");
       localStorage.removeItem("adminName");
       localStorage.removeItem("teacherName");
       localStorage.removeItem("studentName");
+      localStorage.removeItem("studentClass");
       localStorage.removeItem("studentClassId");
+      localStorage.removeItem("teacherClass");
       localStorage.removeItem("userToken");
       localStorage.setItem("currentUserRole", "guest");
 
@@ -2938,6 +2941,10 @@
 
       const userNameDisplay = document.getElementById("user-name-display");
       if (userNameDisplay) userNameDisplay.textContent = "Khách (Chưa đăng nhập)";
+
+      if (typeof window.updateAllUserNames === 'function') {
+        window.updateAllUserNames();
+      }
 
       if (typeof window.activatePanel === 'function') {
         const homeTabBtn = document.getElementById("tab-btn-home");
@@ -3749,7 +3756,7 @@
           if (teacherNameSpan) teacherNameSpan.textContent = `🏫 Giáo viên: ${tName}`;
           if (teacherTitleName) teacherTitleName.textContent = tName;
         } else {
-          if (teacherNameSpan) teacherNameSpan.textContent = "👩‍🏫 Giáo Viên";
+          if (teacherNameSpan) teacherNameSpan.textContent = "🏫 Giáo viên: Đăng nhập";
           if (teacherTitleName) teacherTitleName.textContent = "Cô Mai";
         }
 
@@ -3981,19 +3988,8 @@
       const logoutBtn = document.getElementById("logout-teacher-btn");
       if (logoutBtn) {
         logoutBtn.addEventListener("click", function() {
-          localStorage.removeItem("currentUserRole");
-          localStorage.removeItem("currentTeacherId");
-          localStorage.removeItem("teacherName");
-          localStorage.removeItem("currentUser");
-
-          updateAllUserNames();
-          if (typeof renderClassOptions === "function") renderClassOptions();
-
-          const studentView = document.getElementById("student-view-container");
-          const teacherView = document.getElementById("teacher-view-container");
-          if (studentView && teacherView) {
-            teacherView.style.display = "none";
-            studentView.style.display = "block";
+          if (typeof window.handleGlobalLogoutHTML === 'function') {
+            window.handleGlobalLogoutHTML();
           }
           alert("👋 Bạn đã đăng xuất khỏi tài khoản Giáo viên / Admin!");
         });
