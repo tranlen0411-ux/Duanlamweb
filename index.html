@@ -5791,23 +5791,35 @@
               document.getElementById("input-submission-teacher-comment").placeholder = "Chưa có nhận xét.";
             }
 
-            if (qListContainer) {
-              const sampleQuestions = [
-                { q: "Câu 1: 5 + 3 = ?", ans: "8", correctAns: "8", correct: true },
-                { q: "Câu 2: 12 - 4 = ?", ans: "8", correctAns: "8", correct: true },
-                { q: "Câu 3: 7 + 6 = ?", ans: "13", correctAns: "13", correct: true },
-                { q: "Câu 4: 15 - 9 = ?", ans: "6", correctAns: "6", correct: true },
-                { q: "Câu 5: 9 + 8 = ?", ans: "17", correctAns: "17", correct: true }
-              ];
+            let submissionAnswers = null;
+            if (activeClient && foundScore) {
+              try {
+                const { data: subData } = await activeClient
+                  .from('submissions')
+                  .select('*')
+                  .or(`id.eq.${foundScore.id},student_id.eq.${foundScore.student_id}`)
+                  .limit(1);
+                if (subData && subData.length > 0 && (subData[0].answers || subData[0].questions)) {
+                  submissionAnswers = subData[0].answers || subData[0].questions;
+                }
+              } catch (e) {
+                console.log('[submissions fetch note]:', e);
+              }
+            }
 
-              qListContainer.innerHTML = sampleQuestions.map(item => `
-                <div style="display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #f1f5f9; padding:8px 12px; border-radius:8px; font-size:12px;">
-                  <span><strong>${item.q}</strong> ➔ Học sinh chọn: <span style="font-weight:bold; color:#0369a1;">${item.ans}</span> (Đáp án: ${item.correctAns})</span>
-                  <span style="background:${item.correct ? '#dcfce7' : '#fee2e2'}; color:${item.correct ? '#15803d' : '#b91c1c'}; padding:2px 8px; border-radius:10px; font-weight:bold;">
-                    ${item.correct ? '✅ Đúng' : '❌ Sai'}
-                  </span>
-                </div>
-              `).join('');
+            if (qListContainer) {
+              if (submissionAnswers && Array.isArray(submissionAnswers) && submissionAnswers.length > 0) {
+                qListContainer.innerHTML = submissionAnswers.map(item => `
+                  <div style="display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #f1f5f9; padding:8px 12px; border-radius:8px; font-size:12px;">
+                    <span><strong>${item.q || item.question}</strong> ➔ Học sinh chọn: <span style="font-weight:bold; color:#0369a1;">${item.ans || item.answer}</span> ${item.correctAns ? `(Đáp án: ${item.correctAns})` : ''}</span>
+                    <span style="background:${item.correct ? '#dcfce7' : '#fee2e2'}; color:${item.correct ? '#15803d' : '#b91c1c'}; padding:2px 8px; border-radius:10px; font-weight:bold;">
+                      ${item.correct ? '✅ Đúng' : '❌ Sai'}
+                    </span>
+                  </div>
+                `).join('');
+              } else {
+                qListContainer.innerHTML = `<div style="text-align:center; padding:16px; color:#64748b; font-weight:bold; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">Chưa có dữ liệu chi tiết bài làm.</div>`;
+              }
             }
           } else {
             document.getElementById("detail-score").textContent = "Chưa làm (0%)";
