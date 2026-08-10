@@ -35,7 +35,7 @@ window.supabaseAuth = {
     }
   },
 
-  // 1. Đăng ký tài khoản mới (Register)
+  // 1. Đăng ký tài khoản mới (Register) chuẩn theo cấu trúc bảng Supabase
   async registerUser({ username, password, fullName, role, classId }) {
     const cleanUsername = username.trim().toLowerCase();
     const cleanPassword = password.trim();
@@ -47,70 +47,73 @@ window.supabaseAuth = {
       return { success: false, message: 'Vui lòng điền đầy đủ Tên tài khoản, Mật khẩu và Họ tên!' };
     }
 
-    if (supabaseClient) {
-      try {
-        const { data: existingUser } = await supabaseClient
-          .from('users')
-          .select('id')
-          .eq('username', cleanUsername)
-          .maybeSingle();
+    const activeClient = supabaseClient || window.supabaseClient;
+    if (!activeClient) {
+      return { success: false, message: 'Chưa kết nối được tới Supabase CSDL!' };
+    }
 
-        if (existingUser) {
-          return { success: false, message: 'Tên tài khoản (username) này đã tồn tại! Vui lòng chọn tên khác.' };
-        }
+    try {
+      // Kiểm tra xem username đã tồn tại trong bảng users chưa
+      const { data: existingUser } = await activeClient
+        .from('users')
+        .select('id')
+        .eq('username', cleanUsername)
+        .maybeSingle();
 
-        const { data: newUser, error: insertErr } = await supabaseClient
-          .from('users')
-          .insert([{
-            username: cleanUsername,
-            password: cleanPassword,
-            full_name: cleanFullName,
-            role: userRole,
-            class_id: userClass,
-            xp: 450,
-            coins: 1250
-          }])
-          .select()
-          .single();
-
-        if (insertErr) throw insertErr;
-
-        if (userRole === 'student') {
-          await supabaseClient.from('students').insert([{
-            name: cleanFullName,
-            class_id: userClass,
-            xp: 450,
-            coins: 1250
-          }]);
-        }
-
-        return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase!' };
-      } catch (err) {
-        console.error('Lỗi đăng ký Supabase:', err);
-        return { success: false, message: 'Lỗi CSDL: ' + err.message };
+      if (existingUser) {
+        return { success: false, message: 'Tên tài khoản (username) này đã tồn tại! Vui lòng chọn tên khác.' };
       }
+
+      // 1. Insert vào bảng users chung
+      const { data: newUser, error: insertErr } = await activeClient
+        .from('users')
+        .insert([{
+          username: cleanUsername,
+          password: cleanPassword,
+          full_name: cleanFullName,
+          role: userRole,
+          class_id: userRole === 'student' ? userClass : null,
+          xp: 450,
+          coins: 1250
+        }])
+        .select()
+        .single();
+
+      if (insertErr) {
+        return { success: false, message: 'Lỗi CSDL (Users): ' + insertErr.message };
+      }
+
+      // 2. Nếu là học sinh -> Insert thêm vào bảng students
+      if (userRole === 'student') {
+        await activeClient.from('students').insert([{
+          name: cleanFullName,
+          class_id: userClass,
+          xp: 450,
+          coins: 1250
+        }]);
+      }
+
+      // 3. Nếu là giáo viên -> Insert đúng chuẩn các cột của bảng teachers (id kiểu text, display_name, assigned_classes)
+      if (userRole === 'teacher') {
+        const customTeacherId = 'gv_' + cleanUsername; // Tạo id kiểu text cho bảng teachers
+        const { error: teacherErr } = await activeClient.from('teachers').insert([{
+          id: customTeacherId,
+          username: cleanUsername,
+          password: cleanPassword,
+          display_name: cleanFullName,
+          assigned_classes: [userClass],
+          is_active: false // Chờ quản trị viên phê duyệt
+        }]);
+
+        if (teacherErr) {
+          console.warn('Lỗi chèn vào bảng teachers:', teacherErr);
+        }
+      }
+
+      return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công! Tài khoản giáo viên đang chờ phê duyệt.' };
+    } catch (err) {
+      return { success: false, message: 'Lỗi hệ thống: ' + err.message };
     }
-
-    // LocalStorage Fallback
-    let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
-    if (localUsers.some(u => u.username.toLowerCase() === cleanUsername)) {
-      return { success: false, message: 'Tên tài khoản này đã tồn tại trong bộ nhớ!' };
-    }
-
-    const newUser = {
-      id: Date.now(),
-      username: cleanUsername,
-      password: cleanPassword,
-      full_name: cleanFullName,
-      role: userRole,
-      class_id: userClass,
-      xp: 450,
-      coins: 1250
-    };
-    localUsers.push(newUser);
-    localStorage.setItem('users_db', JSON.stringify(localUsers));
-
-    return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công!' };
   },
 
   async loginUser(username, password) {
