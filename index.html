@@ -2990,8 +2990,12 @@
       localStorage.removeItem("studentClass");
       localStorage.removeItem("studentClassId");
       localStorage.removeItem("teacherClass");
+      localStorage.removeItem("currentClassFilter");
       localStorage.removeItem("userToken");
       localStorage.setItem("currentUserRole", "guest");
+
+      const globalSelect = document.getElementById("global-class-select");
+      if (globalSelect) globalSelect.value = "ALL";
 
       // 2. Đóng và ẩn toàn bộ các modal
       document.querySelectorAll(".modal-backdrop").forEach(modal => {
