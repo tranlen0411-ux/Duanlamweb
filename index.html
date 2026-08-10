@@ -1865,7 +1865,15 @@
           <h3 style="margin: 0; color: #1e293b; font-size: 18px; display: flex; align-items: center; gap: 8px;">
             🏆 Quản Lý Xếp Hạng Lớp Học (<span id="current-class-label" style="color: #2563eb;">Tất cả các lớp</span>)
           </h3>
-          <div style="display:flex; align-items:center; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <!-- BỘ LỌC LỚP RIÊNG CHO KHU VỰC XẾP HẠNG (TIỆN ÍCH LỌC BỔ SUNG 2 TẦNG) -->
+            <div style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #bfdbfe; padding:4px 12px; border-radius:20px; box-shadow:0 2px 5px rgba(0,0,0,0.03);">
+              <span style="font-size:13px;">📊</span>
+              <label for="ranking-class-select" style="font-size:13px; font-weight:bold; color:#1e40af;">Lọc lớp xếp hạng:</label>
+              <select id="ranking-class-select" onchange="handleRankingClassChange(this.value)" style="background:#fff; border:1px solid #93c5fd; border-radius:12px; font-weight:bold; font-size:13px; color:#1e3a8a; padding:4px 10px; outline:none; cursor:pointer;">
+                <option value="ALL">🌐 Tất cả các lớp</option>
+              </select>
+            </div>
             <button onclick="addNewClass()" style="background: #10b981; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 2px 6px rgba(16,185,129,0.3);">
               ➕ Thêm Lớp/Nhóm Mới
             </button>
@@ -2991,11 +2999,14 @@
       localStorage.removeItem("studentClassId");
       localStorage.removeItem("teacherClass");
       localStorage.removeItem("currentClassFilter");
+      localStorage.removeItem("rankingClassFilter");
       localStorage.removeItem("userToken");
       localStorage.setItem("currentUserRole", "guest");
 
       const globalSelect = document.getElementById("global-class-select");
       if (globalSelect) globalSelect.value = "ALL";
+      const rankingSelect = document.getElementById("ranking-class-select");
+      if (rankingSelect) rankingSelect.value = "ALL";
 
       // 2. Đóng và ẩn toàn bộ các modal
       document.querySelectorAll(".modal-backdrop").forEach(modal => {
@@ -5269,18 +5280,56 @@
         }
       };
 
+      // LOGIC KẾT HỢP 2 TẦNG BỘ LỌC (FÚT 4): HEADER FILTER ∩ RANKING FILTER
+      window.getEffectiveRankingClassFilter = function() {
+        const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+        const headerSelect = document.getElementById("global-class-select");
+        const rankingSelect = document.getElementById("ranking-class-select");
+
+        let headerFilter = headerSelect ? headerSelect.value : "ALL";
+        let rankingFilter = rankingSelect ? rankingSelect.value : "ALL";
+
+        // 1. Cả hai bộ lọc đều chọn lớp cụ thể
+        if (headerFilter !== "ALL" && rankingFilter !== "ALL") {
+          if (headerFilter === rankingFilter) {
+            return headerFilter; // e.g. Header=2B, Ranking=2B -> 2B
+          } else {
+            return "__EMPTY__"; // e.g. Header=2A, Ranking=2B -> Rỗng (Không có dữ liệu vì 2B nằm ngoài 2A)
+          }
+        }
+        // 2. Header lọc 1 lớp cụ thể, Ranking chọn Tất cả
+        if (headerFilter !== "ALL") {
+          return headerFilter; // Header=2B, Ranking=ALL -> 2B (bị giới hạn bởi Header 2B)
+        }
+        // 3. Header chọn Tất cả, Ranking lọc 1 lớp cụ thể
+        if (rankingFilter !== "ALL") {
+          return rankingFilter; // Header=ALL, Ranking=2B -> 2B (lọc theo Ranking 2B)
+        }
+        // 4. Cả hai đều chọn Tất cả
+        return "ALL";
+      };
+
+      // HÀM XỬ LÝ KHI THAY ĐỔI BỘ LỌC RIÊNG CỦA XẾP HẠNG (CHỈ TÁC ĐỘNG KHU VỰC RANKING, KHÔNG ĐỔI HEADER)
+      window.handleRankingClassChange = function(newVal) {
+        if (newVal) {
+          localStorage.setItem("rankingClassFilter", newVal);
+        }
+        if (typeof renderGameTaskTable === "function") renderGameTaskTable();
+        if (typeof renderExamTable === "function") renderExamTable();
+      };
+
       // QUẢN LÝ LỚP / NHÓM
       window.renderClassOptions = function () {
         const globalSelect = document.getElementById("global-class-select");
+        const rankingSelect = document.getElementById("ranking-class-select");
         const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
         const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
+        const isAdmin = (role === "admin" || role === "administrator" || role === "quản trị" || !role);
 
         if (globalSelect) {
           const currentVal = globalSelect.value || "ALL";
-          const isAdmin = (role === "admin" || role === "administrator" || role === "quản trị" || !role);
           
           if (isAdmin) {
-            // ADMIN: Quản lý TẤT CẢ các lớp + Từng lớp cụ thể tự động lấy từ Supabase
             globalSelect.innerHTML = `<option value="ALL">🌐 Tất cả các lớp</option>` +
               globalClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             
@@ -5290,7 +5339,6 @@
               globalSelect.value = "ALL";
             }
           } else if (role === "teacher") {
-            // GIÁO VIÊN: Giới hạn theo assigned_classes
             const allowedClassesList = getCurrentTeacherClasses();
             const allowedObjects = globalClasses.filter(c => allowedClassesList.includes(c.id));
 
@@ -5298,11 +5346,9 @@
               globalSelect.innerHTML = `<option value="">⚠️ Chưa được phân công lớp</option>`;
               globalSelect.value = "";
             } else if (allowedObjects.length === 1) {
-              // 1 lớp phân công: Khóa và chỉ hiển thị đúng 1 lớp đó (Không có tùy chọn Tất cả các lớp)
               globalSelect.innerHTML = `<option value="${allowedObjects[0].id}">${allowedObjects[0].name}</option>`;
               globalSelect.value = allowedObjects[0].id;
             } else {
-              // Nhiều lớp phân công: Chỉ hiển thị các lớp thuộc quyền phân công
               const allAssignedText = `🌐 Tất cả lớp được phân công (${allowedObjects.map(c => c.id).join(', ')})`;
               globalSelect.innerHTML = `<option value="ALL">${allAssignedText}</option>` +
                 allowedObjects.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
@@ -5311,6 +5357,35 @@
                 globalSelect.value = currentVal;
               } else {
                 globalSelect.value = allowedObjects[0].id;
+              }
+            }
+          }
+        }
+
+        // Nạp danh sách lớp cho Bộ lọc riêng Xếp hạng #ranking-class-select
+        if (rankingSelect) {
+          const currentRankVal = rankingSelect.value || "ALL";
+          if (isAdmin) {
+            rankingSelect.innerHTML = `<option value="ALL">🌐 Tất cả các lớp</option>` +
+              globalClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            if (globalClasses.some(c => c.id === currentRankVal) || currentRankVal === "ALL") {
+              rankingSelect.value = currentRankVal;
+            } else {
+              rankingSelect.value = "ALL";
+            }
+          } else if (role === "teacher") {
+            const allowedClassesList = getCurrentTeacherClasses();
+            const allowedObjects = globalClasses.filter(c => allowedClassesList.includes(c.id));
+            if (allowedObjects.length <= 1) {
+              rankingSelect.innerHTML = allowedObjects.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+              rankingSelect.value = allowedObjects[0] ? allowedObjects[0].id : "";
+            } else {
+              rankingSelect.innerHTML = `<option value="ALL">🌐 Tất cả lớp được phân công</option>` +
+                allowedObjects.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+              if (allowedObjects.some(c => c.id === currentRankVal) || currentRankVal === "ALL") {
+                rankingSelect.value = currentRankVal;
+              } else {
+                rankingSelect.value = allowedObjects[0].id;
               }
             }
           }
@@ -5880,18 +5955,28 @@
 
       // Render Bảng Trò chơi & Nhiệm vụ
       window.renderGameTaskTable = function () {
-        const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+        const effectiveClass = (typeof getEffectiveRankingClassFilter === "function") ? getEffectiveRankingClassFilter() : "ALL";
         const selectedCategory = document.getElementById("teacher-select-game-task") ? document.getElementById("teacher-select-game-task").value : "game-pika";
         const tbody = document.getElementById("tbody-game-task-ranking");
         
         if (!tbody) return;
 
-        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
-        let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
+        if (effectiveClass === "__EMPTY__") {
+          const hSelect = document.getElementById("global-class-select");
+          const rSelect = document.getElementById("ranking-class-select");
+          const hVal = hSelect ? (hSelect.options[hSelect.selectedIndex] ? hSelect.options[hSelect.selectedIndex].text : hSelect.value) : "";
+          const rVal = rSelect ? (rSelect.options[rSelect.selectedIndex] ? rSelect.options[rSelect.selectedIndex].text : rSelect.value) : "";
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">⚠️ Không có dữ liệu xếp hạng (${rVal} nằm ngoài phạm vi ${hVal} của Header).</td></tr>`;
+          return;
+        }
 
-        let filteredStudents = selectedClass === "ALL" 
+        const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
+        let availableStudents = (role === "teacher") ? getTeacherAllowedStudents() : globalStudents;
+
+        let filteredStudents = effectiveClass === "ALL" 
           ? availableStudents 
-          : availableStudents.filter(s => s.classId === selectedClass);
+          : availableStudents.filter(s => (s.classId === effectiveClass || s.class_id === effectiveClass));
 
         const rawScores = gameTaskScoreStore[selectedCategory] || [];
 
@@ -6155,8 +6240,9 @@
         if (!tbody) return;
 
         try {
-          const role = localStorage.getItem("currentUserRole");
+          const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
           const allowedClasses = getCurrentTeacherClasses();
+          const effectiveClass = (typeof getEffectiveRankingClassFilter === "function") ? getEffectiveRankingClassFilter() : "ALL";
 
           if (role === "teacher" && allowedClasses.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">⚠️ Bạn chưa được phân công lớp quản lý nào. Vui lòng liên hệ Admin.</td></tr>`;
@@ -6165,12 +6251,18 @@
             return;
           }
 
-          let selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
-          if (role === "teacher" && selectedClass !== "ALL" && !allowedClasses.includes(selectedClass)) {
-            selectedClass = allowedClasses[0];
-            const selectEl = document.getElementById("global-class-select");
-            if (selectEl) selectEl.value = selectedClass;
+          if (effectiveClass === "__EMPTY__") {
+            const hSelect = document.getElementById("global-class-select");
+            const rSelect = document.getElementById("ranking-class-select");
+            const hVal = hSelect ? (hSelect.options[hSelect.selectedIndex] ? hSelect.options[hSelect.selectedIndex].text : hSelect.value) : "";
+            const rVal = rSelect ? (rSelect.options[rSelect.selectedIndex] ? rSelect.options[rSelect.selectedIndex].text : rSelect.value) : "";
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">⚠️ Không có dữ liệu xếp hạng (${rVal} nằm ngoài phạm vi ${hVal} của Header).</td></tr>`;
+            const statSubmissions = document.getElementById("stat-total-submissions");
+            if (statSubmissions) statSubmissions.textContent = "0";
+            return;
           }
+
+          let selectedClass = effectiveClass;
 
           const quizSelect = document.getElementById("select-exam-quiz-title");
           const selectedQuiz = quizSelect ? quizSelect.value : "ALL";
