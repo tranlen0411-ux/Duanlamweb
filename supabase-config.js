@@ -35,7 +35,6 @@ window.supabaseAuth = {
     }
   },
 
-  // 1. Đăng ký tài khoản mới (Register)
   async registerUser({ username, password, fullName, role, classId }) {
     const cleanUsername = (username || '').trim().toLowerCase();
     const cleanPassword = (password || '').trim();
@@ -44,7 +43,7 @@ window.supabaseAuth = {
     const userClass = classId || '2AI';
 
     if (!cleanUsername || !cleanPassword || !cleanFullName) {
-      return { success: false, message: 'Vui lòng điền đầy đủ Tên tài khoản, Mật khẩu và Họ tên!' };
+      return { success: false, message: 'Vui lòng điền đầy đủ thông tin!' };
     }
 
     const activeClient = supabaseClient || window.supabaseClient;
@@ -53,7 +52,7 @@ window.supabaseAuth = {
     }
 
     try {
-      // Kiểm tra xem username đã tồn tại trong bảng users chưa
+      // Kiểm tra xem username đã tồn tại chưa
       const { data: existingUser } = await activeClient
         .from('users')
         .select('id')
@@ -61,10 +60,10 @@ window.supabaseAuth = {
         .maybeSingle();
 
       if (existingUser) {
-        return { success: false, message: 'Tên tài khoản (username) này đã tồn tại! Vui lòng chọn tên khác.' };
+        return { success: false, message: 'Tên tài khoản này đã tồn tại! Vui lòng chọn tên khác.' };
       }
 
-      // 1. Insert duy nhất vào bảng users chung (lưu cả giáo viên và học sinh)
+      // Insert vào bảng users chung
       const { data: newUser, error: insertErr } = await activeClient
         .from('users')
         .insert([{
@@ -80,10 +79,10 @@ window.supabaseAuth = {
         .single();
 
       if (insertErr) {
-        return { success: false, message: 'Lỗi CSDL (Users): ' + insertErr.message };
+        return { success: false, message: 'Lỗi CSDL: ' + insertErr.message };
       }
 
-      // 2. Nếu là học sinh -> Insert thêm vào bảng students (nếu cần thiết cho game)
+      // Nếu là học sinh -> Insert thêm vào bảng students
       if (userRole === 'student') {
         await activeClient.from('students').insert([{
           name: cleanFullName,
@@ -93,7 +92,7 @@ window.supabaseAuth = {
         }]);
       }
 
-      return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase!' };
+      return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công!' };
     } catch (err) {
       return { success: false, message: 'Lỗi hệ thống: ' + err.message };
     }
