@@ -3474,9 +3474,21 @@
       if (examTabBtn) examTabBtn.onclick = function() { activatePanel("tab-weekly-exam", this); };
       if (historyTabBtn) historyTabBtn.onclick = function() { activatePanel("tab-history-feedback", this); };
 
-      // HÀM XỬ LÝ CLICK NÚT BANNER
+      // HÀM XỬ LÝ CLICK NÚT BANNER LÀM BÀI NGAY
       window.handleBannerButtonClick = function (e) {
         if (e) e.preventDefault();
+
+        const currentRole = localStorage.getItem("currentUserRole");
+        const studentName = localStorage.getItem("studentName");
+        const isStudentLoggedIn = (currentRole === "student" || (!currentRole && studentName && studentName !== "Khách (Chưa đăng nhập)"));
+
+        if (!isStudentLoggedIn || currentRole === "teacher" || currentRole === "admin" || currentRole === "guest") {
+          alert("🔐 Vui lòng đăng nhập tài khoản Học sinh để làm bài kiểm tra.");
+          if (typeof window.openStudentLoginModal === 'function') {
+            window.openStudentLoginModal();
+          }
+          return;
+        }
 
         const tabExamBtn = document.getElementById("tab-btn-exam");
         activatePanel("tab-weekly-exam", tabExamBtn);
@@ -4339,6 +4351,18 @@
       });
 
       window.startRealWeeklyExam = function () {
+        const currentRole = localStorage.getItem("currentUserRole");
+        const studentName = localStorage.getItem("studentName");
+        const isStudentLoggedIn = (currentRole === "student" || (!currentRole && studentName && studentName !== "Khách (Chưa đăng nhập)"));
+
+        if (!isStudentLoggedIn || currentRole === "teacher" || currentRole === "admin" || currentRole === "guest") {
+          alert("🔐 Vui lòng đăng nhập tài khoản Học sinh để làm bài kiểm tra.");
+          if (typeof window.openStudentLoginModal === 'function') {
+            window.openStudentLoginModal();
+          }
+          return;
+        }
+
         const tabExamBtn = document.getElementById("tab-btn-exam");
         activatePanel("tab-weekly-exam", tabExamBtn);
 
