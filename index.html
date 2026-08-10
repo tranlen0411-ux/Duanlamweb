@@ -469,11 +469,9 @@
     function initApp() {
       updateUserStatsUI();
       updateGradeUI();
-      let storedName = localStorage.getItem('studentName') || 'Bé Nam';
-      if (storedName.includes('Super Admin') || storedName.includes('Lã Hương') || storedName.includes('Admin')) {
-        storedName = 'Bé Nam';
-        localStorage.setItem('studentName', 'Bé Nam');
-      }
+      const role = localStorage.getItem("currentUserRole") || "guest";
+      const isGuest = (role === 'guest' || role === 'null' || !role);
+      let storedName = isGuest ? 'Khách (Chưa đăng nhập)' : (localStorage.getItem('studentName') || 'Khách (Chưa đăng nhập)');
       setStudentNameUI(storedName);
     }
 
@@ -497,11 +495,10 @@
     }
 
     function setStudentNameUI(name) {
-      let displayName = name || 'Bé Nam';
-      if (displayName.includes('Admin') || displayName.includes('Super') || displayName.includes('Hương')) {
-        displayName = 'Bé Nam';
-      }
-      document.querySelectorAll('#user-name-display, .student-name-text').forEach(el => { el.textContent = displayName; });
+      const role = localStorage.getItem("currentUserRole") || "guest";
+      const isGuest = (role === 'guest' || role === 'null' || !role);
+      let displayName = (name && !isGuest) ? name : 'Khách (Chưa đăng nhập)';
+      document.querySelectorAll('#user-name-display').forEach(el => { el.textContent = displayName; });
     }
 
     function switchStudentTab(tabId) {
@@ -2872,7 +2869,7 @@
         if (isGuest) {
           userNameDisplay.textContent = "Khách (Chưa đăng nhập)";
         } else {
-          userNameDisplay.textContent = localStorage.getItem("studentName") || "Bé Nam";
+          userNameDisplay.textContent = localStorage.getItem("studentName") || "Khách (Chưa đăng nhập)";
         }
       }
 
@@ -3716,24 +3713,27 @@
 
       // KHÔI PHỤC VÀ ĐỒNG BỘ TÊN DÙNG CHUNG
       window.updateAllUserNames = function () {
-        let studentName = localStorage.getItem("studentName") || "Bé Nam";
+        const role = localStorage.getItem("currentUserRole") || "guest";
+        const isGuest = (role === 'guest' || role === 'null' || !role);
+        const loggedStudentName = localStorage.getItem("studentName");
+        const studentName = (!isGuest && loggedStudentName) ? loggedStudentName : "Khách (Chưa đăng nhập)";
         
         const userNameDisplay = document.getElementById("user-name-display");
         if (userNameDisplay) userNameDisplay.textContent = studentName;
 
         document.querySelectorAll(".student-name-text").forEach(el => {
-          el.textContent = studentName;
+          el.textContent = isGuest ? "Bé" : studentName;
         });
 
         const speechNameEl = document.getElementById("hero-speech-student-name");
-        if (speechNameEl) speechNameEl.textContent = studentName;
+        if (speechNameEl) speechNameEl.textContent = isGuest ? "Bé" : studentName;
 
         const aiSpeechNameEl = document.getElementById("ai-speech-student-name");
-        if (aiSpeechNameEl) aiSpeechNameEl.textContent = studentName;
+        if (aiSpeechNameEl) aiSpeechNameEl.textContent = isGuest ? "Bé" : studentName;
 
         const studentInput = document.getElementById("input-student-fullname");
         if (studentInput && document.activeElement !== studentInput) {
-          studentInput.value = studentName;
+          studentInput.value = isGuest ? "" : studentName;
         }
 
         const role = localStorage.getItem("currentUserRole");
