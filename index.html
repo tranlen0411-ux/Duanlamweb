@@ -5719,14 +5719,23 @@
 
           document.getElementById("submission-modal-subtitle").textContent = `Học sinh: ${studentName || 'Học sinh'} | ${className || 'Lớp'}`;
           document.getElementById("detail-quiz-title").textContent = "Bài kiểm tra Tuần 1";
-          document.getElementById("detail-score").textContent = "-- / 10 (0%)";
+          document.getElementById("detail-score").textContent = "Đang tải bài làm...";
           document.getElementById("detail-exam-time").textContent = "--";
           document.getElementById("detail-anticheat").textContent = "✅ Trung thực (0 vi phạm)";
           document.getElementById("input-submission-teacher-comment").value = "";
           document.getElementById("hidden-submission-score-id").value = submissionId || "";
           document.getElementById("hidden-submission-student-id").value = studentId || "";
 
+          const qListContainer = document.getElementById("detail-questions-list");
+          if (qListContainer) {
+            qListContainer.innerHTML = `<div style="text-align:center; padding:12px; color:#64748b; font-weight:bold;">Đang tải bài làm...</div>`;
+          }
+
+          modal.style.display = "flex";
+          modal.classList.add("active");
+
           let foundScore = null;
+          let fetchError = false;
           const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
           if (activeClient) {
             try {
@@ -5737,20 +5746,31 @@
                   .eq('id', submissionId)
                   .single();
                 if (!error && data) foundScore = data;
+                if (error) fetchError = true;
               }
 
               if (!foundScore && (studentId || studentName)) {
-                const { data } = await activeClient
+                const { data, error } = await activeClient
                   .from('exam_scores')
                   .select('*')
                   .or(`student_id.eq.${studentId},student_name.eq.${studentName}`)
                   .order('updated_at', { ascending: false })
                   .limit(1);
-                if (data && data.length > 0) foundScore = data[0];
+                if (!error && data && data.length > 0) foundScore = data[0];
+                if (error) fetchError = true;
               }
             } catch (err) {
               console.error('[Supabase fetch submission error]:', err);
+              fetchError = true;
             }
+          }
+
+          if (fetchError) {
+            document.getElementById("detail-score").textContent = "Không thể tải bài làm. Vui lòng thử lại.";
+            if (qListContainer) {
+              qListContainer.innerHTML = `<div style="text-align:center; padding:12px; color:#ef4444; font-weight:bold;">Không thể tải bài làm. Vui lòng thử lại.</div>`;
+            }
+            return;
           }
 
           if (foundScore) {
@@ -5768,37 +5788,36 @@
               document.getElementById("input-submission-teacher-comment").value = existingComment;
             } else {
               document.getElementById("input-submission-teacher-comment").value = "";
-              document.getElementById("input-submission-teacher-comment").placeholder = "Chưa có nhận xét. Nhập nhận xét cho học sinh...";
+              document.getElementById("input-submission-teacher-comment").placeholder = "Chưa có nhận xét.";
+            }
+
+            if (qListContainer) {
+              const sampleQuestions = [
+                { q: "Câu 1: 5 + 3 = ?", ans: "8", correctAns: "8", correct: true },
+                { q: "Câu 2: 12 - 4 = ?", ans: "8", correctAns: "8", correct: true },
+                { q: "Câu 3: 7 + 6 = ?", ans: "13", correctAns: "13", correct: true },
+                { q: "Câu 4: 15 - 9 = ?", ans: "6", correctAns: "6", correct: true },
+                { q: "Câu 5: 9 + 8 = ?", ans: "17", correctAns: "17", correct: true }
+              ];
+
+              qListContainer.innerHTML = sampleQuestions.map(item => `
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #f1f5f9; padding:8px 12px; border-radius:8px; font-size:12px;">
+                  <span><strong>${item.q}</strong> ➔ Học sinh chọn: <span style="font-weight:bold; color:#0369a1;">${item.ans}</span> (Đáp án: ${item.correctAns})</span>
+                  <span style="background:${item.correct ? '#dcfce7' : '#fee2e2'}; color:${item.correct ? '#15803d' : '#b91c1c'}; padding:2px 8px; border-radius:10px; font-weight:bold;">
+                    ${item.correct ? '✅ Đúng' : '❌ Sai'}
+                  </span>
+                </div>
+              `).join('');
             }
           } else {
             document.getElementById("detail-score").textContent = "Chưa làm (0%)";
             document.getElementById("input-submission-teacher-comment").value = "";
-            document.getElementById("input-submission-teacher-comment").placeholder = "Học sinh chưa nộp bài. Nhập lời dặn cho học sinh...";
+            document.getElementById("input-submission-teacher-comment").placeholder = "Chưa có nhận xét.";
+
+            if (qListContainer) {
+              qListContainer.innerHTML = `<div style="text-align:center; padding:12px; color:#94a3b8; font-weight:bold;">Chưa có dữ liệu chi tiết bài làm cho học sinh này.</div>`;
+            }
           }
-
-          // Chi tiết câu trả lời học sinh đã làm (5 câu hỏi)
-          const qListContainer = document.getElementById("detail-questions-list");
-          if (qListContainer) {
-            const sampleQuestions = [
-              { q: "Câu 1: 5 + 3 = ?", ans: "8", correctAns: "8", correct: true },
-              { q: "Câu 2: 12 - 4 = ?", ans: "8", correctAns: "8", correct: true },
-              { q: "Câu 3: 7 + 6 = ?", ans: "13", correctAns: "13", correct: true },
-              { q: "Câu 4: 15 - 9 = ?", ans: "6", correctAns: "6", correct: true },
-              { q: "Câu 5: 9 + 8 = ?", ans: "17", correctAns: "17", correct: true }
-            ];
-
-            qListContainer.innerHTML = sampleQuestions.map(item => `
-              <div style="display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #f1f5f9; padding:8px 12px; border-radius:8px; font-size:12px;">
-                <span><strong>${item.q}</strong> ➔ Học sinh chọn: <span style="font-weight:bold; color:#0369a1;">${item.ans}</span> (Đáp án: ${item.correctAns})</span>
-                <span style="background:${item.correct ? '#dcfce7' : '#fee2e2'}; color:${item.correct ? '#15803d' : '#b91c1c'}; padding:2px 8px; border-radius:10px; font-weight:bold;">
-                  ${item.correct ? '✅ Đúng' : '❌ Sai'}
-                </span>
-              </div>
-            `).join('');
-          }
-
-          modal.style.display = "flex";
-          modal.classList.add("active");
         } catch (err) {
           console.error('[openStudentSubmissionModal error]:', err);
         }
