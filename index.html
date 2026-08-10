@@ -5056,12 +5056,15 @@
               .select('*')
               .order('id', { ascending: true });
 
-            if (!classErr && dbClasses && dbClasses.length > 0) {
+            if (!classErr && dbClasses) {
               globalClasses = dbClasses.map(c => ({
                 id: c.id,
-                name: c.name || ("Lớp " + c.id)
+                name: c.name || ("Lớp " + c.id),
+                teacher_username: c.teacher_username || null
               }));
               window.globalClasses = globalClasses;
+            } else if (classErr) {
+              console.error('[Supabase Classes Error]:', classErr);
             }
 
             // Tải danh sách học sinh từ public.students
@@ -5070,7 +5073,7 @@
               .select('*')
               .order('id', { ascending: true });
 
-            if (!studentErr && dbStudents && dbStudents.length > 0) {
+            if (!studentErr && dbStudents) {
               globalStudents = dbStudents.map(s => ({
                 id: s.id,
                 name: s.name,
@@ -5080,13 +5083,16 @@
                 coins: s.coins || 0
               }));
               window.globalStudents = globalStudents;
+            } else if (studentErr) {
+              console.error('[Supabase Students Error]:', studentErr);
             }
           } catch (err) {
-            console.warn('[Supabase loadClasses/Students Error]:', err);
+            console.error('[Supabase loadClasses/Students Error]:', err);
           }
         }
 
-        renderClassOptions();
+        if (typeof renderClassOptions === "function") renderClassOptions();
+        if (typeof renderAdminTeacherTable === "function") renderAdminTeacherTable();
         if (typeof handleClassChange === "function") {
           const globalSelect = document.getElementById("global-class-select");
           handleClassChange(globalSelect ? globalSelect.value : "ALL");
@@ -5600,8 +5606,8 @@
         rankBtn.onclick = openLeaderboardModal;
       }
 
-      // Thêm Lớp/Nhóm mới (Cho phép tự nhập Mã Lớp và Tên Lớp)
-      window.addNewClass = function () {
+      // Thêm Lớp/Nhóm mới (Thêm trực tiếp vào public.classes Supabase)
+      window.addNewClass = async function () {
         const classIdInput = prompt("Nhập Mã Lớp (Ví dụ: 2D, 3A...):");
         if (!classIdInput || classIdInput.trim() === "") return;
         
@@ -5609,17 +5615,36 @@
         if (!classNameInput) return;
 
         const cleanId = classIdInput.trim();
+        const cleanName = classNameInput.trim();
         
-        // Kiểm tra xem mã lớp đã tồn tại chưa
         if (globalClasses.some(c => c.id.toLowerCase() === cleanId.toLowerCase())) {
           alert("❌ Mã lớp này đã tồn tại! Vui lòng chọn mã khác.");
           return;
         }
 
-        globalClasses.push({ id: cleanId, name: classNameInput.trim() });
-        renderClassOptions();
-        if (typeof renderAdminTeacherTable === "function") renderAdminTeacherTable();
-        handleClassChange(document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL");
+        const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+        if (activeClient) {
+          try {
+            const { error } = await activeClient
+              .from('classes')
+              .insert([{ id: cleanId, name: cleanName }]);
+
+            if (error) {
+              alert("❌ Lỗi khi thêm lớp mới vào Supabase: " + error.message);
+              console.error('[Supabase Insert Class Error]:', error);
+              return;
+            }
+          } catch (err) {
+            alert("❌ Lỗi kết nối Supabase: " + err.message);
+            console.error('[Supabase Insert Class Exception]:', err);
+            return;
+          }
+        }
+
+        if (typeof loadSupabaseClassesAndStudents === 'function') {
+          await loadSupabaseClassesAndStudents();
+        }
+        alert("✅ Thêm lớp mới thành công vào Supabase!");
       };
 
       // Render Bảng Trò chơi & Nhiệm vụ
@@ -5980,158 +6005,74 @@
     }
 
 /* ============================================================
-     MODULE TRỌN GÓI: SỬA/XÓA LỚP (ADMIN) & PHÂN QUYỀN (HỌC SINH)
-     ============================================================ */
+     MODULE QUẢN LÝ LỚP (ADMIN) TỰ ĐỘNG ĐỒNG BỘ SUPABASE
+   ============================================================ */
 
-  // 1. HÀM SỬA TÊN VÀ MÃ LỚP CHO ADMIN
-  window.editClassName = function (classId) {
-    const rows = document.querySelectorAll("#admin-class-table-body tr");
-    let targetRow = null;
-    let currentCode = classId;
-    let currentName = "";
+  // 1. HÀM SỬA TÊN LỚP TRONG PUBLIC.CLASSES SUPABASE
+  window.editClassName = async function (classId) {
+    let currentName = "Lớp " + classId;
+    if (typeof globalClasses !== 'undefined' && Array.isArray(globalClasses)) {
+      const found = globalClasses.find(c => c.id === classId);
+      if (found && found.name) currentName = found.name;
+    }
 
-    rows.forEach(row => {
-      if (row.innerHTML.includes(classId)) {
-        targetRow = row;
-        const cells = row.querySelectorAll("td");
-        if (cells[0]) currentCode = cells[0].textContent.trim();
-        if (cells[1]) currentName = cells[1].textContent.trim();
-      }
-    });
+    const newName = prompt("Nhập Tên Lớp hiển thị mới:", currentName);
+    if (!newName || newName.trim() === "" || newName.trim() === currentName) return;
 
-    const newCode = prompt("Nhập Mã Lớp mới:", currentCode);
-    if (!newCode || newCode.trim() === "") return;
-
-    const newName = prompt("Nhập Tên Lớp mới:", currentName || "Lớp " + newCode.trim());
-    if (!newName || newName.trim() === "") return;
-
-    const trimmedCode = newCode.trim();
     const trimmedName = newName.trim();
+    const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+    if (activeClient) {
+      try {
+        const { error } = await activeClient
+          .from('classes')
+          .update({ name: trimmedName })
+          .eq('id', classId);
 
-    if (targetRow) {
-      const cells = targetRow.querySelectorAll("td");
-      if (cells[0]) cells[0].textContent = trimmedCode;
-      if (cells[1]) cells[1].textContent = trimmedName;
-    }
-
-    const selectEl = document.getElementById("global-class-select");
-    if (selectEl) {
-      Array.from(selectEl.options).forEach(opt => {
-        if (opt.value === classId || opt.value === currentCode) {
-          opt.value = trimmedCode;
-          opt.textContent = trimmedName;
+        if (error) {
+          alert("❌ Lỗi khi cập nhật tên lớp trên Supabase: " + error.message);
+          console.error('[Supabase Update Class Error]:', error);
+          return;
         }
-      });
+      } catch (err) {
+        alert("❌ Lỗi kết nối Supabase: " + err.message);
+        console.error('[Supabase Update Class Exception]:', err);
+        return;
+      }
     }
 
-    alert("✅ Đã cập nhật lớp thành công!");
+    if (typeof loadSupabaseClassesAndStudents === 'function') {
+      await loadSupabaseClassesAndStudents();
+    }
+    alert("✅ Cập nhật tên lớp thành công vào CSDL Supabase!");
   };
 
-  // 2. HÀM XÓA LỚP CHO ADMIN
-  window.deleteClass = function (classId) {
-    if (confirm("Bạn có chắc muốn xóa vĩnh viễn lớp này khỏi hệ thống?")) {
-      let isDeleted = false;
+  // 2. HÀM XÓA LỚP TRONG PUBLIC.CLASSES SUPABASE
+  window.deleteClass = async function (classId) {
+    if (confirm(`Bạn có chắc muốn xóa vĩnh viễn lớp "${classId}" khỏi CSDL Supabase?`)) {
+      const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+      if (activeClient) {
+        try {
+          const { error } = await activeClient
+            .from('classes')
+            .delete()
+            .eq('id', classId);
 
-      const rows = document.querySelectorAll("#admin-class-table-body tr");
-      rows.forEach(row => {
-        if (row.innerHTML.includes(classId)) {
-          row.remove();
-          isDeleted = true;
-        }
-      });
-
-      const selectEl = document.getElementById("global-class-select");
-      if (selectEl) {
-        Array.from(selectEl.options).forEach(opt => {
-          if (opt.value === classId || opt.text.includes(classId)) {
-            opt.remove();
-            isDeleted = true;
+          if (error) {
+            alert("❌ Lỗi khi xóa lớp trên Supabase: " + error.message);
+            console.error('[Supabase Delete Class Error]:', error);
+            return;
           }
-        });
-      }
-
-      if (isDeleted) {
-        alert("🗑️ Đã xóa lớp thành công!");
-      } else {
-        alert("⚠️ Không tìm thấy dòng dữ liệu của lớp này trên bảng!");
-      }
-    }
-  };
-
-  /* ============================================================
-     MODULE CHUẨN: SỬA TÊN VÀ XÓA LỚP CHO ADMIN
-     ============================================================ */
-
-  window.editClassName = function (classId) {
-    const rows = document.querySelectorAll("#admin-class-table-body tr");
-    let targetRow = null;
-    let currentCode = classId;
-    let currentName = "";
-
-    rows.forEach(row => {
-      if (row.innerHTML.includes(classId)) {
-        targetRow = row;
-        const cells = row.querySelectorAll("td");
-        if (cells[0]) currentCode = cells[0].textContent.trim();
-        if (cells[1]) currentName = cells[1].textContent.trim();
-      }
-    });
-
-    const newCode = prompt("Nhập Mã Lớp mới:", currentCode);
-    if (!newCode || newCode.trim() === "") return;
-
-    const newName = prompt("Nhập Tên Lớp mới:", currentName || "Lớp " + newCode.trim());
-    if (!newName || newName.trim() === "") return;
-
-    const trimmedCode = newCode.trim();
-    const trimmedName = newName.trim();
-
-    if (targetRow) {
-      const cells = targetRow.querySelectorAll("td");
-      if (cells[0]) cells[0].textContent = trimmedCode;
-      if (cells[1]) cells[1].textContent = trimmedName;
-    }
-
-    const selectEl = document.getElementById("global-class-select");
-    if (selectEl) {
-      Array.from(selectEl.options).forEach(opt => {
-        if (opt.value === classId || opt.value === currentCode) {
-          opt.value = trimmedCode;
-          opt.textContent = trimmedName;
+        } catch (err) {
+          alert("❌ Lỗi kết nối Supabase: " + err.message);
+          console.error('[Supabase Delete Class Exception]:', err);
+          return;
         }
-      });
-    }
-
-    alert("✅ Đã cập nhật lớp thành công!");
-  };
-
-  window.deleteClass = function (classId) {
-    if (confirm("Bạn có chắc muốn xóa vĩnh viễn lớp này khỏi hệ thống?")) {
-      let isDeleted = false;
-
-      const rows = document.querySelectorAll("#admin-class-table-body tr");
-      rows.forEach(row => {
-        if (row.innerHTML.includes(classId)) {
-          row.remove();
-          isDeleted = true;
-        }
-      });
-
-      const selectEl = document.getElementById("global-class-select");
-      if (selectEl) {
-        Array.from(selectEl.options).forEach(opt => {
-          if (opt.value === classId || opt.text.includes(classId)) {
-            opt.remove();
-            isDeleted = true;
-          }
-        });
       }
 
-      if (isDeleted) {
-        alert("🗑️ Đã xóa lớp thành công!");
-      } else {
-        alert("⚠️ Không tìm thấy dòng dữ liệu của lớp này trên bảng!");
+      if (typeof loadSupabaseClassesAndStudents === 'function') {
+        await loadSupabaseClassesAndStudents();
       }
+      alert("🗑️ Đã xóa lớp thành công khỏi CSDL Supabase!");
     }
   };
   </script>
