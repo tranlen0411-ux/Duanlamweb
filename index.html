@@ -1226,7 +1226,7 @@
         </button>
 
         <button class="header-teacher-btn btn" id="role-switch-btn" onclick="switchLoginMode('teacher'); openTeacherLoginModal();" title="Nhấp để Đăng Nhập Giáo Viên" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);">
-          👩‍🏫 Giáo Viên
+          <span id="teacher-name-display">👩‍🏫 Giáo Viên</span>
         </button>
 
         <button class="header-admin-btn btn" onclick="openAdminDashboardView()" title="Nhấp để vào Quản Trị Admin (lahuong2904@gmail.com)" style="background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border-radius: 20px; font-weight: 900; padding: 8px 16px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);">
@@ -3739,15 +3739,17 @@
 
         let activeTeacherStr = "Cô Mai";
         if (role === "admin") {
-          activeTeacherStr = "Admin Quản Trị Hệ Thống";
-          if (teacherNameSpan) teacherNameSpan.textContent = "Admin";
-          if (teacherTitleName) teacherTitleName.textContent = "Admin Quản Trị Hệ Thống";
-        } else if (teacher) {
-          activeTeacherStr = teacher.displayName;
-          if (teacherNameSpan) teacherNameSpan.textContent = teacher.displayName;
-          if (teacherTitleName) teacherTitleName.textContent = teacher.displayName;
+          const adminDisplayName = localStorage.getItem("adminName") || "Admin Quản Trị";
+          activeTeacherStr = adminDisplayName;
+          if (teacherNameSpan) teacherNameSpan.textContent = `👑 Quản Trị: ${adminDisplayName}`;
+          if (teacherTitleName) teacherTitleName.textContent = adminDisplayName;
+        } else if (role === "teacher" || teacher) {
+          const tName = localStorage.getItem("teacherName") || (teacher ? teacher.displayName : "Cô Mai");
+          activeTeacherStr = tName;
+          if (teacherNameSpan) teacherNameSpan.textContent = `🏫 Giáo viên: ${tName}`;
+          if (teacherTitleName) teacherTitleName.textContent = tName;
         } else {
-          if (teacherNameSpan) teacherNameSpan.textContent = "Đăng nhập";
+          if (teacherNameSpan) teacherNameSpan.textContent = "👩‍🏫 Giáo Viên";
           if (teacherTitleName) teacherTitleName.textContent = "Cô Mai";
         }
 
@@ -4969,11 +4971,15 @@
         const teacherNameDisplay = document.getElementById("teacher-name-display");
 
         if (role === "admin") {
-          if (teacherTitleName) teacherTitleName.textContent = "Admin Quản Trị Hệ Thống";
-          if (teacherNameDisplay) teacherNameDisplay.textContent = "Admin";
-        } else if (teacher) {
-          if (teacherTitleName) teacherTitleName.textContent = teacher.displayName;
-          if (teacherNameDisplay) teacherNameDisplay.textContent = teacher.displayName;
+          const adminDisplayName = localStorage.getItem("adminName") || "Admin Quản Trị";
+          if (teacherTitleName) teacherTitleName.textContent = adminDisplayName;
+          if (teacherNameDisplay) teacherNameDisplay.textContent = `👑 Quản Trị: ${adminDisplayName}`;
+        } else if (role === "teacher" || teacher) {
+          const tName = localStorage.getItem("teacherName") || (teacher ? teacher.displayName : "Cô Mai");
+          if (teacherTitleName) teacherTitleName.textContent = tName;
+          if (teacherNameDisplay) teacherNameDisplay.textContent = `🏫 Giáo viên: ${tName}`;
+        } else {
+          if (teacherNameDisplay) teacherNameDisplay.textContent = "👩‍🏫 Giáo Viên";
         }
 
         const warningBanner = document.getElementById("teacher-unassigned-warning");
