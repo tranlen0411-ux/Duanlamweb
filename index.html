@@ -4710,36 +4710,57 @@
           return {
             id: "admin",
             username: "admin",
-            displayName: "Admin Quản Trị Hệ Thống",
+            displayName: localStorage.getItem("adminName") || "Admin Quản Trị Hệ Thống",
             assignedClasses: globalClasses.map(c => c.id),
             classes: globalClasses.map(c => c.id),
-            active: true
+            active: true,
+            role: "admin"
           };
         }
         const storedTeacherId = localStorage.getItem("currentTeacherId");
-        if (storedTeacherId) {
-          const found = teacherAccounts.find(t => t.id === storedTeacherId);
-          if (found) return found;
+        const storedTeacherName = localStorage.getItem("teacherName");
+
+        if (Array.isArray(window.teacherAccounts) && window.teacherAccounts.length > 0) {
+          if (storedTeacherId) {
+            const found = window.teacherAccounts.find(t => t.id === storedTeacherId || t.username === storedTeacherId);
+            if (found) return found;
+          }
+          if (storedTeacherName) {
+            const found = window.teacherAccounts.find(t => t.displayName === storedTeacherName || t.username === storedTeacherName);
+            if (found) return found;
+          }
         }
         return null;
       }
 
       function getCurrentTeacherClasses() {
+        const role = localStorage.getItem("currentUserRole");
+        if (role === "admin") {
+          return globalClasses.map(c => c.id);
+        }
+        if (role !== "teacher") {
+          return globalClasses.map(c => c.id);
+        }
         const teacher = getCurrentTeacher();
-        if (!teacher) return globalClasses.map(c => c.id);
-        if (isAdmin()) return globalClasses.map(c => c.id);
+        if (!teacher) return [];
         return teacher.assignedClasses || teacher.classes || [];
       }
 
       function teacherCanAccessClass(classId) {
+        const role = localStorage.getItem("currentUserRole");
+        if (role === "admin" || role !== "teacher") return true;
         const allowed = getCurrentTeacherClasses();
+        if (allowed.length === 0) return false;
         if (classId === "ALL" || !classId) return true;
         return allowed.includes(classId);
       }
 
       function getTeacherAllowedStudents() {
+        const role = localStorage.getItem("currentUserRole");
+        if (role === "admin" || role !== "teacher") return globalStudents;
         const allowedClasses = getCurrentTeacherClasses();
-        return globalStudents.filter(s => allowedClasses.includes(s.classId));
+        if (!allowedClasses || allowedClasses.length === 0) return [];
+        return globalStudents.filter(s => allowedClasses.includes(s.classId || s.class_id));
       }
 
       // Render Bảng Quản Lý Giáo Viên Cho Admin
@@ -5088,6 +5109,28 @@
         const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
         if (activeClient) {
           try {
+            // Tải danh sách giáo viên từ public.teachers
+            const { data: dbTeachers, error: teacherErr } = await activeClient
+              .from('teachers')
+              .select('*')
+              .order('created_at', { ascending: true });
+
+            if (!teacherErr && dbTeachers) {
+              teacherAccounts = dbTeachers
+                .filter(t => t.role === 'teacher' || !t.role)
+                .map(t => ({
+                  id: t.id,
+                  username: t.username,
+                  password: t.password || "123456",
+                  displayName: t.display_name || t.username,
+                  assignedClasses: t.assigned_classes || [],
+                  classes: t.assigned_classes || [],
+                  active: t.is_active !== false,
+                  role: t.role || 'teacher'
+                }));
+              window.teacherAccounts = teacherAccounts;
+            }
+
             // Tải danh sách lớp từ public.classes
             const { data: dbClasses, error: classErr } = await activeClient
               .from('classes')
@@ -5140,25 +5183,44 @@
       // QUẢN LÝ LỚP / NHÓM
       window.renderClassOptions = function () {
         const globalSelect = document.getElementById("global-class-select");
+        const role = localStorage.getItem("currentUserRole");
         const teacher = getCurrentTeacher();
 
         if (globalSelect) {
           const currentVal = globalSelect.value || "ALL";
           
-          let allowedClasses = globalClasses;
-          if (teacher && teacher.classes) {
-            allowedClasses = globalClasses.filter(c => teacher.classes.includes(c.id));
-          }
+          if (role === "admin" || !role) {
+            globalSelect.innerHTML = `<option value="ALL">🌐 Tất cả các lớp</option>` +
+              globalClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            
+            if (globalClasses.some(c => c.id === currentVal) || currentVal === "ALL") {
+              globalSelect.value = currentVal;
+            } else {
+              globalSelect.value = "ALL";
+            }
+          } else if (role === "teacher") {
+            const allowedClassesList = getCurrentTeacherClasses();
+            const allowedObjects = globalClasses.filter(c => allowedClassesList.includes(c.id));
 
-          globalSelect.innerHTML = `<option value="ALL">🌐 Tất cả các lớp</option>` +
-            allowedClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-          
-          if (teacher && teacher.classes && teacher.classes.length === 1) {
-            globalSelect.value = teacher.classes[0];
-          } else if (allowedClasses.some(c => c.id === currentVal) || currentVal === "ALL") {
-            globalSelect.value = currentVal;
-          } else {
-            globalSelect.value = "ALL";
+            if (allowedObjects.length === 0) {
+              globalSelect.innerHTML = `<option value="">⚠️ Chưa được phân công lớp</option>`;
+              globalSelect.value = "";
+            } else if (allowedObjects.length === 1) {
+              // 1 lớp phân công: Khóa và chỉ hiển thị đúng 1 lớp đó (Không có tùy chọn Tất cả các lớp)
+              globalSelect.innerHTML = `<option value="${allowedObjects[0].id}">${allowedObjects[0].name}</option>`;
+              globalSelect.value = allowedObjects[0].id;
+            } else {
+              // Nhiều lớp phân công: Hiển thị các lớp thuộc quyền phân công
+              const allAssignedText = `🌐 Tất cả lớp được phân công (${allowedObjects.map(c => c.id).join(', ')})`;
+              globalSelect.innerHTML = `<option value="ALL">${allAssignedText}</option>` +
+                allowedObjects.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+              
+              if (allowedObjects.some(c => c.id === currentVal) || currentVal === "ALL") {
+                globalSelect.value = currentVal;
+              } else {
+                globalSelect.value = allowedObjects[0].id;
+              }
+            }
           }
         }
 
@@ -5169,28 +5231,40 @@
 
         const tagsContainer = document.getElementById("class-management-tags");
         if (tagsContainer) {
-          if (teacher && teacher.classes) {
+          if (role === "teacher" && teacher) {
+            const allowedList = getCurrentTeacherClasses();
             const currentSelected = globalSelect ? globalSelect.value : "ALL";
-            tagsContainer.innerHTML = `
-              <div style="font-weight:bold; color:#0284c7; margin-bottom:6px; font-size:13px;">
-                👩‍🏫 ${teacher.displayName} | 📚 Lớp quản lý:
-              </div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                <button onclick="selectTeacherClassTag('ALL')" style="background:${currentSelected === 'ALL' ? '#0284c7' : '#f1f5f9'}; color:${currentSelected === 'ALL' ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
-                  🌐 Tất cả (${teacher.classes.join(', ')})
-                </button>
-                ${teacher.classes.map(cId => {
-                  const cls = globalClasses.find(c => c.id === cId);
-                  const cName = cls ? cls.name : cId;
-                  const isSel = currentSelected === cId;
-                  return `
-                    <button onclick="selectTeacherClassTag('${cId}')" style="background:${isSel ? '#0284c7' : '#f1f5f9'}; color:${isSel ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
-                      🏫 ${cName}
+            
+            if (allowedList.length === 0) {
+              tagsContainer.innerHTML = `
+                <div style="font-weight:bold; color:#ef4444; font-size:13px; padding:6px 12px; background:#fef2f2; border-radius:12px; border:1px solid #fca5a5;">
+                  ⚠️ ${teacher.displayName} chưa được phân công lớp quản lý. Vui lòng liên hệ Admin!
+                </div>
+              `;
+            } else {
+              tagsContainer.innerHTML = `
+                <div style="font-weight:bold; color:#0284c7; margin-bottom:6px; font-size:13px;">
+                  👩‍🏫 ${teacher.displayName} | 📚 Lớp được phân công:
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                  ${allowedList.length > 1 ? `
+                    <button onclick="selectTeacherClassTag('ALL')" style="background:${currentSelected === 'ALL' ? '#0284c7' : '#f1f5f9'}; color:${currentSelected === 'ALL' ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
+                      🌐 Tất cả (${allowedList.join(', ')})
                     </button>
-                  `;
-                }).join('')}
-              </div>
-            `;
+                  ` : ''}
+                  ${allowedList.map(cId => {
+                    const cls = globalClasses.find(c => c.id === cId);
+                    const cName = cls ? cls.name : cId;
+                    const isSel = currentSelected === cId;
+                    return `
+                      <button onclick="selectTeacherClassTag('${cId}')" style="background:${isSel ? '#0284c7' : '#f1f5f9'}; color:${isSel ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
+                        🏫 ${cName}
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
+              `;
+            }
           } else {
             tagsContainer.innerHTML = globalClasses.map(c => `
               <div style="background:#f1f5f9; padding:6px 12px; border-radius:20px; font-size:13px; display:inline-flex; align-items:center; gap:6px; border:1px solid #cbd5e1;">
@@ -5760,6 +5834,16 @@
       // 1. MỞ MODAL XEM BÀI & NHẬN XÉT THEO SUBMISSION_ID / STUDENT_ID
       window.openStudentSubmissionModal = async function(submissionId, studentId, studentName, className) {
         try {
+          const role = localStorage.getItem("currentUserRole");
+          if (role === "teacher") {
+            let studentObj = globalStudents.find(st => String(st.id) === String(studentId) || (st.name && st.name.toLowerCase().trim() === (studentName || "").toLowerCase().trim()));
+            let studentClassId = studentObj ? (studentObj.classId || studentObj.class_id) : (className ? className.replace("Lớp ", "").trim() : null);
+            if (studentClassId && !teacherCanAccessClass(studentClassId)) {
+              alert("🚫 CẢNH BÁO BẢO MẬT: Bạn không có quyền xem bài làm của học sinh thuộc lớp này!");
+              return;
+            }
+          }
+
           const modal = document.getElementById("modal-student-submission-detail");
           if (!modal) return;
 
@@ -5884,9 +5968,19 @@
       // 2. CHỨC NĂNG LƯU NHẬN XÉT GIÁO VIÊN LÊN SUPABASE
       window.saveSubmissionTeacherComment = async function() {
         try {
+          const role = localStorage.getItem("currentUserRole");
           const scoreId = document.getElementById("hidden-submission-score-id").value;
           const studentId = document.getElementById("hidden-submission-student-id").value;
           const commentText = document.getElementById("input-submission-teacher-comment").value.trim();
+
+          if (role === "teacher") {
+            let studentObj = globalStudents.find(st => String(st.id) === String(studentId));
+            let studentClassId = studentObj ? (studentObj.classId || studentObj.class_id) : null;
+            if (studentClassId && !teacherCanAccessClass(studentClassId)) {
+              alert("🚫 CẢNH BÁO BẢO MẬT: Bạn không có quyền lưu nhận xét cho học sinh thuộc lớp này!");
+              return;
+            }
+          }
 
           if (!commentText) {
             alert("Vui lòng nhập nội dung nhận xét!");
@@ -5936,13 +6030,29 @@
         }
       };
 
-      // 3. RENDER BẢNG BÀI KIỂM TRA HẰNG TUẦN (TRUY VẤN TRỰC TIẾP PUBLIC.EXAM_SCORES SUPABASE)
+      // 3. RENDER BẢNG BÀI KIỂM TRA HẰNG TUẦN (TRUY VẤN TRỰC TIẾP PUBLIC.EXAM_SCORES SUPABASE VỚI PHÂN QUYỀN GIAO VIÊN)
       window.renderExamTable = async function () {
         const tbody = document.getElementById("tbody-exam-ranking");
         if (!tbody) return;
 
         try {
-          const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+          const role = localStorage.getItem("currentUserRole");
+          const allowedClasses = getCurrentTeacherClasses();
+
+          if (role === "teacher" && allowedClasses.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">⚠️ Bạn chưa được phân công lớp quản lý nào. Vui lòng liên hệ Admin.</td></tr>`;
+            const statSubmissions = document.getElementById("stat-total-submissions");
+            if (statSubmissions) statSubmissions.textContent = "0";
+            return;
+          }
+
+          let selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+          if (role === "teacher" && selectedClass !== "ALL" && !allowedClasses.includes(selectedClass)) {
+            selectedClass = allowedClasses[0];
+            const selectEl = document.getElementById("global-class-select");
+            if (selectEl) selectEl.value = selectedClass;
+          }
+
           const quizSelect = document.getElementById("select-exam-quiz-title");
           const selectedQuiz = quizSelect ? quizSelect.value : "ALL";
 
@@ -5955,7 +6065,6 @@
             .select('*')
             .order('updated_at', { ascending: false });
 
-          // In console log bắt buộc theo yêu cầu Bước 2 để kiểm tra dữ liệu thực tế
           if (error) {
             console.error('SUPABASE exam_scores ERROR:', error);
           }
@@ -5966,10 +6075,26 @@
             return;
           }
 
-          // Cập nhật tự động danh sách Bài kiểm tra vào Dropdown từ CSDL
-          if (quizSelect && dbScores.length > 0) {
+          let filtered = dbScores;
+
+          // Lọc bảo mật nghiêm ngặt: Giáo viên chỉ được xem điểm thuộc lớp được phân công
+          filtered = filtered.filter(s => {
+            let studentObj = globalStudents.find(st => String(st.id) === String(s.student_id) || (st.name && st.name.toLowerCase().trim() === (s.student_name || "").toLowerCase().trim()));
+            let studentClassId = studentObj ? (studentObj.classId || studentObj.class_id) : null;
+            
+            if (role === "teacher") {
+              if (!studentClassId || !teacherCanAccessClass(studentClassId)) return false;
+            }
+            if (selectedClass && selectedClass !== "ALL") {
+              return studentClassId === selectedClass;
+            }
+            return true;
+          });
+
+          // Cập nhật tự động danh sách Bài kiểm tra vào Dropdown từ CSDL cho các bài hiển thị
+          if (quizSelect && filtered.length > 0) {
             const currentVal = quizSelect.value || "ALL";
-            const titles = [...new Set(dbScores.map(d => d.quiz_title).filter(Boolean))];
+            const titles = [...new Set(filtered.map(d => d.quiz_title).filter(Boolean))];
             if (titles.length > 0 && quizSelect.options.length <= 1) {
               quizSelect.innerHTML = `<option value="ALL">🌐 Tất cả các bài thi</option>` +
                 titles.map(t => `<option value="${t}">${t}</option>`).join('');
@@ -5979,18 +6104,8 @@
             }
           }
 
-          let filtered = dbScores;
           if (selectedQuiz && selectedQuiz !== "ALL") {
             filtered = filtered.filter(s => s.quiz_title === selectedQuiz);
-          }
-
-          // Lọc theo Lớp nếu người dùng chọn Lớp
-          if (selectedClass && selectedClass !== "ALL") {
-            filtered = filtered.filter(s => {
-              let studentObj = globalStudents.find(st => String(st.id) === String(s.student_id) || (st.name && st.name.toLowerCase().trim() === (s.student_name || "").toLowerCase().trim()));
-              let studentClassId = studentObj ? (studentObj.classId || studentObj.class_id) : null;
-              return studentClassId === selectedClass;
-            });
           }
 
           // Mỗi học sinh chỉ lấy bản ghi bài làm có điểm CAO NHẤT / MỚI NHẤT
@@ -6031,7 +6146,7 @@
           if (statSubmissions) statSubmissions.textContent = uniqueScores.length;
 
           if (uniqueScores.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa có dữ liệu bài làm.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa có dữ liệu bài làm thuộc lớp được phân công.</td></tr>`;
             return;
           }
 
@@ -6039,7 +6154,7 @@
             let studentObj = globalStudents.find(st => String(st.id) === String(item.student_id) || (st.name && st.name.toLowerCase().trim() === (item.student_name || "").toLowerCase().trim()));
             let studentClassId = studentObj ? (studentObj.classId || studentObj.class_id) : null;
             let classObj = globalClasses.find(c => c.id === studentClassId);
-            let className = classObj ? classObj.name : (studentClassId || "Lớp 2A");
+            let className = classObj ? classObj.name : (studentClassId || "Lớp");
 
             return `
               <tr style="border-bottom: 1px solid #f1f5f9;">
@@ -6060,15 +6175,31 @@
         }
       };
 
-      // 4. RENDER BẢNG BÁO CÁO TIẾN ĐỘ HỌC SINH (TRUY VẤN TRỰC TIẾP PUBLIC.EXAM_SCORES SUPABASE)
+      // 4. RENDER BẢNG BÁO CÁO TIẾN ĐỘ HỌC SINH (TRUY VẤN TRỰC TIẾP PUBLIC.EXAM_SCORES SUPABASE VỚI PHÂN QUYỀN GIAO VIÊN)
       window.renderTeacherStudentTable = async function () {
         const tableBody = document.getElementById("teacher-student-table-body");
         if (!tableBody) return;
 
         try {
-          const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+          const role = localStorage.getItem("currentUserRole");
           const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
-          let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
+          const allowedClasses = getCurrentTeacherClasses();
+
+          if (role === "teacher" && allowedClasses.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">⚠️ Bạn chưa được phân công lớp quản lý nào. Vui lòng liên hệ Admin.</td></tr>`;
+            const statTotalStudents = document.getElementById("stat-total-students");
+            if (statTotalStudents) statTotalStudents.textContent = "0";
+            return;
+          }
+
+          let selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+          if (role === "teacher" && selectedClass !== "ALL" && !allowedClasses.includes(selectedClass)) {
+            selectedClass = allowedClasses[0];
+            const selectEl = document.getElementById("global-class-select");
+            if (selectEl) selectEl.value = selectedClass;
+          }
+
+          let availableStudents = (role === "teacher") ? getTeacherAllowedStudents() : globalStudents;
 
           let filteredStudents = selectedClass === "ALL"
             ? availableStudents
@@ -6086,7 +6217,6 @@
                 .select('*')
                 .order('updated_at', { ascending: false });
 
-              // In console log bắt buộc theo yêu cầu Bước 2
               if (error) console.error('SUPABASE progress exam_scores ERROR:', error);
               console.log('SUPABASE progress exam_scores DATA:', data);
 
@@ -6097,7 +6227,7 @@
           }
 
           if (filteredStudents.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Không có học sinh trong danh sách.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Không có học sinh thuộc lớp được phân công.</td></tr>`;
             return;
           }
 
@@ -6160,6 +6290,16 @@
 
       // Sửa điểm & Xóa
       window.editStudentXP = function (categoryKey, studentId) {
+        const role = localStorage.getItem("currentUserRole");
+        if (role === "teacher") {
+          let studentObj = globalStudents.find(st => String(st.id) === String(studentId));
+          let studentClassId = studentObj ? (studentObj.classId || studentObj.class_id) : null;
+          if (studentClassId && !teacherCanAccessClass(studentClassId)) {
+            alert("🚫 CẢNH BÁO BẢO MẬT: Bạn không có quyền sửa điểm của học sinh thuộc lớp này!");
+            return;
+          }
+        }
+
         let list = gameTaskScoreStore[categoryKey] || [];
         let item = list.find(i => i.studentId === studentId);
         let currentXP = item ? item.xp : 0;
@@ -6178,6 +6318,16 @@
       };
 
       window.removeStudentFromRanking = function (categoryKey, studentId) {
+        const role = localStorage.getItem("currentUserRole");
+        if (role === "teacher") {
+          let studentObj = globalStudents.find(st => String(st.id) === String(studentId));
+          let studentClassId = studentObj ? (studentObj.classId || studentObj.class_id) : null;
+          if (studentClassId && !teacherCanAccessClass(studentClassId)) {
+            alert("🚫 CẢNH BÁO BẢO MẬT: Bạn không có quyền xóa học sinh thuộc lớp này!");
+            return;
+          }
+        }
+
         if (confirm("Xóa học sinh này khỏi bảng xếp hạng đã chọn?")) {
           if (gameTaskScoreStore[categoryKey]) {
             gameTaskScoreStore[categoryKey] = gameTaskScoreStore[categoryKey].filter(i => i.studentId !== studentId);
