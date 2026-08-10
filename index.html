@@ -5586,8 +5586,6 @@
           if (!currentStudentObj) {
             currentStudentObj = { id: 102, name: currentStudentName, classId: currentStudentClass };
             studentsList.push(currentStudentObj);
-          } else {
-            currentStudentObj.classId = currentStudentClass;
           }
 
           let filteredStudents = (selectedClass === "ALL" || !selectedClass)
@@ -5785,8 +5783,12 @@
       });
 
       window.handleClassChange = function (selectedClass) {
-        if (selectedClass && selectedClass !== "ALL") {
+        const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+        if (role === "student" && selectedClass && selectedClass !== "ALL") {
           localStorage.setItem("studentClass", selectedClass);
+        }
+        if (selectedClass) {
+          localStorage.setItem("currentClassFilter", selectedClass);
         }
 
         const currentClassLabel = document.getElementById("current-class-label");
