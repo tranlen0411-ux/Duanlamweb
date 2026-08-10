@@ -4669,16 +4669,18 @@
               .order('created_at', { ascending: true });
 
             if (!error && dbTeachers) {
-              teacherAccounts = dbTeachers.map(t => ({
-                id: t.id,
-                username: t.username,
-                password: t.password || "123456",
-                displayName: t.display_name || t.username,
-                assignedClasses: t.assigned_classes || [],
-                classes: t.assigned_classes || [],
-                active: t.is_active !== false,
-                role: t.role || 'teacher'
-              }));
+              teacherAccounts = dbTeachers
+                .filter(t => t.role === 'teacher' || !t.role)
+                .map(t => ({
+                  id: t.id,
+                  username: t.username,
+                  password: t.password || "123456",
+                  displayName: t.display_name || t.username,
+                  assignedClasses: t.assigned_classes || [],
+                  classes: t.assigned_classes || [],
+                  active: t.is_active !== false,
+                  role: t.role || 'teacher'
+                }));
 
               window.teacherAccounts = teacherAccounts;
             }
