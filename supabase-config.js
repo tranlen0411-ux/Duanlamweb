@@ -35,7 +35,7 @@ window.supabaseAuth = {
     }
   },
 
-  // 1. Đăng ký tài khoản mới (Register) - Đẩy thẳng lên Supabase
+  // 1. Đăng ký tài khoản mới (Register)
   async registerUser({ username, password, fullName, role, classId }) {
     const cleanUsername = (username || '').trim().toLowerCase();
     const cleanPassword = (password || '').trim();
@@ -54,7 +54,7 @@ window.supabaseAuth = {
 
     try {
       // Kiểm tra xem username đã tồn tại chưa
-      const { data: existingUser, error: checkErr } = await activeClient
+      const { data: existingUser } = await activeClient
         .from('users')
         .select('id')
         .eq('username', cleanUsername)
@@ -64,7 +64,7 @@ window.supabaseAuth = {
         return { success: false, message: 'Tên tài khoản (username) này đã tồn tại! Vui lòng chọn tên khác.' };
       }
 
-      // 1. Insert vào bảng users chung
+      // Insert duy nhất vào bảng users chung (lưu cả giáo viên và học sinh)
       const { data: newUser, error: insertErr } = await activeClient
         .from('users')
         .insert([{
@@ -80,36 +80,21 @@ window.supabaseAuth = {
         .single();
 
       if (insertErr) {
-        console.error('Lỗi insert bảng users:', insertErr);
-        return { success: false, message: 'Lỗi CSDL (Users): ' + insertErr.message };
+        return { success: false, message: 'Lỗi CSDL: ' + insertErr.message };
       }
 
-      // 2. Nếu là học sinh -> Insert thêm vào bảng students
+      // Nếu là học sinh -> Insert thêm vào bảng students (nếu cần thiết cho game)
       if (userRole === 'student') {
-        const { error: studentErr } = await activeClient.from('students').insert([{
+        await activeClient.from('students').insert([{
           name: cleanFullName,
           class_id: userClass,
           xp: 450,
           coins: 1250
         }]);
-        if (studentErr) console.warn('Lỗi thêm bảng students:', studentErr);
       }
 
-      // 3. Nếu là giáo viên -> Insert thêm vào bảng teachers để duyệt
-      if (userRole === 'teacher') {
-        const { error: teacherErr } = await activeClient.from('teachers').insert([{
-          id: Date.now(), // Thêm dòng này để tránh lỗi null value cột id
-          username: cleanUsername,
-          display_name: cleanFullName,
-          assigned_classes: [userClass],
-          is_active: false // Mặc định chờ duyệt
-        }]);
-        if (teacherErr) console.warn('Lỗi thêm bảng teachers:', teacherErr);
-      }
-
-      return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase! Chờ quản trị viên phê duyệt.' };
+      return { success: true, user: newUser, message: '🎉 Đăng ký tài khoản thành công trên Supabase!' };
     } catch (err) {
-      console.error('Lỗi ngoại lệ đăng ký Supabase:', err);
       return { success: false, message: 'Lỗi hệ thống: ' + err.message };
     }
   },
