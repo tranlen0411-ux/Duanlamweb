@@ -2782,6 +2782,17 @@
             localStorage.setItem("currentUserRole", "admin");
             localStorage.setItem("currentUserUsername", cleanUser);
             localStorage.setItem("adminName", adminName);
+            localStorage.removeItem("teacherName");
+            localStorage.removeItem("teacherClass");
+            localStorage.removeItem("currentTeacherId");
+            localStorage.removeItem("studentName");
+            localStorage.removeItem("studentClass");
+            localStorage.setItem("currentClassFilter", "ALL");
+            localStorage.setItem("rankingClassFilter", "ALL");
+
+            if (typeof window.updateAllUserNames === 'function') {
+              window.updateAllUserNames();
+            }
 
             if (err) err.textContent = '';
             if (typeof window.closeModal === 'function') {
@@ -2949,10 +2960,12 @@
 
       const userNameDisplay = document.getElementById("user-name-display");
       if (userNameDisplay) {
-        if (isGuest) {
-          userNameDisplay.textContent = "Khách (Chưa đăng nhập)";
+        if (currentRole === 'student') {
+          userNameDisplay.textContent = localStorage.getItem("studentName") || "Học sinh";
+        } else if (currentRole === 'admin' || currentRole === 'teacher') {
+          userNameDisplay.textContent = "Chưa đăng nhập (Học sinh)";
         } else {
-          userNameDisplay.textContent = localStorage.getItem("studentName") || "Khách (Chưa đăng nhập)";
+          userNameDisplay.textContent = "Khách (Chưa đăng nhập)";
         }
       }
 
@@ -3905,50 +3918,50 @@
 
       setupRowCommentClick();
 
-      // KHÔI PHỤC VÀ ĐỒNG BỘ TÊN DÙNG CHUNG
+      // KHÔI PHỤC VÀ ĐỒNG BỘ TÊN DÙNG CHUNG THEO ROLE ĐĂNG NHẬP
       window.updateAllUserNames = function () {
-        const role = localStorage.getItem("currentUserRole") || "guest";
+        const role = (localStorage.getItem("currentUserRole") || "guest").toLowerCase();
         const isGuest = (role === 'guest' || role === 'null' || !role);
-        const loggedStudentName = localStorage.getItem("studentName");
-        const studentName = (!isGuest && loggedStudentName) ? loggedStudentName : "Khách (Chưa đăng nhập)";
         
         const userNameDisplay = document.getElementById("user-name-display");
-        if (userNameDisplay) userNameDisplay.textContent = studentName;
-
-        document.querySelectorAll(".student-name-text").forEach(el => {
-          el.textContent = isGuest ? "Bé" : studentName;
-        });
-
-        const speechNameEl = document.getElementById("hero-speech-student-name");
-        if (speechNameEl) speechNameEl.textContent = isGuest ? "Bé" : studentName;
-
-        const aiSpeechNameEl = document.getElementById("ai-speech-student-name");
-        if (aiSpeechNameEl) aiSpeechNameEl.textContent = isGuest ? "Bé" : studentName;
-
-        const studentInput = document.getElementById("input-student-fullname");
-        if (studentInput && document.activeElement !== studentInput) {
-          studentInput.value = isGuest ? "" : studentName;
-        }
-
-        const teacher = typeof getCurrentTeacher === "function" ? getCurrentTeacher() : null;
         const teacherNameSpan = document.getElementById("teacher-name-display");
         const teacherTitleName = document.getElementById("teacher-view-title-name");
 
-        let activeTeacherStr = "Cô Mai";
         if (role === "admin") {
-          const adminDisplayName = localStorage.getItem("adminName") || "Admin Quản Trị";
-          activeTeacherStr = adminDisplayName;
-          if (teacherNameSpan) teacherNameSpan.textContent = `👑 Quản Trị: ${adminDisplayName}`;
+          const adminDisplayName = localStorage.getItem("adminName") || "Super Admin (Lã Hương)";
+          if (userNameDisplay) userNameDisplay.textContent = "Chưa đăng nhập (Học sinh)";
+          if (teacherNameSpan) teacherNameSpan.textContent = "👩‍🏫 Đăng nhập Giáo Viên";
           if (teacherTitleName) teacherTitleName.textContent = adminDisplayName;
-        } else if (role === "teacher" || teacher) {
+        } else if (role === "teacher") {
+          const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
           const tName = localStorage.getItem("teacherName") || (teacher ? teacher.displayName : "Cô Mai");
-          activeTeacherStr = tName;
+          if (userNameDisplay) userNameDisplay.textContent = "Chưa đăng nhập (Học sinh)";
           if (teacherNameSpan) teacherNameSpan.textContent = `🏫 Giáo viên: ${tName}`;
           if (teacherTitleName) teacherTitleName.textContent = tName;
+        } else if (role === "student") {
+          const stName = localStorage.getItem("studentName") || "Bé Nam";
+          if (userNameDisplay) userNameDisplay.textContent = stName;
+          if (teacherNameSpan) teacherNameSpan.textContent = "👩‍🏫 Đăng nhập Giáo Viên";
+          if (teacherTitleName) teacherTitleName.textContent = "Cô Mai";
         } else {
-          if (teacherNameSpan) teacherNameSpan.textContent = "🏫 Giáo viên: Đăng nhập";
+          // Guest / Chưa đăng nhập
+          if (userNameDisplay) userNameDisplay.textContent = "Khách (Chưa đăng nhập)";
+          if (teacherNameSpan) teacherNameSpan.textContent = "👩‍🏫 Đăng nhập Giáo Viên";
           if (teacherTitleName) teacherTitleName.textContent = "Cô Mai";
         }
+
+        document.querySelectorAll(".student-name-text").forEach(el => {
+          el.textContent = (role === 'student') ? (localStorage.getItem("studentName") || "Bé") : "Bé";
+        });
+
+        const speechNameEl = document.getElementById("hero-speech-student-name");
+        if (speechNameEl) speechNameEl.textContent = (role === 'student') ? (localStorage.getItem("studentName") || "Bé") : "Bé";
+
+        const aiSpeechNameEl = document.getElementById("ai-speech-student-name");
+        if (aiSpeechNameEl) aiSpeechNameEl.textContent = (role === 'student') ? (localStorage.getItem("studentName") || "Bé") : "Bé";
+
+        const activeTeacherStr = (role === "admin") ? (localStorage.getItem("adminName") || "Super Admin") :
+                                 (role === "teacher") ? (localStorage.getItem("teacherName") || "Cô Mai") : "Cô Mai";
 
         document.querySelectorAll(".teacher-sign-name").forEach(el => {
           el.textContent = activeTeacherStr;
@@ -4072,6 +4085,15 @@
                 localStorage.setItem("teacherName", res.user.full_name || "Cô Mai");
                 localStorage.setItem("teacherClass", res.user.class_id || "2A");
                 localStorage.setItem("currentUser", JSON.stringify({ id: res.user.id, name: res.user.full_name || "Cô Mai", role: res.user.role }));
+                localStorage.removeItem("adminName");
+                localStorage.removeItem("studentName");
+                localStorage.removeItem("studentClass");
+                localStorage.setItem("currentClassFilter", "ALL");
+                localStorage.setItem("rankingClassFilter", "ALL");
+
+                if (typeof window.updateAllUserNames === 'function') {
+                  window.updateAllUserNames();
+                }
 
                 if (err) err.textContent = '';
                 closeModal('teacher-login-modal');
@@ -5569,8 +5591,13 @@
           return;
         }
 
+        localStorage.setItem("currentUserRole", "student");
         localStorage.setItem("studentName", newName);
         localStorage.setItem("studentClass", newClass);
+        localStorage.removeItem("adminName");
+        localStorage.removeItem("teacherName");
+        localStorage.removeItem("teacherClass");
+        localStorage.removeItem("currentTeacherId");
 
         const lowerName = newName.toLowerCase();
         studentClassMap[lowerName] = newClass;
