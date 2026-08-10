@@ -2,10 +2,11 @@
    TEACHER DASHBOARD & AI ANALYTICS CONTROLLER (GRADES 1-5)
    ============================================================ */
 
-class TeacherDashboard {
-  constructor() {
-    this.selectedStudentId = null;
-  }
+if (typeof TeacherDashboard === 'undefined') {
+  window.TeacherDashboard = class TeacherDashboard {
+    constructor() {
+      this.selectedStudentId = null;
+    }
 
   getGrade() {
     return window.dbStore ? window.dbStore.getSelectedGrade() : 2;
@@ -237,4 +238,98 @@ class TeacherDashboard {
   }
 }
 
-window.teacherDashboard = new TeacherDashboard();
+window.teacherDashboard = window.teacherDashboard || new window.TeacherDashboard();
+// --- TÍNH NĂNG PHÊ DUYỆT TÀI KHOẢN DÀNH CHO ADMIN ---
+window.addEventListener('DOMContentLoaded', () => {
+  const mainContainer = document.querySelector('main') || document.body;
+  
+  const approvalSection = document.createElement('div');
+  approvalSection.innerHTML = `
+    <div style="margin-top: 30px; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h3>🛡️ Phê Duyệt Tài Khoản Giáo Viên Mới</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+          <tr style="background: #f8f9fa; text-align: left;">
+            <th style="padding: 10px; border-bottom: 1px solid #ddd;">Tên hiển thị</th>
+            <th style="padding: 10px; border-bottom: 1px solid #ddd;">Tên đăng nhập (Username)</th>
+            <th style="padding: 10px; border-bottom: 1px solid #ddd;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="pending-teachers-body">
+          <tr><td colspan="3" style="text-align: center; padding: 15px;">Đang tải danh sách chờ duyệt...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+  mainContainer.appendChild(approvalSection);
+  loadPendingTeachers();
+});
+
+async function loadPendingTeachers() {
+  try {
+    const { data, error } = await supabase
+      .from('teachers')
+      .select('*')
+      .eq('status', 'pending');
+
+    const tbody = document.getElementById('pending-teachers-body');
+    if (!tbody) return;
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 15px; color: #777;">Không có tài khoản nào đang chờ duyệt.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.forEach((teacher) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${teacher.display_name || 'Chưa có tên'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${teacher.username}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">
+          <button onclick="approveTeacher('${teacher.id}')" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px;">Phê duyệt</button>
+          <button onclick="rejectTeacher('${teacher.id}')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Từ chối</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (err) {
+    console.error("Lỗi tải danh sách:", err.message);
+  }
+}
+
+async function approveTeacher(teacherId) {
+  try {
+    const { error } = await supabase
+      .from('teachers')
+      .update({ status: 'active' })
+      .eq('id', teacherId);
+
+    if (error) throw error;
+
+    alert("Phê duyệt tài khoản thành công!");
+    loadPendingTeachers();
+  } catch (err) {
+    alert("Lỗi khi phê duyệt: " + err.message);
+  }
+}
+
+async function rejectTeacher(teacherId) {
+  if (!confirm("Bạn có chắc chắn muốn từ chối và xóa tài khoản này không?")) return;
+
+  try {
+    const { error } = await supabase
+      .from('teachers')
+      .delete()
+      .eq('id', teacherId);
+
+    if (error) throw error;
+
+    alert("Đã từ chối và xóa tài khoản.");
+    loadPendingTeachers();
+  } catch (err) {
+    alert("Lỗi khi từ chối: " + err.message);
+  }
+}
