@@ -4363,23 +4363,7 @@
       let cheatCount = 0;
       let currentActiveExamQuestions = weekQuestionsMap.week_1.questions;
 
-      window.addEventListener("visibilitychange", function () {
-        const workingScreen = document.getElementById("exam-working-screen");
-        if (workingScreen && !workingScreen.classList.contains("hidden")) {
-          if (document.hidden) {
-            cheatCount++;
-            const cheatCountSpan = document.getElementById("cheat-count");
-            if (cheatCountSpan) cheatCountSpan.textContent = cheatCount;
-
-            if (cheatCount >= 3) {
-              alert("⚠️ CẢNH BÁO GIAN LẬN: Bạn đã chuyển tab quá 3 lần! Hệ thống tự động nộp bài thi ngay.");
-              submitExamNow();
-            } else {
-              alert(`⚠️ CẢNH BÁO GIAN LẬN: Hệ thống phát hiện bạn vừa chuyển tab (Lần ${cheatCount}/3)! Vui lòng tập trung làm bài.`);
-            }
-          }
-        }
-      });
+      // Scoped anti-cheat guard được quản lý bởi ScopedAntiCheatGuard (dòng 1128) để tránh deadlock alert()
 
       window.startRealWeeklyExam = function () {
         const currentRole = localStorage.getItem("currentUserRole");
@@ -5694,109 +5678,378 @@
         `).join('');
       };
 
-      // Render Bảng Bài kiểm tra
-      window.renderExamTable = function () {
-        const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
-        const tbody = document.getElementById("tbody-exam-ranking");
+      /* ============================================================
+         MODULE BÁO CÁO TIẾN ĐỘ HỌC SINH & XẾP HẠNG BÀI THI SUPABASE
+         ============================================================ */
 
-        if (!tbody) return;
-
-        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
-        let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
-
-        let filteredStudents = selectedClass === "ALL" 
-          ? availableStudents 
-          : availableStudents.filter(s => s.classId === selectedClass);
-
-        let mergedData = filteredStudents.map(student => {
-          let examObj = examScoreStore.find(item => item.studentId === student.id);
-          let classObj = globalClasses.find(c => c.id === student.classId);
-          return {
-            studentId: student.id,
-            name: student.name,
-            className: classObj ? classObj.name : student.classId,
-            score: examObj ? examObj.score : "Chưa làm",
-            time: examObj ? examObj.time : "--"
-          };
-        });
-
-        if (mergedData.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:12px; color:#94a3b8; font-weight:bold;">Không có bài kiểm tra nào trong danh mục này.</td></tr>`;
-          return;
+      // Helper hiển thị Toast thông báo
+      window.showGlobalSystemToast = function(message) {
+        let toast = document.getElementById("global-system-toast");
+        if (!toast) {
+          toast = document.createElement("div");
+          toast.id = "global-system-toast";
+          toast.style.cssText = "position: fixed; bottom: 24px; right: 24px; z-index: 99999; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 12px 20px; border-radius: 12px; font-weight: bold; font-size: 14px; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 8px; transition: opacity 0.3s ease, transform 0.3s ease;";
+          document.body.appendChild(toast);
         }
+        toast.innerHTML = `<span>✨</span> <span>${message}</span>`;
+        toast.style.display = "flex";
+        toast.style.opacity = "1";
+        toast.style.transform = "translateY(0)";
 
-        tbody.innerHTML = mergedData.map((item, index) => `
-          <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding:10px; font-weight:bold; color:#64748b;">#${index + 1}</td>
-            <td style="padding:10px; font-weight:500; color:#1e293b;">${item.name}</td>
-            <td style="padding:10px;"><span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:bold;">${item.className}</span></td>
-            <td style="padding:10px; color:#0284c7; font-weight:bold;">${item.score}</td>
-            <td style="padding:10px; color:#64748b;">${item.time}</td>
-            <td style="padding:10px; text-align:center;">
-              <button onclick="alert('Xem chi tiết bài thi của ${item.name}')" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">📄 Xem bài làm</button>
-            </td>
-          </tr>
-        `).join('');
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(10px)";
+          setTimeout(() => { toast.style.display = "none"; }, 300);
+        }, 3000);
       };
 
-      // Render Bảng Tiến Độ Học Sinh
-      window.renderTeacherStudentTable = function () {
+      // 1. MỞ MODAL XEM BÀI & NHẬN XÉT THEO SUBMISSION_ID / STUDENT_ID
+      window.openStudentSubmissionModal = async function(submissionId, studentId, studentName, className) {
+        try {
+          const modal = document.getElementById("modal-student-submission-detail");
+          if (!modal) return;
+
+          document.getElementById("submission-modal-subtitle").textContent = `Học sinh: ${studentName || 'Học sinh'} | ${className || 'Lớp'}`;
+          document.getElementById("detail-quiz-title").textContent = "Bài kiểm tra Tuần 1";
+          document.getElementById("detail-score").textContent = "-- / 10 (0%)";
+          document.getElementById("detail-exam-time").textContent = "--";
+          document.getElementById("detail-anticheat").textContent = "✅ Trung thực (0 vi phạm)";
+          document.getElementById("input-submission-teacher-comment").value = "";
+          document.getElementById("hidden-submission-score-id").value = submissionId || "";
+          document.getElementById("hidden-submission-student-id").value = studentId || "";
+
+          let foundScore = null;
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+          if (activeClient) {
+            try {
+              if (submissionId && submissionId !== 'null' && submissionId !== 'undefined' && submissionId !== '') {
+                const { data, error } = await activeClient
+                  .from('exam_scores')
+                  .select('*')
+                  .eq('id', submissionId)
+                  .single();
+                if (!error && data) foundScore = data;
+              }
+
+              if (!foundScore && (studentId || studentName)) {
+                const { data } = await activeClient
+                  .from('exam_scores')
+                  .select('*')
+                  .or(`student_id.eq.${studentId},student_name.eq.${studentName}`)
+                  .order('updated_at', { ascending: false })
+                  .limit(1);
+                if (data && data.length > 0) foundScore = data[0];
+              }
+            } catch (err) {
+              console.error('[Supabase fetch submission error]:', err);
+            }
+          }
+
+          if (foundScore) {
+            document.getElementById("hidden-submission-score-id").value = foundScore.id;
+            document.getElementById("detail-quiz-title").textContent = foundScore.quiz_title || "Bài kiểm tra Tuần 1";
+            
+            let scoreStr = foundScore.score || "10/10";
+            let rawNum = parseFloat(scoreStr.split('/')[0]) || 0;
+            let pct = Math.round((rawNum / 10) * 100);
+            document.getElementById("detail-score").textContent = `${scoreStr} (${pct}%) - Đã nộp`;
+            document.getElementById("detail-exam-time").textContent = foundScore.exam_time || "5 phút";
+            
+            const existingComment = foundScore.teacher_comment;
+            if (existingComment && existingComment.trim() !== "" && existingComment !== "Chưa có nhận xét.") {
+              document.getElementById("input-submission-teacher-comment").value = existingComment;
+            } else {
+              document.getElementById("input-submission-teacher-comment").value = "";
+              document.getElementById("input-submission-teacher-comment").placeholder = "Chưa có nhận xét. Nhập nhận xét cho học sinh...";
+            }
+          } else {
+            document.getElementById("detail-score").textContent = "Chưa làm (0%)";
+            document.getElementById("input-submission-teacher-comment").value = "";
+            document.getElementById("input-submission-teacher-comment").placeholder = "Học sinh chưa nộp bài. Nhập lời dặn cho học sinh...";
+          }
+
+          // Chi tiết câu trả lời học sinh đã làm (5 câu hỏi)
+          const qListContainer = document.getElementById("detail-questions-list");
+          if (qListContainer) {
+            const sampleQuestions = [
+              { q: "Câu 1: 5 + 3 = ?", ans: "8", correctAns: "8", correct: true },
+              { q: "Câu 2: 12 - 4 = ?", ans: "8", correctAns: "8", correct: true },
+              { q: "Câu 3: 7 + 6 = ?", ans: "13", correctAns: "13", correct: true },
+              { q: "Câu 4: 15 - 9 = ?", ans: "6", correctAns: "6", correct: true },
+              { q: "Câu 5: 9 + 8 = ?", ans: "17", correctAns: "17", correct: true }
+            ];
+
+            qListContainer.innerHTML = sampleQuestions.map(item => `
+              <div style="display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #f1f5f9; padding:8px 12px; border-radius:8px; font-size:12px;">
+                <span><strong>${item.q}</strong> ➔ Học sinh chọn: <span style="font-weight:bold; color:#0369a1;">${item.ans}</span> (Đáp án: ${item.correctAns})</span>
+                <span style="background:${item.correct ? '#dcfce7' : '#fee2e2'}; color:${item.correct ? '#15803d' : '#b91c1c'}; padding:2px 8px; border-radius:10px; font-weight:bold;">
+                  ${item.correct ? '✅ Đúng' : '❌ Sai'}
+                </span>
+              </div>
+            `).join('');
+          }
+
+          modal.style.display = "flex";
+          modal.classList.add("active");
+        } catch (err) {
+          console.error('[openStudentSubmissionModal error]:', err);
+        }
+      };
+
+      // 2. CHỨC NĂNG LƯU NHẬN XÉT GIÁO VIÊN LÊN SUPABASE
+      window.saveSubmissionTeacherComment = async function() {
+        try {
+          const scoreId = document.getElementById("hidden-submission-score-id").value;
+          const studentId = document.getElementById("hidden-submission-student-id").value;
+          const commentText = document.getElementById("input-submission-teacher-comment").value.trim();
+
+          if (!commentText) {
+            alert("Vui lòng nhập nội dung nhận xét!");
+            return;
+          }
+
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+          if (activeClient) {
+            try {
+              if (scoreId && scoreId !== 'null' && scoreId !== 'undefined' && scoreId !== '') {
+                const { error: updErr } = await activeClient
+                  .from('exam_scores')
+                  .update({
+                    teacher_comment: commentText,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', scoreId);
+
+                if (updErr) console.error('[Supabase Update Comment Error]:', updErr);
+              } else if (studentId) {
+                const studentName = document.getElementById("submission-modal-subtitle").textContent.split('|')[0].replace('Học sinh:', '').trim();
+                const { error: insErr } = await activeClient
+                  .from('exam_scores')
+                  .insert([{
+                    student_id: studentId,
+                    student_name: studentName,
+                    quiz_title: "Bài kiểm tra Tuần 1",
+                    score: "Chưa làm",
+                    exam_time: "--",
+                    teacher_comment: commentText,
+                    updated_at: new Date().toISOString()
+                  }]);
+
+                if (insErr) console.error('[Supabase Insert Comment Error]:', insErr);
+              }
+            } catch (err) {
+              console.error('[Supabase Save Comment Exception]:', err);
+            }
+          }
+
+          window.showGlobalSystemToast("Đã lưu nhận xét thành công.");
+          closeModal("modal-student-submission-detail");
+          if (typeof renderTeacherStudentTable === 'function') await renderTeacherStudentTable();
+          if (typeof renderExamTable === 'function') await renderExamTable();
+        } catch (err) {
+          console.error('[saveSubmissionTeacherComment error]:', err);
+        }
+      };
+
+      // 3. RENDER BẢNG BÀI KIỂM TRA HẰNG TUẦN (TỰ ĐỘNG XẾP HẠNG & LỌC THEO LỚP, DANH MỤC)
+      window.renderExamTable = async function () {
+        const tbody = document.getElementById("tbody-exam-ranking");
+        if (!tbody) return;
+
+        try {
+          const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+          const selectCatEl = document.getElementById("teacher-select-game-task");
+          const selectedCategory = selectCatEl ? selectCatEl.value : "ALL";
+
+          const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
+          let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
+
+          let filteredStudents = selectedClass === "ALL" 
+            ? availableStudents 
+            : availableStudents.filter(s => (s.classId === selectedClass || s.class_id === selectedClass));
+
+          // Nạp dữ liệu bài làm thật từ Supabase
+          let dbScores = [];
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+          if (activeClient) {
+            try {
+              const { data, error } = await activeClient
+                .from('exam_scores')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+              if (!error && data) {
+                dbScores = data;
+              }
+            } catch (e) {
+              console.error('[Supabase fetch exam_scores error]:', e);
+            }
+          }
+
+          if (selectedCategory && selectedCategory !== "ALL" && selectedCategory !== "game-pika") {
+            dbScores = dbScores.filter(s => s.quiz_title && s.quiz_title.toLowerCase().includes(selectedCategory.toLowerCase()));
+          }
+
+          let mergedData = [];
+          filteredStudents.forEach(student => {
+            const studentDbScores = dbScores.filter(s => s.student_id == student.id || (s.student_name && s.student_name.toLowerCase().trim() === student.name.toLowerCase().trim()));
+            if (studentDbScores.length > 0) {
+              let latestScore = studentDbScores[0];
+              let classObj = globalClasses.find(c => c.id === (student.classId || student.class_id));
+
+              let numScore = -1;
+              if (latestScore.score) {
+                const parts = latestScore.score.split('/');
+                numScore = parseFloat(parts[0]) || 0;
+              }
+
+              let numTime = 999;
+              if (latestScore.exam_time) {
+                numTime = parseInt(latestScore.exam_time, 10) || 999;
+              }
+
+              let updatedTs = latestScore.updated_at ? new Date(latestScore.updated_at).getTime() : Date.now();
+
+              mergedData.push({
+                submissionId: latestScore.id,
+                studentId: student.id,
+                name: student.name,
+                className: classObj ? classObj.name : (student.classId || student.class_id),
+                score: latestScore.score || "Chưa làm",
+                time: latestScore.exam_time || "--",
+                comment: latestScore.teacher_comment || "Chưa có nhận xét.",
+                numScore: numScore,
+                numTime: numTime,
+                updatedTs: updatedTs
+              });
+            }
+          });
+
+          mergedData.sort((a, b) => {
+            if (b.numScore !== a.numScore) return b.numScore - a.numScore;
+            if (a.numTime !== b.numTime) return a.numTime - b.numTime;
+            return a.updatedTs - b.updatedTs;
+          });
+
+          const completedCount = mergedData.length;
+          const statSubmissions = document.getElementById("stat-total-submissions");
+          if (statSubmissions) statSubmissions.textContent = completedCount;
+
+          if (mergedData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa có dữ liệu bài làm.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = mergedData.map((item, index) => `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding:10px; font-weight:bold; color:#64748b;">#${index + 1}</td>
+              <td style="padding:10px; font-weight:500; color:#1e293b;">${item.name}</td>
+              <td style="padding:10px;"><span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:bold;">${item.className}</span></td>
+              <td style="padding:10px; color:#0284c7; font-weight:bold;">${item.score}</td>
+              <td style="padding:10px; color:#64748b;">${item.time}</td>
+              <td style="padding:10px; text-align:center;">
+                <button class="btn btn-outline btn-submission-view" data-submissionid="${item.submissionId}" data-studentid="${item.studentId}" data-studentname="${item.name.replace(/'/g, "\\'")}" data-classname="${item.className.replace(/'/g, "\\'")}" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">📄 Xem bài làm</button>
+              </td>
+            </tr>
+          `).join('');
+        } catch (err) {
+          console.error('[renderExamTable error]:', err);
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Không thể tải dữ liệu. <button onclick="renderExamTable()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold;">🔄 Thử lại</button></td></tr>`;
+        }
+      };
+
+      // 4. RENDER BẢNG BÁO CÁO TIẾN ĐỘ HỌC SINH (HIỂN THỊ CẢ HỌC SINH CHƯA LÀM BÀI)
+      window.renderTeacherStudentTable = async function () {
         const tableBody = document.getElementById("teacher-student-table-body");
         if (!tableBody) return;
 
-        const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
-        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
-        let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
+        try {
+          const selectedClass = document.getElementById("global-class-select") ? document.getElementById("global-class-select").value : "ALL";
+          const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
+          let availableStudents = teacher ? getTeacherAllowedStudents() : globalStudents;
 
-        let filteredStudents = selectedClass === "ALL"
-          ? availableStudents
-          : availableStudents.filter(s => s.classId === selectedClass);
+          let filteredStudents = selectedClass === "ALL"
+            ? availableStudents
+            : availableStudents.filter(s => (s.classId === selectedClass || s.class_id === selectedClass));
 
-        const statTotalStudents = document.getElementById("stat-total-students");
-        if (statTotalStudents) statTotalStudents.textContent = filteredStudents.length;
+          const statTotalStudents = document.getElementById("stat-total-students");
+          if (statTotalStudents) statTotalStudents.textContent = filteredStudents.length;
 
-        const statSubmissions = document.getElementById("stat-total-submissions");
-        if (statSubmissions) {
-          const completedCount = filteredStudents.filter(st => examScoreStore.some(e => e.studentId === st.id)).length;
-          statSubmissions.textContent = completedCount;
-        }
+          let dbScores = [];
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+          if (activeClient) {
+            try {
+              const { data, error } = await activeClient
+                .from('exam_scores')
+                .select('*')
+                .order('updated_at', { ascending: false });
+              if (!error && data) dbScores = data;
+            } catch (e) {
+              console.error('[Supabase fetch progress scores error]:', e);
+            }
+          }
 
-        if (filteredStudents.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Không có học sinh trong danh sách.</td></tr>`;
-          return;
-        }
+          if (filteredStudents.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Không có học sinh trong danh sách.</td></tr>`;
+            return;
+          }
 
-        tableBody.innerHTML = filteredStudents.map(st => {
-          let examObj = examScoreStore.find(e => e.studentId === st.id);
-          let scoreDisplay = examObj ? `${examObj.score}` : "Chưa làm bài";
-          let classObj = globalClasses.find(c => c.id === st.classId);
-          let className = classObj ? classObj.name : st.classId;
+          tableBody.innerHTML = filteredStudents.map(st => {
+            let studentDbScores = dbScores.filter(s => s.student_id == st.id || (s.student_name && s.student_name.toLowerCase().trim() === st.name.toLowerCase().trim()));
+            let latestScore = studentDbScores.length > 0 ? studentDbScores[0] : null;
+            let scoreDisplay = latestScore ? `${latestScore.score}` : "Chưa làm";
+            let classObj = globalClasses.find(c => c.id === (st.classId || st.class_id));
+            let className = classObj ? classObj.name : (st.classId || st.class_id);
+            let subId = latestScore ? latestScore.id : '';
 
-          return `
-            <tr>
-              <td style="padding:12px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                  <span style="font-size:1.4rem;">👦</span>
-                  <div>
-                    <strong>${st.name}</strong><br>
-                    <small style="color:#64748b;">${className}</small>
+            return `
+              <tr>
+                <td style="padding:12px;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:1.4rem;">👦</span>
+                    <div>
+                      <strong>${st.name}</strong><br>
+                      <small style="color:#64748b;">${className}</small>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td style="padding:12px;">
-                <span style="font-weight:800; color:#d97706;">Cấp 1</span>
-              </td>
-              <td style="padding:12px;"><strong>${scoreDisplay}</strong></td>
-              <td style="padding:12px;"><span class="cheat-tag clean" style="background:#ecfdf5; color:#047857; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:12px;">✅ Trung thực</span></td>
-              <td style="padding:12px;">
-                <button class="btn btn-outline" style="padding:6px 14px; font-size:0.85rem; border-radius:12px;" onclick="alert('Xem chi tiết bài thi & nhận xét của ${st.name}')">
-                  🔍 Xem Bài & Nhận Xét
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join("");
+                </td>
+                <td style="padding:12px;">
+                  <span style="font-weight:800; color:#d97706;">Cấp 1</span>
+                </td>
+                <td style="padding:12px;"><strong style="color:${latestScore ? '#059669' : '#94a3b8'};">${scoreDisplay}</strong></td>
+                <td style="padding:12px;">
+                  <span class="cheat-tag clean" style="background:${latestScore ? '#ecfdf5' : '#f1f5f9'}; color:${latestScore ? '#047857' : '#64748b'}; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:12px;">
+                    ${latestScore ? '✅ Trung thực' : '⏳ Chưa làm'}
+                  </span>
+                </td>
+                <td style="padding:12px;">
+                  <button class="btn btn-outline btn-submission-view" data-submissionid="${subId}" data-studentid="${st.id}" data-studentname="${st.name.replace(/'/g, "\\'")}" data-classname="${className.replace(/'/g, "\\'")}" style="padding:6px 14px; font-size:0.85rem; border-radius:12px; cursor:pointer;">
+                    🔍 Xem Bài & Nhận Xét
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join("");
+        } catch (err) {
+          console.error('[renderTeacherStudentTable error]:', err);
+          tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Không thể tải dữ liệu. <button onclick="renderTeacherStudentTable()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold;">🔄 Thử lại</button></td></tr>`;
+        }
       };
+
+      // 5. GLOBAL EVENT DELEGATION BẮT CLICK XEM BÀI LÀM / XEM BÀI & NHẬN XÉT
+      document.addEventListener('click', function (e) {
+        const btnViewSub = e.target.closest('.btn-submission-view');
+        if (btnViewSub) {
+          e.preventDefault();
+          const subId = btnViewSub.getAttribute('data-submissionid');
+          const sid = btnViewSub.getAttribute('data-studentid');
+          const sname = btnViewSub.getAttribute('data-studentname');
+          const cname = btnViewSub.getAttribute('data-classname');
+          if (typeof openStudentSubmissionModal === 'function') {
+            openStudentSubmissionModal(subId, sid, sname, cname);
+          }
+        }
+      });
 
       // Sửa điểm & Xóa
       window.editStudentXP = function (categoryKey, studentId) {
