@@ -3736,7 +3736,6 @@
           studentInput.value = isGuest ? "" : studentName;
         }
 
-        const role = localStorage.getItem("currentUserRole");
         const teacher = typeof getCurrentTeacher === "function" ? getCurrentTeacher() : null;
         const teacherNameSpan = document.getElementById("teacher-name-display");
         const teacherTitleName = document.getElementById("teacher-view-title-name");
