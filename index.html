@@ -1204,10 +1204,7 @@
         <div class="header-class-selector" style="background: #fef08a; border: 1px solid #fde047; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
           <span style="font-size: 14px;">🎓</span>
           <select id="global-class-select" onchange="handleClassChange(this.value)" style="background: transparent; border: none; font-weight: bold; color: #854d0e; font-size: 13px; cursor: pointer; outline: none;">
-            <option value="2AI">Lớp 2 AI</option>
-            <option value="2A">Lớp 2A</option>
-            <option value="2B">Lớp 2B</option>
-            <option value="2C">Lớp 2C</option>
+            <option value="ALL">🌐 Tất cả các lớp</option>
           </select>
         </div>
       </div>
@@ -4994,6 +4991,54 @@
         }
       };
 
+      // 1. TẢI VÀ ĐỒNG BỘ DANH SÁCH LỚP HỌC VÀ HỌC SINH TỪ SUPABASE
+      window.loadSupabaseClassesAndStudents = async function() {
+        const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+        if (activeClient) {
+          try {
+            // Tải danh sách lớp từ public.classes
+            const { data: dbClasses, error: classErr } = await activeClient
+              .from('classes')
+              .select('*')
+              .order('id', { ascending: true });
+
+            if (!classErr && dbClasses && dbClasses.length > 0) {
+              globalClasses = dbClasses.map(c => ({
+                id: c.id,
+                name: c.name || ("Lớp " + c.id)
+              }));
+              window.globalClasses = globalClasses;
+            }
+
+            // Tải danh sách học sinh từ public.students
+            const { data: dbStudents, error: studentErr } = await activeClient
+              .from('students')
+              .select('*')
+              .order('id', { ascending: true });
+
+            if (!studentErr && dbStudents && dbStudents.length > 0) {
+              globalStudents = dbStudents.map(s => ({
+                id: s.id,
+                name: s.name,
+                classId: s.class_id,
+                class_id: s.class_id,
+                xp: s.xp || 0,
+                coins: s.coins || 0
+              }));
+              window.globalStudents = globalStudents;
+            }
+          } catch (err) {
+            console.warn('[Supabase loadClasses/Students Error]:', err);
+          }
+        }
+
+        renderClassOptions();
+        if (typeof handleClassChange === "function") {
+          const globalSelect = document.getElementById("global-class-select");
+          handleClassChange(globalSelect ? globalSelect.value : "ALL");
+        }
+      };
+
       // QUẢN LÝ LỚP / NHÓM
       window.renderClassOptions = function () {
         const globalSelect = document.getElementById("global-class-select");
@@ -5476,6 +5521,9 @@
       forceHideAllModals();
       renderClassOptions();
       updateAllUserNames();
+      if (typeof loadSupabaseClassesAndStudents === 'function') {
+        loadSupabaseClassesAndStudents();
+      }
 
       const currentRole = localStorage.getItem("currentUserRole");
       if (currentRole === "teacher" || currentRole === "admin") {
