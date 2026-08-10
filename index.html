@@ -1681,10 +1681,40 @@
       </div>
 
       <!-- ============================================================
-            TAB 4: LỊCH SỬ & NHẬN XÉT CỦA GIÁO VIÊN (CLICK TRỰC TIẾP TỪNG DÒNG)
+            TAB 4: LỊCH SỬ & NHẬN XÉT CỦA GIÁO VIÊN (KẾT NỐI DỮ LIỆU SUPABASE THẬT)
             ============================================================ -->
       <div class="tab-content-panel" id="tab-history-feedback">
-        <!-- Phần Lịch Sử Bài Làm & Lời Nhắn Từ Giáo Viên trên giao diện học sinh đã được xóa theo yêu cầu -->
+        <div class="history-table-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="font-size: 1.4rem; font-weight: 900; margin: 0;">📜 Lịch Sử Bài Làm & Lời Nhắn Từ Giáo Viên</h3>
+            <button id="student-view-teacher-comment-btn" class="btn btn-outline" style="display: none; border-radius: 20px; font-weight: 800; border: 2px solid #10b981; color: #047857;" onclick="nhapNhanXetGiaoVien()">
+              ✏️ Ghi / Sửa Nhận Xét (Dành Cho Giáo Viên)
+            </button>
+          </div>
+
+          <p id="student-view-teacher-tip" style="display: none; font-size: 0.88rem; color: #0284c7; font-weight: 800; margin-bottom: 12px;">
+            💡 <em>Mẹo: Giáo viên có thể click trực tiếp vào ô Lời Nhắn của từng dòng dưới đây để chỉnh sửa nhận xét riêng cho lượt làm đó!</em>
+          </p>
+
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Tên bài thi</th>
+                <th>Điểm số</th>
+                <th>Thời gian</th>
+                <th>Số câu đúng</th>
+                <th>Lời Nhắn Từ Giáo Viên</th>
+              </tr>
+            </thead>
+            <tbody id="student-history-table-body">
+              <tr>
+                <td colspan="5" style="text-align:center; padding:16px; color:#64748b; font-weight:bold;">
+                  ⏳ Đang tải lịch sử bài làm từ Supabase...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -3517,7 +3547,12 @@
       if (homeTabBtn) homeTabBtn.onclick = function() { activatePanel("tab-home-tasks", this); };
       if (gamesTabBtn) gamesTabBtn.onclick = function() { activatePanel("tab-game-arena", this); };
       if (examTabBtn) examTabBtn.onclick = function() { activatePanel("tab-weekly-exam", this); };
-      if (historyTabBtn) historyTabBtn.onclick = function() { activatePanel("tab-history-feedback", this); };
+      if (historyTabBtn) historyTabBtn.onclick = function() {
+        activatePanel("tab-history-feedback", this);
+        if (typeof loadStudentExamHistoryFromSupabase === "function") {
+          loadStudentExamHistoryFromSupabase();
+        }
+      };
 
       // HÀM XỬ LÝ CLICK NÚT BANNER LÀM BÀI NGAY
       window.handleBannerButtonClick = function (e) {
@@ -3732,6 +3767,65 @@
           }
         }
         openCommentModalForRow('teacher_comment_week1', 'Lượt làm Tuần 1', null);
+      };
+
+      window.loadStudentExamHistoryFromSupabase = async function() {
+        const tbody = document.getElementById("student-history-table-body");
+        if (!tbody) return;
+
+        const currentStudentId = localStorage.getItem("currentStudentId") || localStorage.getItem("studentId") || "101";
+        const currentStudentName = localStorage.getItem("studentName") || "Vũ Bảo An";
+
+        const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+        if (!activeClient) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa kết nối Supabase.</td></tr>`;
+          return;
+        }
+
+        try {
+          const { data, error } = await activeClient
+            .from('exam_scores')
+            .select('*')
+            .or(`student_id.eq.${currentStudentId},student_name.eq.${currentStudentName}`)
+            .order('updated_at', { ascending: false });
+
+          if (error) {
+            console.error('[Supabase loadStudentExamHistory Error]:', error);
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Không thể tải lịch sử từ Supabase. <button onclick="loadStudentExamHistoryFromSupabase()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">🔄 Thử lại</button></td></tr>`;
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa có lịch sử làm bài thi.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = data.map(item => {
+            let scoreStr = item.score || "10/10";
+            let rawNum = parseFloat(scoreStr.split('/')[0]) || 0;
+            let timeStr = item.exam_time || "--";
+            let dateStr = item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : "--";
+            let commentText = item.teacher_comment && item.teacher_comment.trim() !== "" ? item.teacher_comment : "Chưa có nhận xét.";
+
+            return `
+              <tr>
+                <td><strong>${item.quiz_title || 'Bài kiểm tra Tuần 1'}</strong></td>
+                <td><span class="score-badge-10" style="color: ${rawNum >= 8 ? '#059669' : '#0284c7'}; font-weight:bold;">${scoreStr}</span></td>
+                <td><small style="color:#64748b;">${dateStr} (${timeStr})</small></td>
+                <td><strong style="color:#0369a1;">${rawNum >= 10 ? '5/5' : Math.round(rawNum / 2) + '/5'} câu</strong></td>
+                <td>
+                  <span class="teacher-comment-italic" style="color: ${commentText !== 'Chưa có nhận xét.' ? '#059669' : '#94a3b8'}; font-weight: 700;">
+                    "${commentText}"
+                  </span>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+        } catch (err) {
+          console.error('[loadStudentExamHistoryFromSupabase Exception]:', err);
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Lỗi nạp dữ liệu.</td></tr>`;
+        }
       };
 
       window.saveTeacherCommentFromModal = function () {
