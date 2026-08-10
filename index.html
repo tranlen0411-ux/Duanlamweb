@@ -5282,28 +5282,30 @@
 
       // LOGIC KẾT HỢP 2 TẦNG BỘ LỌC (FÚT 4): HEADER FILTER ∩ RANKING FILTER
       window.getEffectiveRankingClassFilter = function() {
-        const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
         const headerSelect = document.getElementById("global-class-select");
         const rankingSelect = document.getElementById("ranking-class-select");
 
-        let headerFilter = headerSelect ? headerSelect.value : "ALL";
-        let rankingFilter = rankingSelect ? rankingSelect.value : "ALL";
+        let headerFilter = headerSelect ? headerSelect.value : (localStorage.getItem("currentClassFilter") || "ALL");
+        let rankingFilter = (rankingSelect && rankingSelect.value) ? rankingSelect.value : (localStorage.getItem("rankingClassFilter") || "ALL");
+
+        const hClean = String(headerFilter || "ALL").trim();
+        const rClean = String(rankingFilter || "ALL").trim();
 
         // 1. Cả hai bộ lọc đều chọn lớp cụ thể
-        if (headerFilter !== "ALL" && rankingFilter !== "ALL") {
-          if (headerFilter === rankingFilter) {
-            return headerFilter; // e.g. Header=2B, Ranking=2B -> 2B
+        if (hClean !== "ALL" && rClean !== "ALL") {
+          if (hClean.toLowerCase() === rClean.toLowerCase()) {
+            return hClean; // e.g. Header=2B, Ranking=2B -> 2B
           } else {
             return "__EMPTY__"; // e.g. Header=2A, Ranking=2B -> Rỗng (Không có dữ liệu vì 2B nằm ngoài 2A)
           }
         }
         // 2. Header lọc 1 lớp cụ thể, Ranking chọn Tất cả
-        if (headerFilter !== "ALL") {
-          return headerFilter; // Header=2B, Ranking=ALL -> 2B (bị giới hạn bởi Header 2B)
+        if (hClean !== "ALL") {
+          return hClean; // Header=2B, Ranking=ALL -> 2B (bị giới hạn bởi Header 2B)
         }
         // 3. Header chọn Tất cả, Ranking lọc 1 lớp cụ thể
-        if (rankingFilter !== "ALL") {
-          return rankingFilter; // Header=ALL, Ranking=2B -> 2B (lọc theo Ranking 2B)
+        if (rClean !== "ALL") {
+          return rClean; // Header=ALL, Ranking=2B -> 2B (lọc theo Ranking 2B)
         }
         // 4. Cả hai đều chọn Tất cả
         return "ALL";
@@ -5314,8 +5316,13 @@
         if (newVal) {
           localStorage.setItem("rankingClassFilter", newVal);
         }
+        const rSelect = document.getElementById("ranking-class-select");
+        if (rSelect && rSelect.value !== newVal) {
+          rSelect.value = newVal;
+        }
         if (typeof renderGameTaskTable === "function") renderGameTaskTable();
         if (typeof renderExamTable === "function") renderExamTable();
+        if (typeof updateStudentModalView === "function") updateStudentModalView();
       };
 
       // QUẢN LÝ LỚP / NHÓM
@@ -5362,13 +5369,14 @@
           }
         }
 
-        // Nạp danh sách lớp cho Bộ lọc riêng Xếp hạng #ranking-class-select
+        // Nạp danh sách lớp cho Bộ lọc riêng Xếp hạng #ranking-class-select từ CSDL Supabase
         if (rankingSelect) {
-          const currentRankVal = rankingSelect.value || "ALL";
+          const storedRankVal = localStorage.getItem("rankingClassFilter");
+          const currentRankVal = storedRankVal || rankingSelect.value || "ALL";
           if (isAdmin) {
             rankingSelect.innerHTML = `<option value="ALL">🌐 Tất cả các lớp</option>` +
               globalClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            if (globalClasses.some(c => c.id === currentRankVal) || currentRankVal === "ALL") {
+            if (globalClasses.some(c => String(c.id).trim().toLowerCase() === String(currentRankVal).trim().toLowerCase()) || currentRankVal === "ALL") {
               rankingSelect.value = currentRankVal;
             } else {
               rankingSelect.value = "ALL";
@@ -5382,7 +5390,7 @@
             } else {
               rankingSelect.innerHTML = `<option value="ALL">🌐 Tất cả lớp được phân công</option>` +
                 allowedObjects.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-              if (allowedObjects.some(c => c.id === currentRankVal) || currentRankVal === "ALL") {
+              if (allowedObjects.some(c => String(c.id).trim().toLowerCase() === String(currentRankVal).trim().toLowerCase()) || currentRankVal === "ALL") {
                 rankingSelect.value = currentRankVal;
               } else {
                 rankingSelect.value = allowedObjects[0].id;
