@@ -1686,14 +1686,14 @@
       <div class="tab-content-panel" id="tab-history-feedback">
         <div class="history-table-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
-            <h3 style="font-size: 1.4rem; font-weight: 900; margin: 0;">📜 Lịch Sử Bài Làm & Lời Nhắn Từ Giáo Viên</h3>
+            <h3 style="font-size: 1.4rem; font-weight: 900; margin: 0;">📜 Lịch Sử Bài Làm</h3>
             <button id="student-view-teacher-comment-btn" class="btn btn-outline" style="display: none; border-radius: 20px; font-weight: 800; border: 2px solid #10b981; color: #047857;" onclick="nhapNhanXetGiaoVien()">
               ✏️ Ghi / Sửa Nhận Xét (Dành Cho Giáo Viên)
             </button>
           </div>
 
           <p id="student-view-teacher-tip" style="display: none; font-size: 0.88rem; color: #0284c7; font-weight: 800; margin-bottom: 12px;">
-            💡 <em>Mẹo: Giáo viên có thể click trực tiếp vào ô Lời Nhắn của từng dòng dưới đây để chỉnh sửa nhận xét riêng cho lượt làm đó!</em>
+            💡 <em>Mẹo: Giáo viên có thể click trực tiếp vào từng dòng dưới đây để xem nhận xét!</em>
           </p>
 
           <table class="history-table">
@@ -1703,12 +1703,11 @@
                 <th>Điểm số</th>
                 <th>Thời gian</th>
                 <th>Số câu đúng</th>
-                <th>Lời Nhắn Từ Giáo Viên</th>
               </tr>
             </thead>
             <tbody id="student-history-table-body">
               <tr>
-                <td colspan="5" style="text-align:center; padding:16px; color:#64748b; font-weight:bold;">
+                <td colspan="4" style="text-align:center; padding:16px; color:#64748b; font-weight:bold;">
                   ⏳ Đang tải lịch sử bài làm từ Supabase...
                 </td>
               </tr>
@@ -3778,7 +3777,7 @@
 
         const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
         if (!activeClient) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa kết nối Supabase.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa kết nối Supabase.</td></tr>`;
           return;
         }
 
@@ -3791,12 +3790,12 @@
 
           if (error) {
             console.error('[Supabase loadStudentExamHistory Error]:', error);
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Không thể tải lịch sử từ Supabase. <button onclick="loadStudentExamHistoryFromSupabase()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">🔄 Thử lại</button></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Không thể tải lịch sử từ Supabase. <button onclick="loadStudentExamHistoryFromSupabase()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">🔄 Thử lại</button></td></tr>`;
             return;
           }
 
           if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa có lịch sử làm bài thi.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa có lịch sử làm bài thi.</td></tr>`;
             return;
           }
 
@@ -3805,7 +3804,6 @@
             let rawNum = parseFloat(scoreStr.split('/')[0]) || 0;
             let timeStr = item.exam_time || "--";
             let dateStr = item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : "--";
-            let commentText = item.teacher_comment && item.teacher_comment.trim() !== "" ? item.teacher_comment : "Chưa có nhận xét.";
 
             return `
               <tr>
@@ -3813,18 +3811,13 @@
                 <td><span class="score-badge-10" style="color: ${rawNum >= 8 ? '#059669' : '#0284c7'}; font-weight:bold;">${scoreStr}</span></td>
                 <td><small style="color:#64748b;">${dateStr} (${timeStr})</small></td>
                 <td><strong style="color:#0369a1;">${rawNum >= 10 ? '5/5' : Math.round(rawNum / 2) + '/5'} câu</strong></td>
-                <td>
-                  <span class="teacher-comment-italic" style="color: ${commentText !== 'Chưa có nhận xét.' ? '#059669' : '#94a3b8'}; font-weight: 700;">
-                    "${commentText}"
-                  </span>
-                </td>
               </tr>
             `;
           }).join('');
 
         } catch (err) {
           console.error('[loadStudentExamHistoryFromSupabase Exception]:', err);
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Lỗi nạp dữ liệu.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Lỗi nạp dữ liệu.</td></tr>`;
         }
       };
 
