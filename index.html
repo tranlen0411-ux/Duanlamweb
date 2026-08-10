@@ -4668,8 +4668,8 @@
               .select('*')
               .order('created_at', { ascending: true });
 
-            if (!error) {
-              window.teacherAccounts = (dbTeachers || []).map(t => ({
+            if (!error && dbTeachers) {
+              teacherAccounts = dbTeachers.map(t => ({
                 id: t.id,
                 username: t.username,
                 password: t.password || "123456",
@@ -4679,6 +4679,8 @@
                 active: t.is_active !== false,
                 role: t.role || 'teacher'
               }));
+
+              window.teacherAccounts = teacherAccounts;
             }
           } catch (err) {
             console.warn('[Supabase renderAdminTeacherTable Error]:', err);
