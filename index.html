@@ -5874,18 +5874,23 @@
           localStorage.setItem("currentClassFilter", selectedClass);
         }
 
+        const globalSelect = document.getElementById("global-class-select");
+        if (globalSelect && globalSelect.value !== selectedClass) {
+          globalSelect.value = selectedClass;
+        }
+
         const currentClassLabel = document.getElementById("current-class-label");
         if (currentClassLabel) {
-          const cls = globalClasses.find(c => c.id === selectedClass);
+          const cls = globalClasses.find(c => String(c.id).trim().toLowerCase() === String(selectedClass).trim().toLowerCase());
           currentClassLabel.textContent = cls ? cls.name : (selectedClass === "ALL" ? "Tất cả các lớp" : selectedClass);
         }
 
         document.querySelectorAll(".current-grade-tag").forEach(el => {
-          const cls = globalClasses.find(c => c.id === selectedClass);
+          const cls = globalClasses.find(c => String(c.id).trim().toLowerCase() === String(selectedClass).trim().toLowerCase());
           el.textContent = cls ? cls.name : (selectedClass === "ALL" ? "Tất cả các lớp" : selectedClass);
         });
 
-        updateStudentModalView();
+        if (typeof updateStudentModalView === "function") updateStudentModalView();
         if (typeof renderGameTaskTable === "function") renderGameTaskTable();
         if (typeof renderExamTable === "function") renderExamTable();
         if (typeof renderTeacherStudentTable === "function") renderTeacherStudentTable();
