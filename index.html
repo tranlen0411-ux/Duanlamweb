@@ -1225,9 +1225,10 @@
           <text x="120" y="32" font-family="'Nunito', sans-serif" font-weight="900" font-size="26" fill="#10B981">Em</text>
         </svg>
 
-        <!-- Bộ chọn lớp dạng Dropdown thay thế nút Lớp 2 AI gốc -->
-        <div class="header-class-selector" style="background: #fef08a; border: 1px solid #fde047; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
-          <span style="font-size: 14px;">🎓</span>
+        <!-- Bộ chọn lớp dạng Dropdown trên Header Admin / Giáo viên -->
+        <div class="header-class-selector" style="background: #fef08a; border: 1px solid #fde047; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+          <span style="font-size: 14px;">📚</span>
+          <span style="font-weight: 800; font-size: 13px; color: #854d0e;">Lớp:</span>
           <select id="global-class-select" onchange="handleClassChange(this.value)" style="background: transparent; border: none; font-weight: bold; color: #854d0e; font-size: 13px; cursor: pointer; outline: none;">
             <option value="ALL">🌐 Tất cả các lớp</option>
           </select>
@@ -5267,13 +5268,15 @@
       // QUẢN LÝ LỚP / NHÓM
       window.renderClassOptions = function () {
         const globalSelect = document.getElementById("global-class-select");
-        const role = localStorage.getItem("currentUserRole");
-        const teacher = getCurrentTeacher();
+        const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+        const teacher = (typeof getCurrentTeacher === "function") ? getCurrentTeacher() : null;
 
         if (globalSelect) {
           const currentVal = globalSelect.value || "ALL";
+          const isAdmin = (role === "admin" || role === "administrator" || role === "quản trị" || !role);
           
-          if (role === "admin" || !role) {
+          if (isAdmin) {
+            // ADMIN: Quản lý TẤT CẢ các lớp + Từng lớp cụ thể tự động lấy từ Supabase
             globalSelect.innerHTML = `<option value="ALL">🌐 Tất cả các lớp</option>` +
               globalClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             
@@ -5283,6 +5286,7 @@
               globalSelect.value = "ALL";
             }
           } else if (role === "teacher") {
+            // GIÁO VIÊN: Giới hạn theo assigned_classes
             const allowedClassesList = getCurrentTeacherClasses();
             const allowedObjects = globalClasses.filter(c => allowedClassesList.includes(c.id));
 
@@ -5294,7 +5298,7 @@
               globalSelect.innerHTML = `<option value="${allowedObjects[0].id}">${allowedObjects[0].name}</option>`;
               globalSelect.value = allowedObjects[0].id;
             } else {
-              // Nhiều lớp phân công: Hiển thị các lớp thuộc quyền phân công
+              // Nhiều lớp phân công: Chỉ hiển thị các lớp thuộc quyền phân công
               const allAssignedText = `🌐 Tất cả lớp được phân công (${allowedObjects.map(c => c.id).join(', ')})`;
               globalSelect.innerHTML = `<option value="ALL">${allAssignedText}</option>` +
                 allowedObjects.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
@@ -5332,7 +5336,7 @@
                 </div>
                 <div style="display:flex; flex-wrap:wrap; gap:6px;">
                   ${allowedList.length > 1 ? `
-                    <button onclick="selectTeacherClassTag('ALL')" style="background:${currentSelected === 'ALL' ? '#0284c7' : '#f1f5f9'}; color:${currentSelected === 'ALL' ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
+                    <button onclick="handleClassChange('ALL')" style="background:${currentSelected === 'ALL' ? '#0284c7' : '#f1f5f9'}; color:${currentSelected === 'ALL' ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
                       🌐 Tất cả (${allowedList.join(', ')})
                     </button>
                   ` : ''}
@@ -5341,7 +5345,7 @@
                     const cName = cls ? cls.name : cId;
                     const isSel = currentSelected === cId;
                     return `
-                      <button onclick="selectTeacherClassTag('${cId}')" style="background:${isSel ? '#0284c7' : '#f1f5f9'}; color:${isSel ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
+                      <button onclick="handleClassChange('${cId}')" style="background:${isSel ? '#0284c7' : '#f1f5f9'}; color:${isSel ? '#fff' : '#334155'}; border:1px solid #cbd5e1; padding:4px 10px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
                         🏫 ${cName}
                       </button>
                     `;
@@ -5350,13 +5354,30 @@
               `;
             }
           } else {
-            tagsContainer.innerHTML = globalClasses.map(c => `
-              <div style="background:#f1f5f9; padding:6px 12px; border-radius:20px; font-size:13px; display:inline-flex; align-items:center; gap:6px; border:1px solid #cbd5e1;">
-                <span style="font-weight:bold; color:#334155;">${c.name}</span>
-                <button onclick="editClassName('${c.id}')" title="Sửa tên" style="background:none; border:none; cursor:pointer; font-size:12px;">✏️</button>
-                <button onclick="deleteClass('${c.id}')" title="Xóa lớp" style="background:none; border:none; cursor:pointer; font-size:12px; color:#ef4444;">🗑️</button>
+            // ADMIN: Bộ lọc nhanh & quản lý các lớp dành cho Admin
+            const currentSelected = globalSelect ? globalSelect.value : "ALL";
+            tagsContainer.innerHTML = `
+              <div style="font-weight:bold; color:#854d0e; margin-bottom:6px; font-size:13px; display:flex; align-items:center; gap:8px;">
+                <span>👑 Quản Trị Lớp Học | Quản Lý Lớp & Lọc Nhanh:</span>
               </div>
-            `).join('');
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <button onclick="handleClassChange('ALL')" style="background:${currentSelected === 'ALL' ? '#dc2626' : '#f1f5f9'}; color:${currentSelected === 'ALL' ? '#fff' : '#334155'}; border:1px solid ${currentSelected === 'ALL' ? '#b91c1c' : '#cbd5e1'}; padding:4px 12px; border-radius:16px; font-size:12px; font-weight:bold; cursor:pointer;">
+                  🌐 Tất cả các lớp
+                </button>
+                ${globalClasses.map(c => {
+                  const isSel = currentSelected === c.id;
+                  return `
+                    <div style="background:${isSel ? '#fee2e2' : '#f1f5f9'}; padding:4px 10px; border-radius:16px; font-size:12px; display:inline-flex; align-items:center; gap:6px; border:1px solid ${isSel ? '#ef4444' : '#cbd5e1'};">
+                      <button onclick="handleClassChange('${c.id}')" style="background:none; border:none; cursor:pointer; font-weight:bold; color:${isSel ? '#dc2626' : '#334155'};">
+                        🏫 ${c.name}
+                      </button>
+                      <button onclick="editClassName('${c.id}')" title="Sửa tên lớp" style="background:none; border:none; cursor:pointer; font-size:11px;">✏️</button>
+                      <button onclick="deleteClass('${c.id}')" title="Xóa lớp" style="background:none; border:none; cursor:pointer; font-size:11px; color:#ef4444;">🗑️</button>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `;
           }
         }
       };
