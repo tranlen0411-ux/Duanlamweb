@@ -3768,12 +3768,38 @@
         openCommentModalForRow('teacher_comment_week1', 'Lượt làm Tuần 1', null);
       };
 
+      window.getCurrentStudent = function() {
+        const savedName = localStorage.getItem("studentName") || "Bé Nam";
+        const savedId = localStorage.getItem("currentStudentId") || localStorage.getItem("studentId");
+        const lowerName = savedName.trim().toLowerCase();
+
+        if (savedId && typeof globalStudents !== "undefined" && Array.isArray(globalStudents)) {
+          const foundById = globalStudents.find(s => String(s.id) === String(savedId));
+          if (foundById) return foundById;
+        }
+
+        if (typeof globalStudents !== "undefined" && Array.isArray(globalStudents)) {
+          const foundByName = globalStudents.find(s => s && s.name && s.name.trim().toLowerCase() === lowerName);
+          if (foundByName) {
+            localStorage.setItem("currentStudentId", String(foundByName.id));
+            return foundByName;
+          }
+        }
+
+        return {
+          id: savedId || "102",
+          name: savedName,
+          classId: localStorage.getItem("studentClass") || "2A"
+        };
+      };
+
       window.loadStudentExamHistoryFromSupabase = async function() {
         const tbody = document.getElementById("student-history-table-body");
         if (!tbody) return;
 
-        const currentStudentId = localStorage.getItem("currentStudentId") || localStorage.getItem("studentId") || "101";
-        const currentStudentName = localStorage.getItem("studentName") || "Vũ Bảo An";
+        const currentStudent = getCurrentStudent();
+        const currentStudentId = String(currentStudent.id);
+        const currentStudentName = currentStudent.name.trim();
 
         const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
         if (!activeClient) {
@@ -3782,6 +3808,7 @@
         }
 
         try {
+          // TRUY VẤN TRỰC TIẾP TỪ SUPABASE THEO ĐÚNG STUDENT_ID & NAME CỦA HỌC SINH ĐANG ĐĂNG NHẬP
           const { data, error } = await activeClient
             .from('exam_scores')
             .select('*')
@@ -3794,12 +3821,19 @@
             return;
           }
 
-          if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa có lịch sử làm bài thi.</td></tr>`;
+          // LỌC CHẶT CHẼ DUY NHẤT HỌC SINH ĐANG ĐĂNG NHẬP (TỪ CHỐI LỚP / HỌC SINH KHÁC)
+          const filteredScores = (data || []).filter(item => {
+            const matchId = item.student_id && (String(item.student_id) === currentStudentId || String(item.student_id) === currentStudentName);
+            const matchName = item.student_name && item.student_name.trim().toLowerCase() === currentStudentName.toLowerCase();
+            return matchId || matchName;
+          });
+
+          if (!filteredScores || filteredScores.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b; font-weight:bold;">Chưa có lịch sử làm bài thi.</td></tr>`;
             return;
           }
 
-          tbody.innerHTML = data.map(item => {
+          tbody.innerHTML = filteredScores.map(item => {
             let scoreStr = item.score || "10/10";
             let rawNum = parseFloat(scoreStr.split('/')[0]) || 0;
             let timeStr = item.exam_time || "--";
@@ -5440,12 +5474,16 @@
 
         if (student) {
           student.classId = newClass;
+          localStorage.setItem("currentStudentId", String(student.id));
         } else {
-          globalStudents.push({
-            id: Date.now(),
+          const newStudentId = Date.now();
+          student = {
+            id: newStudentId,
             name: newName,
             classId: newClass
-          });
+          };
+          globalStudents.push(student);
+          localStorage.setItem("currentStudentId", String(newStudentId));
         }
 
         localStorage.setItem("globalStudents", JSON.stringify(globalStudents));
@@ -5461,6 +5499,10 @@
         }
 
         closeModal("edit-profile-modal");
+
+        if (typeof loadStudentExamHistoryFromSupabase === "function") {
+          loadStudentExamHistoryFromSupabase();
+        }
 
         const globalSelect = document.getElementById("global-class-select");
         if (globalSelect) {
