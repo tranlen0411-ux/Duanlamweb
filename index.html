@@ -1633,8 +1633,8 @@
         </div>
     </div>
     
-    <!-- Lệnh mở sang Tab mới rộng rãi -->
-    <button onclick="window.open('ai-la-trieu-phu.html', '_blank')" style="width: 100%; background: linear-gradient(135deg, #4f46e5, #3730a3); color: white; border: none; padding: 10px; border-radius: 18px; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 0 0 #312e81; transition: all 0.2s;">
+    <!-- Lệnh mở game Ai Là Triệu Phú an toàn -->
+    <button onclick="openAiLaTrieuPhuGame()" style="width: 100%; background: linear-gradient(135deg, #4f46e5, #3730a3); color: white; border: none; padding: 10px; border-radius: 18px; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 0 0 #312e81; transition: all 0.2s;">
         Chơi Ngay ✨
     </button>
 </div>
@@ -4740,6 +4740,18 @@
 
         loadCurrentStepQuestion();
         if (customModal) customModal.classList.add('active');
+      };
+
+      // HAM MO GAME AI LA TRIEU PHU AN TOAN (CO FALLBACK CHO PHIEN TRINH DUYET CHAN POPUP)
+      window.openAiLaTrieuPhuGame = function () {
+        try {
+          const win = window.open('ai-la-trieu-phu.html', '_blank');
+          if (!win || win.closed || typeof win.closed === 'undefined') {
+            window.location.href = 'ai-la-trieu-phu.html';
+          }
+        } catch (err) {
+          window.location.href = 'ai-la-trieu-phu.html';
+        }
       };
 
       document.addEventListener('click', function(e) {

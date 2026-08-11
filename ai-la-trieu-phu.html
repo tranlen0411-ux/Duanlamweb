@@ -629,17 +629,21 @@
             gameScreen: document.getElementById('game-screen'),
             endScreen: document.getElementById('end-screen'),
             questionText: document.getElementById('question-text'),
-            options: [
-                document.getElementById('opt-0').parentElement,
-                document.getElementById('opt-1').parentElement,
-                document.getElementById('opt-2').parentElement,
-                document.getElementById('opt-3').parentElement
-            ],
+            options: [],
             moneyTree: document.getElementById('money-tree'),
             timerText: document.getElementById('timer-text'),
             timerCircle: document.querySelector('.timer-circle'),
             app: document.getElementById('app')
         };
+
+        function getOptionBtns() {
+            return [
+                document.getElementById('opt-0') ? document.getElementById('opt-0').closest('.option-btn') : null,
+                document.getElementById('opt-1') ? document.getElementById('opt-1').closest('.option-btn') : null,
+                document.getElementById('opt-2') ? document.getElementById('opt-2').closest('.option-btn') : null,
+                document.getElementById('opt-3') ? document.getElementById('opt-3').closest('.option-btn') : null
+            ];
+        }
 
         function initGame() {
             currentQuestion = 0;
@@ -647,33 +651,42 @@
             usedAudience = false;
             usedExpert = false;
             
-            document.getElementById('btn-5050').disabled = false;
-            document.getElementById('btn-audience').disabled = false;
-            document.getElementById('btn-expert').disabled = false;
+            const btn50 = document.getElementById('btn-5050');
+            const btnAud = document.getElementById('btn-audience');
+            const btnExp = document.getElementById('btn-expert');
+            if (btn50) btn50.disabled = false;
+            if (btnAud) btnAud.disabled = false;
+            if (btnExp) btnExp.disabled = false;
 
-            els.endScreen.classList.add('hidden');
-            els.gameScreen.classList.add('hidden');
-            els.startScreen.classList.remove('hidden');
+            if (els.endScreen) els.endScreen.classList.add('hidden');
+            if (els.gameScreen) els.gameScreen.classList.add('hidden');
+            if (els.startScreen) els.startScreen.classList.remove('hidden');
             
             renderMoneyTree();
             clearFireworks();
         }
 
         function startGame() {
-            // Khởi tạo Audio Context khi người dùng tương tác
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            // Khởi tạo Audio Context an toàn không làm gián đoạn luồng game
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) audioCtx = new AudioContextClass();
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch (err) {
+                console.warn("[Ai Là Triệu Phú] AudioContext Init Notice:", err);
             }
 
-            els.startScreen.classList.add('hidden');
-            els.gameScreen.classList.remove('hidden');
+            if (els.startScreen) els.startScreen.classList.add('hidden');
+            if (els.gameScreen) els.gameScreen.classList.remove('hidden');
             loadQuestion();
         }
 
         function renderMoneyTree() {
+            if (!els.moneyTree) return;
             els.moneyTree.innerHTML = '';
             for (let i = 0; i < 15; i++) {
                 let div = document.createElement('div');
@@ -687,12 +700,20 @@
         function loadQuestion() {
             isAnswering = false;
             const q = questions[currentQuestion];
-            els.questionText.innerHTML = `Câu ${currentQuestion + 1}: ${q.q}`;
+            if (!q) return;
+
+            if (els.questionText) els.questionText.innerHTML = `Câu ${currentQuestion + 1}: ${q.q}`;
             
-            els.options.forEach((btn, index) => {
-                btn.classList.remove('selected', 'correct', 'wrong', 'hidden-option');
-                btn.querySelector('span:nth-child(2)').innerHTML = q.options[index];
-                btn.disabled = false;
+            const optionBtns = getOptionBtns();
+            els.options = optionBtns;
+
+            optionBtns.forEach((btn, index) => {
+                if (btn) {
+                    btn.classList.remove('selected', 'correct', 'wrong', 'hidden-option');
+                    const optSpan = document.getElementById(`opt-${index}`);
+                    if (optSpan) optSpan.innerHTML = q.options[index];
+                    btn.disabled = false;
+                }
             });
 
             // Update Money Tree UI
@@ -700,7 +721,8 @@
                 m.classList.remove('current');
                 if (idx < currentQuestion) m.classList.add('passed');
             });
-            document.getElementById(`milestone-${currentQuestion}`).classList.add('current');
+            const curMilestone = document.getElementById(`milestone-${currentQuestion}`);
+            if (curMilestone) curMilestone.classList.add('current');
 
             startTimer();
         }
@@ -724,13 +746,13 @@
         }
 
         function updateTimerUI() {
-            els.timerText.innerText = Math.ceil(timeLeft);
-            // Chu vi hình tròn r=36 là ~226
-            const offset = 226 - (timeLeft / 30) * 226;
-            els.timerCircle.style.strokeDashoffset = offset;
-            
-            if (timeLeft <= 5) els.timerCircle.style.stroke = 'red';
-            else els.timerCircle.style.stroke = 'var(--gold)';
+            if (els.timerText) els.timerText.innerText = Math.ceil(timeLeft);
+            if (els.timerCircle) {
+                const offset = 226 - (timeLeft / 30) * 226;
+                els.timerCircle.style.strokeDashoffset = offset;
+                if (timeLeft <= 5) els.timerCircle.style.stroke = 'red';
+                else els.timerCircle.style.stroke = 'var(--gold)';
+            }
         }
 
         function selectOption(index) {
@@ -738,14 +760,12 @@
             isAnswering = true;
             clearInterval(timer);
             
-            // Disable tất cả options
-            els.options.forEach(btn => btn.disabled = true);
+            const optionBtns = getOptionBtns();
+            optionBtns.forEach(btn => { if (btn) btn.disabled = true; });
             
-            // Hiệu ứng chọn
-            const selectedBtn = els.options[index];
-            selectedBtn.classList.add('selected');
+            const selectedBtn = optionBtns[index];
+            if (selectedBtn) selectedBtn.classList.add('selected');
 
-            // Giả lập độ trễ hồi hộp
             setTimeout(() => {
                 checkAnswer(index);
             }, 1500);
@@ -753,22 +773,24 @@
 
         function timeOut() {
             isAnswering = true;
-            els.options.forEach(btn => btn.disabled = true);
+            const optionBtns = getOptionBtns();
+            optionBtns.forEach(btn => { if (btn) btn.disabled = true; });
             const correctIdx = questions[currentQuestion].correct;
-            els.options[correctIdx].classList.add('correct');
+            if (optionBtns[correctIdx]) optionBtns[correctIdx].classList.add('correct');
             showWrongEffect();
         }
 
         function checkAnswer(selectedIndex) {
             const correctIndex = questions[currentQuestion].correct;
-            const selectedBtn = els.options[selectedIndex];
-            const correctBtn = els.options[correctIndex];
+            const optionBtns = getOptionBtns();
+            const selectedBtn = optionBtns[selectedIndex];
+            const correctBtn = optionBtns[correctIndex];
 
-            selectedBtn.classList.remove('selected');
+            if (selectedBtn) selectedBtn.classList.remove('selected');
 
             if (selectedIndex === correctIndex) {
                 // Đúng
-                selectedBtn.classList.add('correct');
+                if (selectedBtn) selectedBtn.classList.add('correct');
                 playTingSound();
                 createMiniFireworks();
                 
@@ -782,19 +804,20 @@
                 }, 2500);
             } else {
                 // Sai
-                selectedBtn.classList.add('wrong');
-                correctBtn.classList.add('correct');
+                if (selectedBtn) selectedBtn.classList.add('wrong');
+                if (correctBtn) correctBtn.classList.add('correct');
                 showWrongEffect();
             }
         }
 
         function showWrongEffect() {
-            els.app.classList.add('shake-effect');
+            if (els.app) els.app.classList.add('shake-effect');
             setTimeout(() => {
-                els.app.classList.remove('shake-effect');
-                // Hiện bảng giải thích
-                document.getElementById('explain-text').innerHTML = questions[currentQuestion].explain;
-                document.getElementById('modal-explain').classList.add('active');
+                if (els.app) els.app.classList.remove('shake-effect');
+                const explainEl = document.getElementById('explain-text');
+                if (explainEl) explainEl.innerHTML = questions[currentQuestion].explain;
+                const modalExplain = document.getElementById('modal-explain');
+                if (modalExplain) modalExplain.classList.add('active');
             }, 500);
         }
 
@@ -804,91 +827,100 @@
         }
 
         function showWinScreen() {
-            els.gameScreen.classList.add('hidden');
-            els.endScreen.classList.remove('hidden');
+            if (els.gameScreen) els.gameScreen.classList.add('hidden');
+            if (els.endScreen) els.endScreen.classList.remove('hidden');
             
-            document.getElementById('end-icon').innerHTML = "🏆";
-            document.getElementById('end-title').innerHTML = "CHÚC MỪNG!";
-            document.getElementById('end-message').innerHTML = "Bạn đã trở thành<br><span style='color:var(--gold); font-size: 2rem'>TRIỆU PHÚ TOÁN HỌC</span>";
+            const iconEl = document.getElementById('end-icon');
+            const titleEl = document.getElementById('end-title');
+            const msgEl = document.getElementById('end-message');
+
+            if (iconEl) iconEl.innerHTML = "🏆";
+            if (titleEl) titleEl.innerHTML = "CHÚC MỪNG!";
+            if (msgEl) msgEl.innerHTML = "Bạn đã trở thành<br><span style='color:var(--gold); font-size: 2rem'>TRIỆU PHÚ TOÁN HỌC</span>";
             startBigFireworks();
         }
 
         function showLoseScreen() {
-            els.gameScreen.classList.add('hidden');
-            els.endScreen.classList.remove('hidden');
+            if (els.gameScreen) els.gameScreen.classList.add('hidden');
+            if (els.endScreen) els.endScreen.classList.remove('hidden');
             
-            document.getElementById('end-icon').innerHTML = "💔";
-            document.getElementById('end-title').innerHTML = "KẾT THÚC";
-            let moneyStr = currentQuestion > 0 ? milestones[currentQuestion-1].split(" ")[0] : "0";
-            document.getElementById('end-message').innerHTML = `Cảm ơn bạn đã tham gia!<br>Vượt qua: Câu ${currentQuestion}`;
+            const iconEl = document.getElementById('end-icon');
+            const titleEl = document.getElementById('end-title');
+            const msgEl = document.getElementById('end-message');
+
+            if (iconEl) iconEl.innerHTML = "💔";
+            if (titleEl) titleEl.innerHTML = "KẾT THÚC";
+            if (msgEl) msgEl.innerHTML = `Cảm ơn bạn đã tham gia!<br>Vượt qua: Câu ${currentQuestion}`;
         }
 
         function use5050() {
             if (used5050 || isAnswering) return;
             used5050 = true;
-            document.getElementById('btn-5050').disabled = true;
+            const btn50 = document.getElementById('btn-5050');
+            if (btn50) btn50.disabled = true;
 
             const correctIdx = questions[currentQuestion].correct;
             let wrongIndices = [0, 1, 2, 3].filter(i => i !== correctIdx);
             
-            // Randomly hide 2 wrong answers
             wrongIndices.sort(() => Math.random() - 0.5);
-            els.options[wrongIndices[0]].classList.add('hidden-option');
-            els.options[wrongIndices[1]].classList.add('hidden-option');
+            const optionBtns = getOptionBtns();
+            if (optionBtns[wrongIndices[0]]) optionBtns[wrongIndices[0]].classList.add('hidden-option');
+            if (optionBtns[wrongIndices[1]]) optionBtns[wrongIndices[1]].classList.add('hidden-option');
         }
 
         function useAudience() {
             if (usedAudience || isAnswering) return;
             usedAudience = true;
-            document.getElementById('btn-audience').disabled = true;
+            const btnAud = document.getElementById('btn-audience');
+            if (btnAud) btnAud.disabled = true;
 
             const correctIdx = questions[currentQuestion].correct;
             let percentages = [0, 0, 0, 0];
             
-            // Generate percentages favoring the correct answer (40-70%)
             let correctPct = Math.floor(Math.random() * 30) + 40; 
             percentages[correctIdx] = correctPct;
             
             let remain = 100 - correctPct;
+            const optionBtns = getOptionBtns();
+
             for (let i = 0; i < 4; i++) {
                 if (i !== correctIdx) {
-                    if (els.options[i].classList.contains('hidden-option')) {
-                        percentages[i] = 0; // If 50:50 was used
+                    if (optionBtns[i] && optionBtns[i].classList.contains('hidden-option')) {
+                        percentages[i] = 0;
                     } else {
-                        // Distribute remaining
                         let p = Math.floor(Math.random() * (remain / 2));
                         percentages[i] = p;
                         remain -= p;
                     }
                 }
             }
-            // Add any left over to a valid random wrong option
-            let validWrongs = [0,1,2,3].filter(i => i !== correctIdx && !els.options[i].classList.contains('hidden-option'));
-            if(validWrongs.length > 0) {
+            let validWrongs = [0,1,2,3].filter(i => i !== correctIdx && optionBtns[i] && !optionBtns[i].classList.contains('hidden-option'));
+            if (validWrongs.length > 0) {
                 percentages[validWrongs[0]] += remain;
             } else {
-                 percentages[correctIdx] += remain;
+                percentages[correctIdx] += remain;
             }
 
-            // Render Chart
             const chartDiv = document.getElementById('audience-chart');
-            chartDiv.innerHTML = '';
-            const labels = ['A', 'B', 'C', 'D'];
-            
-            for(let i=0; i<4; i++) {
-                const group = document.createElement('div');
-                group.className = 'bar-group';
-                group.innerHTML = `
-                    <div class="bar-pct">${percentages[i]}%</div>
-                    <div class="bar" style="height: 0px;" data-h="${percentages[i]}"></div>
-                    <div class="bar-label">${labels[i]}</div>
-                `;
-                chartDiv.appendChild(group);
+            if (chartDiv) {
+                chartDiv.innerHTML = '';
+                const labels = ['A', 'B', 'C', 'D'];
+                
+                for(let i=0; i<4; i++) {
+                    const group = document.createElement('div');
+                    group.className = 'bar-group';
+                    group.innerHTML = `
+                        <div class="bar-pct">${percentages[i]}%</div>
+                        <div class="bar" style="height: 0px;" data-h="${percentages[i]}"></div>
+                        <div class="bar-label">${labels[i]}</div>
+                    `;
+                    chartDiv.appendChild(group);
+                }
             }
 
-            document.getElementById('modal-audience').classList.add('active');
+            const modalAudience = document.getElementById('modal-audience');
+            if (modalAudience) modalAudience.classList.add('active');
             
-            // Animate bars after a short delay
             setTimeout(() => {
                 document.querySelectorAll('.bar').forEach(bar => {
                     bar.style.height = bar.getAttribute('data-h') + 'px';
@@ -899,20 +931,26 @@
         function useExpert() {
             if (usedExpert || isAnswering) return;
             usedExpert = true;
-            document.getElementById('btn-expert').disabled = true;
+            const btnExp = document.getElementById('btn-expert');
+            if (btnExp) btnExp.disabled = true;
 
             const correctIdx = questions[currentQuestion].correct;
             const labels = ['A', 'B', 'C', 'D'];
             const explain = questions[currentQuestion].explain;
 
-            document.getElementById('expert-text').innerHTML = 
-                `"Chào bạn, tôi chắc chắn đáp án đúng là <strong>${labels[correctIdx]}</strong>. Bởi vì: <br><br> ${explain}"`;
+            const expertText = document.getElementById('expert-text');
+            if (expertText) {
+                expertText.innerHTML = 
+                    `"Chào bạn, tôi chắc chắn đáp án đúng là <strong>${labels[correctIdx]}</strong>. Bởi vì: <br><br> ${explain}"`;
+            }
             
-            document.getElementById('modal-expert').classList.add('active');
+            const modalExpert = document.getElementById('modal-expert');
+            if (modalExpert) modalExpert.classList.add('active');
         }
 
         function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
         }
 
         function playTingSound() {
