@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
     class_id TEXT REFERENCES classes(id) ON DELETE SET NULL,
     xp INT DEFAULT 450,
     coins INT DEFAULT 1250,
+    status TEXT DEFAULT 'approved',
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

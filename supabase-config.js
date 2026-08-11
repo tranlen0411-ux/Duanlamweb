@@ -76,7 +76,7 @@ window.supabaseAuth = {
           xp: 450,
           coins: 1250,
           status: userRole === 'teacher' ? 'pending' : 'approved',
-          active: userRole === 'teacher' ? false : true
+          is_active: userRole === 'teacher' ? false : true
         }])
         .select()
         .single();
@@ -177,11 +177,11 @@ window.supabaseAuth = {
 
       if (!user) {
         if (cleanUsername === 'comai' && (cleanPassword === '123456' || cleanPassword === 'comai123')) {
-          user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', status: 'approved', active: true, xp: 0, coins: 0 };
+          user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', status: 'approved', is_active: true, active: true, xp: 0, coins: 0 };
         } else if ((cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'adminlahuong2904@gmail.com' || cleanUsername === 'admin') && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
-          user = { id: 1, username: 'lahuong2904@gmail.com', email: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', status: 'approved', active: true, class_id: '2AI', xp: 9999, coins: 9999 };
+          user = { id: 1, username: 'lahuong2904@gmail.com', email: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', status: 'approved', is_active: true, active: true, class_id: '2AI', xp: 9999, coins: 9999 };
         } else if (cleanUsername === 'benam' && cleanPassword === '123456') {
-          user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', status: 'approved', active: true, xp: 450, coins: 1250 };
+          user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', status: 'approved', is_active: true, active: true, xp: 450, coins: 1250 };
         }
       }
     }
@@ -192,7 +192,7 @@ window.supabaseAuth = {
 
     // KIỂM TRA PHÊ DUYỆT TÀI KHOẢN GIÁO VIÊN (PENDING / REJECTED)
     if (user.role === 'teacher') {
-      if (user.status === 'pending' || user.active === false) {
+      if (user.status === 'pending' || user.is_active === false || user.active === false) {
         return { 
           success: false, 
           message: '⏳ Tài khoản Giáo viên của bạn đang CHỜ ADMIN PHÊ DUYỆT! Vui lòng liên hệ Super Admin (lahuong2904@gmail.com) để được kích hoạt tài khoản.' 

@@ -3105,13 +3105,13 @@
         if (window.supabaseAuth && window.supabaseAuth.client) {
           await window.supabaseAuth.client
             .from('users')
-            .update({ status: 'approved', active: true })
+            .update({ status: 'approved', is_active: true })
             .eq('username', username);
 
           try {
             await window.supabaseAuth.client
               .from('teachers')
-              .update({ status: 'approved', active: true })
+              .update({ status: 'approved', is_active: true })
               .eq('username', username);
           } catch (tErr) {}
         }
@@ -3119,7 +3119,7 @@
         let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
         localUsers = localUsers.map(u => {
           if (u.username.toLowerCase() === username.toLowerCase()) {
-            return { ...u, status: 'approved', active: true };
+            return { ...u, status: 'approved', is_active: true, active: true };
           }
           return u;
         });
@@ -3141,13 +3141,13 @@
         if (window.supabaseAuth && window.supabaseAuth.client) {
           await window.supabaseAuth.client
             .from('users')
-            .update({ status: 'rejected', active: false })
+            .update({ status: 'rejected', is_active: false })
             .eq('username', username);
 
           try {
             await window.supabaseAuth.client
               .from('teachers')
-              .update({ status: 'rejected', active: false })
+              .update({ status: 'rejected', is_active: false })
               .eq('username', username);
           } catch (tErr) {}
         }
@@ -3155,7 +3155,7 @@
         let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
         localUsers = localUsers.map(u => {
           if (u.username.toLowerCase() === username.toLowerCase()) {
-            return { ...u, status: 'rejected', active: false };
+            return { ...u, status: 'rejected', is_active: false, active: false };
           }
           return u;
         });
@@ -3216,7 +3216,7 @@
       }
 
       // 2. Tải danh sách Giáo Viên CHỜ PHÊ DUYỆT (pending)
-      const pendingTeachers = users.filter(u => u.role === 'teacher' && (u.status === 'pending' || u.active === false));
+      const pendingTeachers = users.filter(u => u.role === 'teacher' && (u.status === 'pending' || u.is_active === false || u.active === false));
       const pendingBadge = document.getElementById("pending-teacher-badge");
       if (pendingBadge) pendingBadge.textContent = pendingTeachers.length;
 
@@ -5099,7 +5099,7 @@
                 role: 'teacher',
                 class_id: checkedClasses[0] || '2A',
                 status: 'approved',
-                active: true
+                is_active: true
               }]);
             } catch (err) {
               console.warn('[Supabase Insert Teacher Error]:', err);
@@ -5139,14 +5139,15 @@
       window.toggleTeacherActive = async function(tId) {
         const teacher = teacherAccounts.find(t => t.id === tId);
         if (!teacher) return;
-        const newActive = (teacher.active === false) ? true : false;
+        const newActive = (teacher.is_active === false || teacher.active === false) ? true : false;
+        teacher.is_active = newActive;
         teacher.active = newActive;
 
         const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
         if (activeClient) {
           try {
             await activeClient.from('teachers').update({ is_active: newActive }).eq('id', tId);
-            await activeClient.from('users').update({ active: newActive, status: newActive ? 'approved' : 'pending' }).eq('username', teacher.username);
+            await activeClient.from('users').update({ is_active: newActive, status: newActive ? 'approved' : 'pending' }).eq('username', teacher.username);
           } catch (err) {
             console.warn('[Supabase Toggle Active Error]:', err);
           }
