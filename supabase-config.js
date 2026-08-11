@@ -66,12 +66,14 @@ window.supabaseAuth = {
 
       // 1. Insert vào bảng users chung
       let newUser = null;
+      const targetClassId = (userRole === 'student') ? (userClass || '2AI') : null;
+
       const userPayload = {
         username: cleanUsername,
         password: cleanPassword,
         full_name: cleanFullName,
         role: userRole,
-        class_id: userRole === 'student' ? userClass : (userClass || '2A'),
+        class_id: targetClassId,
         xp: 450,
         coins: 1250,
         is_active: userRole === 'teacher' ? false : true
@@ -90,7 +92,7 @@ window.supabaseAuth = {
           password: cleanPassword,
           full_name: cleanFullName,
           role: userRole,
-          class_id: userRole === 'student' ? userClass : (userClass || '2A')
+          class_id: targetClassId
         };
         const { data: retryData, error: retryErr } = await activeClient
           .from('users')
