@@ -5745,11 +5745,10 @@
           const selectedClass = globalSelect ? globalSelect.value : "ALL";
           const gameSelect = document.getElementById("game-task-select");
           const selectedCategory = gameSelect ? gameSelect.value : "game-pika";
-
-          let studentsList = Array.isArray(globalStudents) ? [...globalStudents] : [];
           const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
 
-          // 1. Nạp trực tiếp từ Supabase public.students nếu globalStudents chưa sẵn sàng
+          // 1. Nạp danh sách học sinh hợp lệ từ Supabase public.students
+          let studentsList = Array.isArray(globalStudents) ? [...globalStudents] : [];
           if (studentsList.length === 0 && activeClient) {
             try {
               const { data: dbSt, error: stErr } = await activeClient
@@ -5757,31 +5756,28 @@
                 .select('*')
                 .order('id', { ascending: true });
 
-              if (stErr) {
-                console.error('[Supabase] Load students failed:', stErr);
-              } else if (dbSt) {
-                studentsList = dbSt.map(s => ({
-                  id: s.id,
-                  name: s.name,
-                  classId: s.class_id,
-                  class_id: s.class_id,
-                  xp: s.xp || 0,
-                  coins: s.coins || 0
-                }));
+              if (!stErr && dbSt) {
+                studentsList = dbSt.filter(s => s && s.name && !s.name.toLowerCase().trim().includes('test'));
                 globalStudents = studentsList;
               }
             } catch (errSt) {
               console.error('[Supabase] Load students failed:', errSt);
             }
+          } else {
+            studentsList = studentsList.filter(s => s && s.name && !s.name.toLowerCase().trim().includes('test'));
           }
 
-          // Lọc bỏ 100% tài khoản test / mồ côi (chỉ giữ các học sinh thực sự từ public.students)
-          studentsList = studentsList.filter(s => s && s.name && !s.name.toLowerCase().trim().includes('test'));
+          // Map truy vấn nhanh học sinh theo ID và Tên
+          let studentsMap = {};
+          studentsList.forEach(s => {
+            studentsMap[String(s.id)] = s;
+            if (s.name) studentsMap[s.name.toLowerCase().trim()] = s;
+          });
 
-          // 2. Nạp điểm xếp hạng từ Supabase public.game_scores
-          let dbScoresMap = {};
+          const validStudentIds = new Set(studentsList.map(s => String(s.id)));
+
+          // 2. Nạp dữ liệu điểm thực tế từ Supabase public.game_scores
           let dbScoresRaw = [];
-
           if (activeClient) {
             try {
               const { data: dbScores, error: dbErr } = await activeClient
@@ -5791,91 +5787,98 @@
 
               if (dbErr) {
                 console.error('[Supabase] Load leaderboard failed:', dbErr);
-              } else if (dbScores && dbScores.length > 0) {
+              } else if (dbScores) {
                 dbScoresRaw = dbScores;
-                dbScores.forEach(row => {
-                  dbScoresMap[String(row.student_id)] = row.xp;
-                  if (row.student_name) dbScoresMap[row.student_name.toLowerCase().trim()] = row.xp;
-                });
               }
             } catch (sbErr) {
               console.error('[Supabase] Load leaderboard failed:', sbErr);
             }
           }
 
-          // BƯỚC XÁC MINH AUDIT BẮT BUỘC TRƯỚC KHI RENDER LEADERBOARD
-          const validStudentIds = new Set(studentsList.map(s => String(s.id)));
-          let validScoresCount = 0;
-          let orphanScoresCount = 0;
+          // 3. LUỒNG DỮ LIỆU ĐÚNG: LEADERBOARD STUDENTS = public.game_scores.student_id ∩ public.students.id
+          let scoresByStudent = {};
+          let orphanScoresExcluded = 0;
 
           dbScoresRaw.forEach(score => {
-            if (score && score.student_id && validStudentIds.has(String(score.student_id))) {
-              validScoresCount++;
+            if (!score) return;
+            const sid = String(score.student_id);
+            const sname = score.student_name ? score.student_name.toLowerCase().trim() : "";
+
+            let matchedStudent = null;
+            if (score.student_id && validStudentIds.has(sid)) {
+              matchedStudent = studentsMap[sid];
+            } else if (sname && studentsMap[sname]) {
+              matchedStudent = studentsMap[sname];
+            }
+
+            if (matchedStudent) {
+              const targetId = String(matchedStudent.id);
+              const scoreXP = parseInt(score.xp) || 0;
+              if (!scoresByStudent[targetId]) {
+                scoresByStudent[targetId] = {
+                  id: matchedStudent.id,
+                  name: matchedStudent.name,
+                  classId: matchedStudent.classId || matchedStudent.class_id,
+                  className: matchedStudent.className || matchedStudent.classId || matchedStudent.class_id || "Lớp 2A",
+                  xp: scoreXP
+                };
+              } else {
+                if (scoreXP > scoresByStudent[targetId].xp) {
+                  scoresByStudent[targetId].xp = scoreXP;
+                }
+              }
             } else {
-              orphanScoresCount++;
-              console.log(`ORPHAN SCORE:\nstudent_id = ${score ? score.student_id : 'null'}\n→ NOT FOUND IN public.students\n→ EXCLUDED FROM LEADERBOARD`);
+              orphanScoresExcluded++;
+              console.log(`ORPHAN SCORE:\nstudent_id = ${score.student_id}\n→ NOT FOUND IN public.students\n→ EXCLUDED FROM LEADERBOARD`);
             }
           });
 
-          const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
-          const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
-          const currentStudentXP = parseInt(localStorage.getItem("userXP")) || 450;
-          const role = (localStorage.getItem("currentUserRole") || "guest").toLowerCase();
+          let leaderboardStudents = Object.values(scoresByStudent);
 
-          // Lọc theo lớp
-          let filteredStudents = (selectedClass === "ALL" || !selectedClass)
-            ? studentsList
-            : studentsList.filter(s => s && (s.classId === selectedClass || s.class_id === selectedClass));
+          // 4. Lọc theo Lớp học (Class Filter)
+          if (selectedClass && selectedClass !== "ALL") {
+            leaderboardStudents = leaderboardStudents.filter(s =>
+              s && (String(s.classId).toLowerCase().trim() === String(selectedClass).toLowerCase().trim() ||
+                    String(s.className).toLowerCase().trim().includes(String(selectedClass).toLowerCase().trim()))
+            );
+          }
 
-          console.log(`LEADERBOARD VALIDATION:\n- total students from Supabase: ${studentsList.length}\n- total game scores: ${dbScoresRaw.length}\n- valid scores: ${validScoresCount}\n- orphan scores removed: ${orphanScoresCount}\n- students rendered: ${filteredStudents.length}`);
+          leaderboardStudents.sort((a, b) => b.xp - a.xp);
 
-          // 2. Tổng hợp dữ liệu xếp hạng từ Supabase
-          let mergedData = filteredStudents.map(student => {
-            let studentXP = 0;
-            const keyById = String(student.id);
-            const keyByName = student.name ? student.name.toLowerCase().trim() : "";
+          const excludedStudentsWithoutScores = studentsList.length - leaderboardStudents.length;
 
-            if (dbScoresMap[keyById] !== undefined) {
-              studentXP = dbScoresMap[keyById];
-            } else if (dbScoresMap[keyByName] !== undefined) {
-              studentXP = dbScoresMap[keyByName];
-            } else if (role === "student" && student.name && student.name.toLowerCase().trim() === currentStudentName.toLowerCase().trim()) {
-              studentXP = currentStudentXP;
-            } else {
-              studentXP = student.xp || 0;
-            }
-
-            let classesArr = (typeof globalClasses !== "undefined" && Array.isArray(globalClasses)) ? globalClasses : [];
-            let classObj = classesArr.find(c => c && (c.id === student.classId || c.id === student.class_id));
-            let className = classObj ? classObj.name : (student.classId || student.class_id || "Lớp 2A");
-
-            return {
-              id: student.id,
-              name: student.name || "Học sinh",
-              className: className,
-              xp: studentXP
-            };
+          console.log("LEADERBOARD SOURCE AUDIT", {
+            studentsFromSupabase: studentsList.length,
+            gameScoresFromSupabase: dbScoresRaw.length,
+            validLeaderboardStudents: leaderboardStudents.length,
+            excludedStudentsWithoutScores: excludedStudentsWithoutScores,
+            orphanScoresExcluded: orphanScoresExcluded
           });
 
-          mergedData.sort((a, b) => b.xp - a.xp);
-
-          if (mergedData.length === 0) {
-            listContainer.innerHTML = `<div style="text-align:center; padding:15px; color:#888; font-weight:bold;">Không có học sinh trong lớp này.</div>`;
+          if (leaderboardStudents.length === 0) {
+            listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#64748b; font-weight:bold; background:#f8fafc; border-radius:12px; margin:10px 0;">🏆 Chưa có dữ liệu xếp hạng cho danh mục này.</div>`;
             return;
           }
 
-          // 3. Render danh sách học sinh
+          const currentStudentName = (localStorage.getItem("studentName") || "").toLowerCase().trim();
+          const role = (localStorage.getItem("currentUserRole") || "guest").toLowerCase();
+
+          // 5. Render danh sách học sinh CÓ ĐIỂM THỰC TẾ
           const badges = ["🥇", "🥈", "🥉"];
-          listContainer.innerHTML = mergedData.map((item, index) => {
+          listContainer.innerHTML = leaderboardStudents.map((item, index) => {
             const badgeIcon = badges[index] || `<span style="display:inline-block; width:22px; text-align:center; color:#64748b; font-weight:bold;">#${index + 1}</span>`;
-            const isCurrentUser = (role === "student") && item.name.toLowerCase().trim() === currentStudentName.toLowerCase().trim();
+            const isCurrentUser = (role === "student") && item.name.toLowerCase().trim() === currentStudentName;
+
+            let classesArr = (typeof globalClasses !== "undefined" && Array.isArray(globalClasses)) ? globalClasses : [];
+            let classObj = classesArr.find(c => c && (String(c.id).toLowerCase().trim() === String(item.classId).toLowerCase().trim()));
+            let displayClassName = classObj ? classObj.name : (item.className || item.classId || "Lớp 2A");
 
             return `
               <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:8px; background:${isCurrentUser ? '#fef3c7' : '#f8fafc'}; border-radius:12px; border:1px solid ${isCurrentUser ? '#fde047' : '#e2e8f0'}; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span style="font-size:1.15rem; font-weight:900;">${badgeIcon}</span>
                   <span style="font-weight:900; color:${isCurrentUser ? '#92400e' : '#1e293b'}; font-size:0.95rem;">${item.name} ${isCurrentUser ? '🌟 (Bạn)' : ''}</span>
-                  <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-weight:bold;">${item.className}</span>
+                  <span style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-weight:bold;">${displayClassName}</span>
                 </div>
                 <span style="color:#ea580c; font-weight:900; font-size:0.95rem;">${item.xp} XP</span>
               </div>
