@@ -4850,39 +4850,7 @@
         { id: "2C", name: "Lớp 2C" }
       ];
 
-      let globalStudents = [
-        { id: 101, name: "Vũ Bảo An", classId: "2AI" },
-        { id: 102, name: "Bé Nam (Con)", classId: "2AI" },
-        { id: 103, name: "Đỗ Hoàng Long", classId: "2AI" },
-        { id: 104, name: "Trần Tiến Đạt", classId: "2A" },
-        { id: 105, name: "Nguyen Văn A", classId: "2A" },
-        { id: 106, name: "Lê Thị B", classId: "2B" }
-      ];
-
-      let studentClassMap = {};
-      try {
-        const savedMap = localStorage.getItem("studentClassMap");
-        if (savedMap) studentClassMap = JSON.parse(savedMap);
-      } catch(e){}
-
-      try {
-        const savedStudents = localStorage.getItem("globalStudents");
-        if (savedStudents) {
-          const parsed = JSON.parse(savedStudents);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            globalStudents = parsed;
-          }
-        }
-      } catch(e){}
-
-      globalStudents.forEach(s => {
-        const key = s.name.toLowerCase();
-        if (studentClassMap[key]) {
-          s.classId = studentClassMap[key];
-        } else if (!s.classId) {
-          s.classId = "2AI";
-        }
-      });
+      let globalStudents = [];
 
       let gameTaskScoreStore = {
         "game-pika": [
@@ -5367,7 +5335,9 @@
               .order('id', { ascending: true });
 
             if (!studentErr && dbStudents) {
-              globalStudents = dbStudents.map(s => ({
+              // Lọc bỏ tài khoản test / mồ côi (không cho phép hiển thị Test User / Học Sinh Test trên Leaderboard)
+              const validStudents = dbStudents.filter(s => s && s.name && !s.name.toLowerCase().trim().includes('test'));
+              globalStudents = validStudents.map(s => ({
                 id: s.id,
                 name: s.name,
                 classId: s.class_id,
@@ -5377,7 +5347,7 @@
               }));
               window.globalStudents = globalStudents;
             } else if (studentErr) {
-              console.error('[Supabase Students Error]:', studentErr);
+              console.error('[Supabase] Load students failed:', studentErr);
             }
           } catch (err) {
             console.error('[Supabase loadClasses/Students Error]:', err);
@@ -5777,10 +5747,39 @@
           const selectedCategory = gameSelect ? gameSelect.value : "game-pika";
 
           let studentsList = Array.isArray(globalStudents) ? [...globalStudents] : [];
-
-          // 1. Nạp điểm xếp hạng từ Supabase public.game_scores
-          let dbScoresMap = {};
           const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+
+          // 1. Nạp trực tiếp từ Supabase public.students nếu globalStudents chưa sẵn sàng
+          if (studentsList.length === 0 && activeClient) {
+            try {
+              const { data: dbSt, error: stErr } = await activeClient
+                .from('students')
+                .select('*')
+                .order('id', { ascending: true });
+
+              if (stErr) {
+                console.error('[Supabase] Load students failed:', stErr);
+              } else if (dbSt) {
+                studentsList = dbSt.map(s => ({
+                  id: s.id,
+                  name: s.name,
+                  classId: s.class_id,
+                  class_id: s.class_id,
+                  xp: s.xp || 0,
+                  coins: s.coins || 0
+                }));
+                globalStudents = studentsList;
+              }
+            } catch (errSt) {
+              console.error('[Supabase] Load students failed:', errSt);
+            }
+          }
+
+          // Lọc bỏ 100% tài khoản test / mồ côi (chỉ giữ các học sinh thực sự từ public.students)
+          studentsList = studentsList.filter(s => s && s.name && !s.name.toLowerCase().trim().includes('test'));
+
+          // 2. Nạp điểm xếp hạng từ Supabase public.game_scores
+          let dbScoresMap = {};
 
           if (activeClient) {
             try {
