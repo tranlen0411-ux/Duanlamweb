@@ -1729,6 +1729,16 @@
               </tr>
             </tbody>
           </table>
+
+          <!-- KHU VỰC NHẬN XÉT CỦA THẦY/CÔ (ĐỒNG BỘ SUPABASE MỚI) -->
+          <div id="teacher-comment-display-card" style="margin-top: 24px; padding: 18px 22px; background: linear-gradient(135deg, #f0fdf4, #e0f2fe); border-radius: 16px; border: 2px solid #a7f3d0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);">
+            <h4 style="font-size: 1.2rem; font-weight: 900; color: #065f46; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+              <span>💬</span> <span>Nhận xét của Thầy/Cô</span>
+            </h4>
+            <div id="teacher-comment-content-box">
+              <p style="color: #64748b; font-weight: bold; margin: 0;">⏳ Đang nạp nhận xét từ Supabase...</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3071,6 +3081,11 @@
         window.loadStudentDailyTasksFromSupabase();
       }
 
+      const commentBox = document.getElementById("teacher-comment-content-box");
+      if (commentBox) {
+        commentBox.innerHTML = `<div style="text-align:center; padding:14px; color:#64748b; font-weight:bold; background:white; border-radius:12px;">💬 Đăng nhập tài khoản Học Sinh để xem nhận xét từ Thầy/Cô.</div>`;
+      }
+
       if (typeof window.updateStudentModalView === 'function') {
         window.updateStudentModalView();
       }
@@ -3847,15 +3862,18 @@
 
       window.loadStudentExamHistoryFromSupabase = async function() {
         const tbody = document.getElementById("student-history-table-body");
+        const commentBox = document.getElementById("teacher-comment-content-box");
         if (!tbody) return;
 
         const currentStudent = getCurrentStudent();
         const currentStudentId = String(currentStudent.id);
         const currentStudentName = currentStudent.name.trim();
+        const currentStudentClassId = String(currentStudent.class_id || currentStudent.classId || localStorage.getItem("studentClass") || "2A");
 
         const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
         if (!activeClient) {
           tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8; font-weight:bold;">Chưa kết nối Supabase.</td></tr>`;
+          if (commentBox) commentBox.innerHTML = `<p style="color:#64748b; font-weight:bold; margin:0;">Chưa kết nối Supabase.</p>`;
           return;
         }
 
@@ -3870,10 +3888,11 @@
           if (error) {
             console.error('[Supabase loadStudentExamHistory Error]:', error);
             tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Không thể tải lịch sử từ Supabase. <button onclick="loadStudentExamHistoryFromSupabase()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">🔄 Thử lại</button></td></tr>`;
+            if (commentBox) commentBox.innerHTML = `<p style="color:#ef4444; font-weight:bold; margin:0;">💬 Không thể tải nhận xét từ Supabase.</p>`;
             return;
           }
 
-          // LỌC CHẶT CHẼ DUY NHẤT HỌC SINH ĐANG ĐĂNG NHẬP (TỪ CHỐI LỚP / HỌC SINH KHÁC)
+          // LỌC CHẶT CHẼ DUY NHẤT HỌC SINH ĐANG ĐĂNG NHẬP
           const filteredScores = (data || []).filter(item => {
             const matchId = item.student_id && (String(item.student_id) === currentStudentId || String(item.student_id) === currentStudentName);
             const matchName = item.student_name && item.student_name.trim().toLowerCase() === currentStudentName.toLowerCase();
@@ -3882,28 +3901,62 @@
 
           if (!filteredScores || filteredScores.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b; font-weight:bold;">Chưa có lịch sử làm bài thi.</td></tr>`;
-            return;
+          } else {
+            tbody.innerHTML = filteredScores.map(item => {
+              let scoreStr = item.score || "10/10";
+              let rawNum = parseFloat(scoreStr.split('/')[0]) || 0;
+              let timeStr = item.exam_time || "--";
+              let dateStr = item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : "--";
+
+              return `
+                <tr>
+                  <td><strong>${item.quiz_title || 'Bài kiểm tra Tuần 1'}</strong></td>
+                  <td><span class="score-badge-10" style="color: ${rawNum >= 8 ? '#059669' : '#0284c7'}; font-weight:bold;">${scoreStr}</span></td>
+                  <td><small style="color:#64748b;">${dateStr} (${timeStr})</small></td>
+                  <td><strong style="color:#0369a1;">${rawNum >= 10 ? '5/5' : Math.round(rawNum / 2) + '/5'} câu</strong></td>
+                </tr>
+              `;
+            }).join('');
           }
 
-          tbody.innerHTML = filteredScores.map(item => {
-            let scoreStr = item.score || "10/10";
-            let rawNum = parseFloat(scoreStr.split('/')[0]) || 0;
-            let timeStr = item.exam_time || "--";
-            let dateStr = item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : "--";
+          // HIỂN THỊ NHẬN XẾP CỦA GIÁO VIÊN NẾU CÓ DÀNH CHO HỌC SINH ĐANG ĐĂNG NHẬP
+          if (commentBox) {
+            const scoresWithComments = filteredScores.filter(s => s && s.teacher_comment && s.teacher_comment.trim() !== '');
 
-            return `
-              <tr>
-                <td><strong>${item.quiz_title || 'Bài kiểm tra Tuần 1'}</strong></td>
-                <td><span class="score-badge-10" style="color: ${rawNum >= 8 ? '#059669' : '#0284c7'}; font-weight:bold;">${scoreStr}</span></td>
-                <td><small style="color:#64748b;">${dateStr} (${timeStr})</small></td>
-                <td><strong style="color:#0369a1;">${rawNum >= 10 ? '5/5' : Math.round(rawNum / 2) + '/5'} câu</strong></td>
-              </tr>
-            `;
-          }).join('');
+            if (scoresWithComments.length === 0) {
+              commentBox.innerHTML = `<div style="text-align:center; padding:14px; color:#64748b; font-weight:bold; background:white; border-radius:12px;">💬 Thầy/Cô chưa có nhận xét cho em.</div>`;
+            } else {
+              // Ánh xạ Giáo viên phụ trách từ CSDL/lớp
+              const teacherMap = {
+                '2AI': 'Cô Mai',
+                '2A': 'Cô Hường',
+                '2B': 'Thầy Hùng',
+                '2C': 'Cô Lan'
+              };
+              let classesArr = (typeof globalClasses !== "undefined" && Array.isArray(globalClasses)) ? globalClasses : [];
+              let currentClassObj = classesArr.find(c => String(c.id).toLowerCase().trim() === String(currentStudentClassId).toLowerCase().trim());
+              let teacherDisplayName = teacherMap[currentStudentClassId] || (currentClassObj ? currentClassObj.name : "Giáo viên chủ nhiệm");
+
+              commentBox.innerHTML = scoresWithComments.map(item => {
+                let dateStr = item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : "--";
+                return `
+                  <div style="background: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; border-left: 4px solid #10b981; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                      <span style="font-weight: 800; color: #047857; font-size: 0.95rem;">👨‍🏫 Giáo viên: ${teacherDisplayName} (Lớp ${currentStudentClassId})</span>
+                      <span style="font-size: 0.8rem; color: #64748b; font-weight: bold;">📅 ${dateStr}</span>
+                    </div>
+                    <p style="color: #1e293b; font-size: 0.95rem; line-height: 1.5; margin: 0 0 6px 0; font-weight: 600;">"${item.teacher_comment}"</p>
+                    <small style="color: #0284c7; font-weight: bold;">📝 Bài thi: ${item.quiz_title || 'Bài kiểm tra'} (${item.score || '10/10'})</small>
+                  </div>
+                `;
+              }).join('');
+            }
+          }
 
         } catch (err) {
           console.error('[loadStudentExamHistoryFromSupabase Exception]:', err);
           tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">Lỗi nạp dữ liệu.</td></tr>`;
+          if (commentBox) commentBox.innerHTML = `<p style="color:#ef4444; font-weight:bold; margin:0;">💬 Lỗi nạp nhận xét từ Supabase.</p>`;
         }
       };
 
@@ -6058,27 +6111,47 @@
 
       window.handleClassChange = function (selectedClass) {
         const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
-        if (role === "student" && selectedClass && selectedClass !== "ALL") {
-          localStorage.setItem("studentClass", selectedClass);
+        let targetClass = selectedClass;
+
+        // Nếu người dùng đang ở vai trò HỌC SINH -> KHÓA BỘ LỌC HEADER THEO LỚP THỰC TẾ CỦA HỌC SINH TỪ SUPABASE
+        if (role === "student") {
+          let currentStudent = (typeof getCurrentStudent === "function") ? getCurrentStudent() : null;
+          let currentStudentClass = currentStudent ? (currentStudent.class_id || currentStudent.classId) : null;
+          if (!currentStudentClass) {
+            currentStudentClass = localStorage.getItem("studentClass") || "2A";
+          }
+
+          // Nếu học sinh chọn lớp khác với lớp thực tế của mình -> Tự động đưa về lớp thực tế
+          if (selectedClass && String(selectedClass).toLowerCase().trim() !== String(currentStudentClass).toLowerCase().trim()) {
+            if (typeof showGlobalSystemToast === "function") {
+              showGlobalSystemToast(`⚠️ Em thuộc Lớp ${currentStudentClass}, bộ lọc tự động giữ ở Lớp ${currentStudentClass}.`);
+            }
+            targetClass = currentStudentClass;
+          } else if (!selectedClass || selectedClass === "ALL") {
+            targetClass = currentStudentClass;
+          }
+
+          localStorage.setItem("studentClass", targetClass);
         }
-        if (selectedClass) {
-          localStorage.setItem("currentClassFilter", selectedClass);
+
+        if (targetClass) {
+          localStorage.setItem("currentClassFilter", targetClass);
         }
 
         const globalSelect = document.getElementById("global-class-select");
-        if (globalSelect && globalSelect.value !== selectedClass) {
-          globalSelect.value = selectedClass;
+        if (globalSelect && globalSelect.value !== targetClass) {
+          globalSelect.value = targetClass;
         }
 
         const currentClassLabel = document.getElementById("current-class-label");
         if (currentClassLabel) {
-          const cls = globalClasses.find(c => String(c.id).trim().toLowerCase() === String(selectedClass).trim().toLowerCase());
-          currentClassLabel.textContent = cls ? cls.name : (selectedClass === "ALL" ? "Tất cả các lớp" : selectedClass);
+          const cls = globalClasses.find(c => String(c.id).trim().toLowerCase() === String(targetClass).trim().toLowerCase());
+          currentClassLabel.textContent = cls ? cls.name : (targetClass === "ALL" ? "Tất cả các lớp" : targetClass);
         }
 
         document.querySelectorAll(".current-grade-tag").forEach(el => {
-          const cls = globalClasses.find(c => String(c.id).trim().toLowerCase() === String(selectedClass).trim().toLowerCase());
-          el.textContent = cls ? cls.name : (selectedClass === "ALL" ? "Tất cả các lớp" : selectedClass);
+          const cls = globalClasses.find(c => String(c.id).trim().toLowerCase() === String(targetClass).trim().toLowerCase());
+          el.textContent = cls ? cls.name : (targetClass === "ALL" ? "Tất cả các lớp" : targetClass);
         });
 
         if (typeof updateStudentModalView === "function") updateStudentModalView();
