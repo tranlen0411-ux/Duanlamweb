@@ -3067,6 +3067,14 @@
         window.updateStudentViewPermissionsAndTeacherName();
       }
 
+      if (typeof window.loadStudentDailyTasksFromSupabase === 'function') {
+        window.loadStudentDailyTasksFromSupabase();
+      }
+
+      if (typeof window.updateStudentModalView === 'function') {
+        window.updateStudentModalView();
+      }
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -3985,6 +3993,72 @@
         setupRowCommentClick();
         if (typeof updateUserStatsUI === 'function') {
           updateUserStatsUI();
+        }
+        if (typeof loadStudentDailyTasksFromSupabase === 'function') {
+          loadStudentDailyTasksFromSupabase();
+        }
+      };
+
+      // ĐỒNG BỘ TRẠNG THÁI NHIỆM VỤ HẰNG NGÀY THEO TỪNG HỌC SINH TỪ SUPABASE
+      window.loadStudentDailyTasksFromSupabase = async function() {
+        try {
+          const role = (localStorage.getItem("currentUserRole") || "guest").toLowerCase();
+          const currentStudentName = localStorage.getItem("studentName");
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+
+          // Nếu không đăng nhập vai trò Học sinh hoặc ở chế độ Khách -> Reset UI nhiệm vụ về mặc định
+          if (role !== "student" || !currentStudentName) {
+            document.querySelectorAll(".btn-complete-mission").forEach(btn => {
+              if (btn.classList.contains("done")) {
+                btn.classList.remove("done");
+                btn.classList.add("active");
+                btn.textContent = "Làm ngay";
+              }
+            });
+            return;
+          }
+
+          let studentObj = (typeof globalStudents !== "undefined" && Array.isArray(globalStudents))
+            ? globalStudents.find(s => s && s.name && s.name.toLowerCase().trim() === currentStudentName.toLowerCase().trim())
+            : null;
+          let studentId = studentObj ? studentObj.id : 102;
+
+          if (activeClient && studentId) {
+            const { data: taskRows, error: taskErr } = await activeClient
+              .from('game_scores')
+              .select('category_key')
+              .or(`student_id.eq.${studentId},student_name.eq.${currentStudentName}`)
+              .like('category_key', 'task-%');
+
+            if (taskErr) {
+              console.error('[Supabase] Load daily tasks failed:', taskErr);
+              return;
+            }
+
+            if (taskRows && taskRows.length > 0) {
+              const doneTaskKeys = taskRows.map(r => r.category_key);
+              const taskKeyMap = {
+                "zoo": "task-rung-xanh",
+                "speed": "task-tinh-nham",
+                "pika": "task-chuoi-hoc-tap",
+                "tower": "task-dau-truong",
+                "exam": "task-diem-so",
+                "bee": "task-ong-ai"
+              };
+
+              document.querySelectorAll(".btn-complete-mission").forEach(btn => {
+                const gameKey = btn.getAttribute("data-game-key");
+                const matchedTaskKey = taskKeyMap[gameKey];
+                if (matchedTaskKey && doneTaskKeys.includes(matchedTaskKey)) {
+                  btn.classList.add("done");
+                  btn.classList.remove("active");
+                  btn.textContent = "Hoàn thành";
+                }
+              });
+            }
+          }
+        } catch (err) {
+          console.error('[Supabase] Load daily tasks failed:', err);
         }
       };
 
@@ -5692,59 +5766,71 @@
         if (typeof forceHideAllModals === "function") forceHideAllModals();
       };
 
-      window.updateStudentModalView = function () {
+      window.updateStudentModalView = async function () {
         try {
           const listContainer = document.getElementById("leaderboard-list");
           if (!listContainer) return;
 
           const globalSelect = document.getElementById("global-class-select");
           const selectedClass = globalSelect ? globalSelect.value : "ALL";
+          const gameSelect = document.getElementById("game-task-select");
+          const selectedCategory = gameSelect ? gameSelect.value : "game-pika";
 
-          // 1. Duyệt qua và lọc tất cả học sinh tham gia theo lớp được chọn (hoặc tất cả các lớp)
           let studentsList = Array.isArray(globalStudents) ? [...globalStudents] : [];
 
-          // Đồng bộ học sinh hiện tại từ localStorage
+          // 1. Nạp điểm xếp hạng từ Supabase public.game_scores
+          let dbScoresMap = {};
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+
+          if (activeClient) {
+            try {
+              const { data: dbScores, error: dbErr } = await activeClient
+                .from('game_scores')
+                .select('*')
+                .eq('category_key', selectedCategory);
+
+              if (dbErr) {
+                console.error('[Supabase] Load leaderboard failed:', dbErr);
+              } else if (dbScores && dbScores.length > 0) {
+                dbScores.forEach(row => {
+                  dbScoresMap[String(row.student_id)] = row.xp;
+                  if (row.student_name) dbScoresMap[row.student_name.toLowerCase().trim()] = row.xp;
+                });
+              }
+            } catch (sbErr) {
+              console.error('[Supabase] Load leaderboard failed:', sbErr);
+            }
+          }
+
           const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
           const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
           const currentStudentXP = parseInt(localStorage.getItem("userXP")) || 450;
+          const role = (localStorage.getItem("currentUserRole") || "guest").toLowerCase();
 
-          let currentStudentObj = studentsList.find(s => s && s.name && s.name.toLowerCase() === currentStudentName.toLowerCase());
-          if (!currentStudentObj) {
-            currentStudentObj = { id: 102, name: currentStudentName, classId: currentStudentClass };
-            studentsList.push(currentStudentObj);
-          }
-
+          // Lọc theo lớp
           let filteredStudents = (selectedClass === "ALL" || !selectedClass)
             ? studentsList
-            : studentsList.filter(s => s && s.classId === selectedClass);
+            : studentsList.filter(s => s && (s.classId === selectedClass || s.class_id === selectedClass));
 
-          let scoreStore = (typeof gameTaskScoreStore !== "undefined" && gameTaskScoreStore) ? gameTaskScoreStore : {};
-
-          // 2. Tổng hợp đầy đủ điểm XP của tất cả học sinh
+          // 2. Tổng hợp dữ liệu xếp hạng từ Supabase
           let mergedData = filteredStudents.map(student => {
             let studentXP = 0;
+            const keyById = String(student.id);
+            const keyByName = student.name ? student.name.toLowerCase().trim() : "";
 
-            if (student.name && student.name.toLowerCase() === currentStudentName.toLowerCase()) {
+            if (dbScoresMap[keyById] !== undefined) {
+              studentXP = dbScoresMap[keyById];
+            } else if (dbScoresMap[keyByName] !== undefined) {
+              studentXP = dbScoresMap[keyByName];
+            } else if (role === "student" && student.name && student.name.toLowerCase().trim() === currentStudentName.toLowerCase().trim()) {
               studentXP = currentStudentXP;
             } else {
-              for (let catKey in scoreStore) {
-                const items = scoreStore[catKey] || [];
-                if (Array.isArray(items)) {
-                  const found = items.find(i => i && (i.studentId === student.id || (i.name && i.name.toLowerCase() === student.name.toLowerCase())));
-                  if (found && typeof found.xp === "number" && found.xp > studentXP) {
-                    studentXP = found.xp;
-                  }
-                }
-              }
-              if (studentXP === 0) {
-                const defaultXPMap = { 101: 2100, 102: 1950, 103: 1750, 104: 1500, 105: 1350, 106: 1200 };
-                studentXP = defaultXPMap[student.id] || 1000;
-              }
+              studentXP = student.xp || 0;
             }
 
             let classesArr = (typeof globalClasses !== "undefined" && Array.isArray(globalClasses)) ? globalClasses : [];
-            let classObj = classesArr.find(c => c && c.id === student.classId);
-            let className = classObj ? classObj.name : (student.classId || "Lớp 2 AI");
+            let classObj = classesArr.find(c => c && (c.id === student.classId || c.id === student.class_id));
+            let className = classObj ? classObj.name : (student.classId || student.class_id || "Lớp 2A");
 
             return {
               id: student.id,
@@ -5761,11 +5847,11 @@
             return;
           }
 
-          // 3. Render danh sách ĐẦY ĐỦ TẤT CẢ các học sinh
+          // 3. Render danh sách học sinh
           const badges = ["🥇", "🥈", "🥉"];
           listContainer.innerHTML = mergedData.map((item, index) => {
             const badgeIcon = badges[index] || `<span style="display:inline-block; width:22px; text-align:center; color:#64748b; font-weight:bold;">#${index + 1}</span>`;
-            const isCurrentUser = item.name.toLowerCase() === currentStudentName.toLowerCase();
+            const isCurrentUser = (role === "student") && item.name.toLowerCase().trim() === currentStudentName.toLowerCase().trim();
 
             return `
               <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:8px; background:${isCurrentUser ? '#fef3c7' : '#f8fafc'}; border-radius:12px; border:1px solid ${isCurrentUser ? '#fde047' : '#e2e8f0'}; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
@@ -5793,12 +5879,18 @@
        * @param {string} categoryKey - Danh mục ("game-pika", "game-clock", "game-zoo", "game-lego", "game-pizza", "game-race", "exam-weekly"...)
        * @param {number} addedXp - Số điểm XP cộng dồn (Ví dụ: +20, +50, +100...)
        */
-      window.updateLeaderboardScoreAutomatically = function (studentId, categoryKey, addedXp) {
+      window.updateLeaderboardScoreAutomatically = async function (studentId, categoryKey, addedXp) {
         try {
           const xpToAdd = parseInt(addedXp) || 0;
           if (xpToAdd <= 0) return;
 
-          // 1. Xác định học sinh hiện tại nếu không truyền studentId
+          const currentUserRole = (localStorage.getItem("currentUserRole") || "guest").toLowerCase();
+          if (currentUserRole !== "student") {
+            console.log("[Notice] Đang ở chế độ Khách / Giáo viên / Admin. Không ghi điểm vào tài khoản học sinh.");
+            return;
+          }
+
+          // 1. Xác định học sinh hiện tại từ phiên đăng nhập
           const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
           const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
 
@@ -5820,59 +5912,95 @@
             xpDisplay.textContent = `${newTotalXP} XP`;
           }
 
-          // 3. Cộng dồn vào gameTaskScoreStore hoặc examScoreStore
+          // 3. Ghi/Cập nhật dữ liệu trực tiếp vào Supabase public.game_scores
           const category = categoryKey || "game-pika";
-          if (category.startsWith("exam")) {
-            if (typeof examScoreStore !== "undefined" && Array.isArray(examScoreStore)) {
-              let examObj = examScoreStore.find(e => e && e.studentId === targetStudentId);
-              if (examObj) {
-                examObj.score = `${newTotalXP} đ`;
-                examObj.time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-              } else {
-                examScoreStore.push({
-                  studentId: targetStudentId,
-                  score: `${newTotalXP} đ`,
-                  time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-                });
-              }
-              localStorage.setItem("examScoreStore", JSON.stringify(examScoreStore));
-            }
-          } else {
-            if (typeof gameTaskScoreStore !== "undefined" && gameTaskScoreStore) {
-              if (!gameTaskScoreStore[category]) {
-                gameTaskScoreStore[category] = [];
-              }
-              let items = gameTaskScoreStore[category];
-              let foundScore = items.find(i => i && (i.studentId === targetStudentId || (i.name && i.name.toLowerCase() === currentStudentName.toLowerCase())));
+          const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
 
-              if (foundScore) {
-                foundScore.xp = (foundScore.xp || 0) + xpToAdd;
+          if (activeClient && targetStudentId) {
+            try {
+              const { data: existingRows, error: findErr } = await activeClient
+                .from('game_scores')
+                .select('*')
+                .eq('student_id', targetStudentId)
+                .eq('category_key', category);
+
+              if (findErr) {
+                console.error('[Supabase] Load game_scores failed:', findErr);
+              } else if (existingRows && existingRows.length > 0) {
+                const existingRow = existingRows[0];
+                const updatedScore = (existingRow.xp || 0) + xpToAdd;
+                const { error: updErr } = await activeClient
+                  .from('game_scores')
+                  .update({
+                    xp: updatedScore,
+                    student_name: currentStudentName,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', existingRow.id);
+
+                if (updErr) console.error('[Supabase] Load game_scores failed:', updErr);
               } else {
-                items.push({
-                  studentId: targetStudentId,
-                  name: currentStudentName,
-                  xp: newTotalXP
-                });
+                const { error: insErr } = await activeClient
+                  .from('game_scores')
+                  .insert([{
+                    category_key: category,
+                    student_id: targetStudentId,
+                    student_name: currentStudentName,
+                    xp: newTotalXP,
+                    updated_at: new Date().toISOString()
+                  }]);
+
+                if (insErr) console.error('[Supabase] Load game_scores failed:', insErr);
               }
 
-              // Tự động sắp xếp lại danh sách từ cao xuống thấp
-              items.sort((a, b) => (b.xp || 0) - (a.xp || 0));
-              localStorage.setItem("gameTaskScoreStore", JSON.stringify(gameTaskScoreStore));
+              // Đồng bộ tổng XP vào bảng public.students nếu có
+              try {
+                await activeClient
+                  .from('students')
+                  .update({ xp: newTotalXP })
+                  .eq('id', targetStudentId);
+              } catch (stUpdErr) {}
+            } catch (sbErr) {
+              console.error('[Supabase] Load game_scores failed:', sbErr);
             }
           }
 
-          // 4. Đồng bộ cập nhật lại Bảng Xếp Hạng nếu đang hiển thị
+          // 4. Cộng dồn vào gameTaskScoreStore bộ nhớ phụ
+          if (typeof gameTaskScoreStore !== "undefined" && gameTaskScoreStore) {
+            if (!gameTaskScoreStore[category]) {
+              gameTaskScoreStore[category] = [];
+            }
+            let items = gameTaskScoreStore[category];
+            let foundScore = items.find(i => i && (i.studentId === targetStudentId || (i.name && i.name.toLowerCase() === currentStudentName.toLowerCase())));
+
+            if (foundScore) {
+              foundScore.xp = (foundScore.xp || 0) + xpToAdd;
+            } else {
+              items.push({
+                studentId: targetStudentId,
+                name: currentStudentName,
+                xp: newTotalXP
+              });
+            }
+
+            items.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+            localStorage.setItem("gameTaskScoreStore", JSON.stringify(gameTaskScoreStore));
+          }
+
+          // 5. Đồng bộ cập nhật lại Bảng Xếp Hạng nếu đang hiển thị
           if (typeof updateStudentModalView === "function") {
             updateStudentModalView();
           }
           if (typeof renderGameTaskTable === "function") {
             renderGameTaskTable();
           }
-          if (typeof renderExamTable === "function") {
-            renderExamTable();
+
+          // Nếu đây là nhiệm vụ hằng ngày -> Cập nhật UI nhiệm vụ hằng ngày
+          if (category.startsWith("task-") && typeof loadStudentDailyTasksFromSupabase === "function") {
+            loadStudentDailyTasksFromSupabase();
           }
 
-          console.log(`[Leaderboard Auto-Update] Đã cộng dồn +${xpToAdd} XP cho học sinh (ID: ${targetStudentId}) ở danh mục [${category}]. Tổng XP mới: ${newTotalXP}`);
+          console.log(`[Supabase Game Scores Sync] Đã cộng dồn +${xpToAdd} XP cho học sinh (ID: ${targetStudentId}) ở danh mục [${category}]. Tổng XP mới: ${newTotalXP}`);
         } catch (err) {
           console.error("Lỗi khi tự động cập nhật điểm Bảng Xếp Hạng:", err);
         }
