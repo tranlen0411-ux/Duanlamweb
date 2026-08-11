@@ -352,7 +352,7 @@
         if (!user) {
           try {
             let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
-            user = localUsers.find(u => (u.username?.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword);
+            user = localUsers.find(u => (u.username?.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword && u.role !== 'teacher');
           } catch (e) {}
 
           if (!user) {
@@ -364,14 +364,6 @@
               user = { id: 105, username: 'laquyan', full_name: 'Lã Quý An', role: 'student', class_id: '2A', xp: 450, coins: 1250, status: 'approved', active: true };
             } else if (cleanUsername === 'tranthihien' && cleanPassword === '123456') {
               user = { id: 106, username: 'tranthihien', full_name: 'Trần Thị Hiền', role: 'student', class_id: '2A', xp: 450, coins: 1250, status: 'approved', active: true };
-            } else if (cleanUsername === 'comai' && cleanPassword === '123456') {
-              user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', xp: 0, coins: 0, status: 'approved', active: true };
-            } else if (cleanUsername === 'colan' && cleanPassword === '123456') {
-              user = { id: 202, username: 'colan', full_name: 'Cô Lan', role: 'teacher', class_id: '2A', xp: 0, coins: 0, status: 'approved', active: true };
-            } else if (cleanUsername === 'thayhung' && cleanPassword === '123456') {
-              user = { id: 203, username: 'thayhung', full_name: 'Thầy Hùng', role: 'teacher', class_id: '2B', xp: 0, coins: 0, status: 'approved', active: true };
-            } else if (cleanUsername === 'thaytam' && cleanPassword === '123456') {
-              user = { id: 204, username: 'thaytam', full_name: 'Lê Văn Tám', role: 'teacher', class_id: '2C', xp: 0, coins: 0, status: 'approved', active: true };
             }
           }
         }

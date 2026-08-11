@@ -152,36 +152,52 @@ window.supabaseAuth = {
     }
 
     let user = null;
+    const activeClient = supabaseClient || window.supabaseClient;
 
-    if (supabaseClient) {
+    if (activeClient) {
       try {
-        // 1. Lệnh truy vấn trực tiếp vào bảng users trên Supabase CSDL (không query bảng teachers cũ)
-        const { data: dbUsers, error } = await supabaseClient
+        // 1. Lệnh truy vấn trực tiếp vào bảng users trên Supabase CSDL
+        const { data: dbUser } = await activeClient
           .from('users')
           .select('*')
           .eq('username', cleanUsername)
-          .eq('password', cleanPassword);
+          .eq('password', cleanPassword)
+          .maybeSingle();
 
-        if (error) {
-          console.error('[Supabase Query Error - eq username]:', error);
-        }
-
-        if (dbUsers && dbUsers.length > 0) {
-          user = dbUsers[0];
+        if (dbUser) {
+          user = dbUser;
         } else {
           // 2. Thử truy vấn thêm theo email nếu username không khớp
-          const { data: dbUsersByEmail, error: emailErr } = await supabaseClient
+          const { data: dbUserByEmail } = await activeClient
             .from('users')
             .select('*')
             .eq('email', cleanUsername)
-            .eq('password', cleanPassword);
+            .eq('password', cleanPassword)
+            .maybeSingle();
 
-          if (emailErr) {
-            console.error('[Supabase Query Error - eq email]:', emailErr);
-          }
+          if (dbUserByEmail) {
+            user = dbUserByEmail;
+          } else {
+            // 3. Thử truy vấn bảng teachers chính thức nếu không tìm thấy trong users
+            const { data: dbTeacher } = await activeClient
+              .from('teachers')
+              .select('*')
+              .eq('username', cleanUsername)
+              .eq('password', cleanPassword)
+              .maybeSingle();
 
-          if (dbUsersByEmail && dbUsersByEmail.length > 0) {
-            user = dbUsersByEmail[0];
+            if (dbTeacher) {
+              user = {
+                id: dbTeacher.id,
+                username: dbTeacher.username,
+                full_name: dbTeacher.display_name,
+                role: 'teacher',
+                assigned_classes: dbTeacher.assigned_classes || [],
+                class_id: (dbTeacher.assigned_classes && dbTeacher.assigned_classes[0]) ? dbTeacher.assigned_classes[0] : null,
+                is_active: dbTeacher.is_active !== false,
+                active: dbTeacher.is_active !== false
+              };
+            }
           }
         }
       } catch (err) {
@@ -189,19 +205,17 @@ window.supabaseAuth = {
       }
     }
 
-    // 3. Fallback kiểm tra bộ nhớ cục bộ nếu chưa kết nối được CSDL Supabase
+    // 4. Nếu không tìm thấy user trên CSDL Supabase: Không được fallback sang tài khoản Giáo viên mẫu (comai) hay teacherAccounts
     if (!user) {
       try {
         let localUsers = JSON.parse(localStorage.getItem('users_db') || '[]');
-        user = localUsers.find(u => (u.username?.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword);
+        user = localUsers.find(u => (u.username?.toLowerCase() === cleanUsername || u.email?.toLowerCase() === cleanUsername) && u.password === cleanPassword && u.role !== 'teacher');
       } catch (localErr) {
         console.warn('localStorage parse error:', localErr);
       }
 
       if (!user) {
-        if (cleanUsername === 'comai' && (cleanPassword === '123456' || cleanPassword === 'comai123')) {
-          user = { id: 201, username: 'comai', full_name: 'Cô Mai', role: 'teacher', class_id: '2A', status: 'approved', is_active: true, active: true, xp: 0, coins: 0 };
-        } else if ((cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'adminlahuong2904@gmail.com' || cleanUsername === 'admin') && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
+        if ((cleanUsername === 'lahuong2904@gmail.com' || cleanUsername === 'adminlahuong2904@gmail.com' || cleanUsername === 'admin') && (cleanPassword === '123456' || cleanPassword === 'admin123')) {
           user = { id: 1, username: 'lahuong2904@gmail.com', email: 'lahuong2904@gmail.com', full_name: 'Super Admin (Lã Hương)', role: 'admin', status: 'approved', is_active: true, active: true, class_id: '2AI', xp: 9999, coins: 9999 };
         } else if (cleanUsername === 'benam' && cleanPassword === '123456') {
           user = { id: 102, username: 'benam', full_name: 'Bé Nam', role: 'student', class_id: '2AI', status: 'approved', is_active: true, active: true, xp: 450, coins: 1250 };
@@ -213,14 +227,15 @@ window.supabaseAuth = {
       return { success: false, message: '❌ Tên tài khoản hoặc mật khẩu không chính xác!' };
     }
 
-    // KIỂM TRA PHÊ DUYỆT TÀI KHOẢN GIÁO VIÊN (PENDING / REJECTED)
+    // KIỂM TRA PHÊ DUYỆT TÀI KHOẢN GIÁO VIÊN (PENDING / IS_ACTIVE === FALSE)
     if (user.role === 'teacher') {
-      if (user.status === 'pending' || user.is_active === false || user.active === false) {
+      if (user.is_active === false || user.active === false) {
         return { 
           success: false, 
           message: '⏳ Tài khoản Giáo viên của bạn đang CHỜ ADMIN PHÊ DUYỆT! Vui lòng liên hệ Super Admin (lahuong2904@gmail.com) để được kích hoạt tài khoản.' 
         };
       }
+    }
       if (user.status === 'rejected') {
         return { 
           success: false, 
