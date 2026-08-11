@@ -5780,6 +5780,7 @@
 
           // 2. Nạp điểm xếp hạng từ Supabase public.game_scores
           let dbScoresMap = {};
+          let dbScoresRaw = [];
 
           if (activeClient) {
             try {
@@ -5791,6 +5792,7 @@
               if (dbErr) {
                 console.error('[Supabase] Load leaderboard failed:', dbErr);
               } else if (dbScores && dbScores.length > 0) {
+                dbScoresRaw = dbScores;
                 dbScores.forEach(row => {
                   dbScoresMap[String(row.student_id)] = row.xp;
                   if (row.student_name) dbScoresMap[row.student_name.toLowerCase().trim()] = row.xp;
@@ -5801,6 +5803,20 @@
             }
           }
 
+          // BƯỚC XÁC MINH AUDIT BẮT BUỘC TRƯỚC KHI RENDER LEADERBOARD
+          const validStudentIds = new Set(studentsList.map(s => String(s.id)));
+          let validScoresCount = 0;
+          let orphanScoresCount = 0;
+
+          dbScoresRaw.forEach(score => {
+            if (score && score.student_id && validStudentIds.has(String(score.student_id))) {
+              validScoresCount++;
+            } else {
+              orphanScoresCount++;
+              console.log(`ORPHAN SCORE:\nstudent_id = ${score ? score.student_id : 'null'}\n→ NOT FOUND IN public.students\n→ EXCLUDED FROM LEADERBOARD`);
+            }
+          });
+
           const currentStudentName = localStorage.getItem("studentName") || "Bé Nam";
           const currentStudentClass = localStorage.getItem("studentClass") || "2AI";
           const currentStudentXP = parseInt(localStorage.getItem("userXP")) || 450;
@@ -5810,6 +5826,8 @@
           let filteredStudents = (selectedClass === "ALL" || !selectedClass)
             ? studentsList
             : studentsList.filter(s => s && (s.classId === selectedClass || s.class_id === selectedClass));
+
+          console.log(`LEADERBOARD VALIDATION:\n- total students from Supabase: ${studentsList.length}\n- total game scores: ${dbScoresRaw.length}\n- valid scores: ${validScoresCount}\n- orphan scores removed: ${orphanScoresCount}\n- students rendered: ${filteredStudents.length}`);
 
           // 2. Tổng hợp dữ liệu xếp hạng từ Supabase
           let mergedData = filteredStudents.map(student => {
