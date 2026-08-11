@@ -5227,6 +5227,13 @@
                 username: username,
                 password: password
               }).eq('username', username);
+
+              // ĐỒNG BỘ 2 CHIỀU: Cập nhật teacher_username vào public.classes
+              if (checkedClasses && checkedClasses.length > 0) {
+                for (let cId of checkedClasses) {
+                  await activeClient.from('classes').update({ teacher_username: username }).eq('id', cId);
+                }
+              }
             } catch (err) {
               console.warn('[Supabase Update Teacher Error]:', err);
             }
