@@ -3002,14 +3002,34 @@
       if (teacherBtn) teacherBtn.style.display = isTeacherOrAdmin ? "inline-block" : "none";
       if (teacherTip) teacherTip.style.display = isTeacherOrAdmin ? "block" : "none";
 
-      // Ánh xạ Giáo viên phụ trách theo lớp từ Supabase CSDL
-      const teacherMap = {
-        '2AI': 'Cô Mai',
-        '2A': 'Cô Hường',
-        '2B': 'Thầy Hùng',
-        '2C': 'Cô Lan'
-      };
-      const assignedTeacher = teacherMap[currentClassId] || 'Cô Mai';
+      // Ánh xạ Giáo viên phụ trách theo lớp từ Supabase CSDL (dynamic mapping)
+      let assignedTeacher = "Chưa xác định giáo viên phụ trách";
+      let classesArr = (typeof globalClasses !== "undefined" && Array.isArray(globalClasses)) ? globalClasses : [];
+      let teachersArr = (typeof globalTeachers !== "undefined" && Array.isArray(globalTeachers)) ? globalTeachers : [];
+      let currentClassObj = classesArr.find(c => c && String(c.id).toLowerCase().trim() === String(currentClassId).toLowerCase().trim());
+      let teacherUsername = currentClassObj ? (currentClassObj.teacher_username || "").trim().toLowerCase() : "";
+
+      let assignedTeacherObj = null;
+      if (teacherUsername) {
+        assignedTeacherObj = teachersArr.find(t => t && String(t.username || "").trim().toLowerCase() === teacherUsername);
+      }
+      if (!assignedTeacherObj && teachersArr.length > 0) {
+        assignedTeacherObj = teachersArr.find(t => {
+          if (!t) return false;
+          let classesList = t.assigned_classes;
+          if (typeof classesList === "string") {
+            return classesList.toLowerCase().includes(currentClassId.toLowerCase());
+          } else if (Array.isArray(classesList)) {
+            return classesList.some(c => String(c).toLowerCase().trim() === currentClassId.toLowerCase());
+          }
+          return false;
+        });
+      }
+      if (assignedTeacherObj && (assignedTeacherObj.display_name || assignedTeacherObj.full_name)) {
+        assignedTeacher = (assignedTeacherObj.display_name || assignedTeacherObj.full_name).trim();
+      } else if (assignedTeacherObj && assignedTeacherObj.username) {
+        assignedTeacher = assignedTeacherObj.username.trim();
+      }
 
       // Cập nhật tên giáo viên lên tất cả các phần hiển thị
       const teacherSpans = document.querySelectorAll(".teacher-sign-name, #assigned-teacher-name-span");
@@ -3926,23 +3946,58 @@
             if (scoresWithComments.length === 0) {
               commentBox.innerHTML = `<div style="text-align:center; padding:14px; color:#64748b; font-weight:bold; background:white; border-radius:12px;">💬 Thầy/Cô chưa có nhận xét cho em.</div>`;
             } else {
-              // Ánh xạ Giáo viên phụ trách từ CSDL/lớp
-              const teacherMap = {
-                '2AI': 'Cô Mai',
-                '2A': 'Cô Hường',
-                '2B': 'Thầy Hùng',
-                '2C': 'Cô Lan'
-              };
+              // XÁC ĐỊNH GIÁO VIÊN PHỤ TRÁCH DỰA TRÊN DỮ LIỆU CSDL SUPABASE (PUBLIC.CLASSES & PUBLIC.TEACHERS)
               let classesArr = (typeof globalClasses !== "undefined" && Array.isArray(globalClasses)) ? globalClasses : [];
-              let currentClassObj = classesArr.find(c => String(c.id).toLowerCase().trim() === String(currentStudentClassId).toLowerCase().trim());
-              let teacherDisplayName = teacherMap[currentStudentClassId] || (currentClassObj ? currentClassObj.name : "Giáo viên chủ nhiệm");
+              let teachersArr = (typeof globalTeachers !== "undefined" && Array.isArray(globalTeachers)) ? globalTeachers : [];
+
+              if (teachersArr.length === 0 && activeClient) {
+                try {
+                  const { data: dbT } = await activeClient.from('teachers').select('*');
+                  if (dbT) {
+                    teachersArr = dbT;
+                    globalTeachers = dbT;
+                  }
+                } catch (tErr) {}
+              }
+
+              let currentClassObj = classesArr.find(c => c && String(c.id).toLowerCase().trim() === String(currentStudentClassId).toLowerCase().trim());
+              let classDisplayName = currentClassObj ? (currentClassObj.name || `Lớp ${currentStudentClassId}`) : `Lớp ${currentStudentClassId}`;
+              let teacherUsername = currentClassObj ? (currentClassObj.teacher_username || "").trim().toLowerCase() : "";
+
+              let assignedTeacherObj = null;
+              if (teacherUsername) {
+                assignedTeacherObj = teachersArr.find(t => t && String(t.username || "").trim().toLowerCase() === teacherUsername);
+              }
+
+              if (!assignedTeacherObj && teachersArr.length > 0) {
+                assignedTeacherObj = teachersArr.find(t => {
+                  if (!t) return false;
+                  let classesList = t.assigned_classes;
+                  if (typeof classesList === "string") {
+                    return classesList.toLowerCase().includes(currentStudentClassId.toLowerCase());
+                  } else if (Array.isArray(classesList)) {
+                    return classesList.some(c => String(c).toLowerCase().trim() === currentStudentClassId.toLowerCase());
+                  }
+                  return false;
+                });
+              }
+
+              let teacherDisplayName = "";
+              if (assignedTeacherObj && (assignedTeacherObj.display_name || assignedTeacherObj.full_name)) {
+                teacherDisplayName = (assignedTeacherObj.display_name || assignedTeacherObj.full_name).trim();
+              } else if (assignedTeacherObj && assignedTeacherObj.username) {
+                teacherDisplayName = assignedTeacherObj.username.trim();
+              } else {
+                teacherDisplayName = "Chưa xác định giáo viên phụ trách";
+                console.log(`TEACHER MAPPING ERROR\nclass_id = ${currentStudentClassId}\nteacher_username = ${teacherUsername || 'empty'}\nteacher record = NOT FOUND`);
+              }
 
               commentBox.innerHTML = scoresWithComments.map(item => {
                 let dateStr = item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : "--";
                 return `
                   <div style="background: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; border-left: 4px solid #10b981; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
-                      <span style="font-weight: 800; color: #047857; font-size: 0.95rem;">👨‍🏫 Giáo viên: ${teacherDisplayName} (Lớp ${currentStudentClassId})</span>
+                      <span style="font-weight: 800; color: #047857; font-size: 0.95rem;">👨‍🏫 Giáo viên: ${teacherDisplayName} (${classDisplayName})</span>
                       <span style="font-size: 0.8rem; color: #64748b; font-weight: bold;">📅 ${dateStr}</span>
                     </div>
                     <p style="color: #1e293b; font-size: 0.95rem; line-height: 1.5; margin: 0 0 6px 0; font-weight: 600;">"${item.teacher_comment}"</p>
