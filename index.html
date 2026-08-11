@@ -3337,17 +3337,29 @@
         ];
       }
 
+      const globalSelect = document.getElementById("global-class-select");
+      const adminSelectedClass = globalSelect ? globalSelect.value : (localStorage.getItem("currentClassFilter") || "ALL");
+
+      let filteredClassesList = classes;
+      if (adminSelectedClass && adminSelectedClass !== "ALL") {
+        filteredClassesList = classes.filter(c => String(c.id).toLowerCase().trim() === String(adminSelectedClass).toLowerCase().trim());
+      }
+
       const gridClasses = document.getElementById("admin-classes-grid");
       if (gridClasses) {
-        gridClasses.innerHTML = classes.map(c => `
-          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px; padding: 14px; display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <strong style="display: block; font-size: 1.05rem; color: #0f172a;">${c.name}</strong>
-              <span style="font-size: 0.8rem; color: #64748b;">Mã Lớp: ${c.id}</span>
+        if (filteredClassesList.length === 0) {
+          gridClasses.innerHTML = `<div style="padding:10px; color:#64748b; font-weight:bold;">Không tìm thấy lớp ${adminSelectedClass}</div>`;
+        } else {
+          gridClasses.innerHTML = filteredClassesList.map(c => `
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px; padding: 14px; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <strong style="display: block; font-size: 1.05rem; color: #0f172a;">${c.name}</strong>
+                <span style="font-size: 0.8rem; color: #64748b;">Mã Lớp: ${c.id}</span>
+              </div>
+              <button onclick="handleAdminDeleteClass('${c.id}')" style="background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-weight: 800; cursor: pointer;">✕</button>
             </div>
-            <button onclick="handleAdminDeleteClass('${c.id}')" style="background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-weight: 800; cursor: pointer;">✕</button>
-          </div>
-        `).join('');
+          `).join('');
+        }
       }
 
       // 4. Tải Students
@@ -3357,20 +3369,32 @@
         { id: 103, name: 'Đỗ Hoàng Long', classId: '2AI', xp: 1750, coins: 1250 },
         { id: 104, name: 'Trần Tiến Đạt', classId: '2A', xp: 1500, coins: 1250 }
       ];
+
+      if (adminSelectedClass && adminSelectedClass !== "ALL") {
+        students = students.filter(s => {
+          const sClass = s.class_id || s.classId;
+          return sClass && String(sClass).toLowerCase().trim() === String(adminSelectedClass).toLowerCase().trim();
+        });
+      }
+
       const tbodyStudents = document.getElementById("tbody-admin-students-list");
       if (tbodyStudents) {
-        tbodyStudents.innerHTML = students.map(s => `
-          <tr style="border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 10px;">${s.id}</td>
-            <td style="padding: 10px; font-weight: 800;">${s.name}</td>
-            <td style="padding: 10px;">${s.classId || s.class_id || '2AI'}</td>
-            <td style="padding: 10px; font-weight: 900; color: #16a34a;">⚡ ${s.xp || 450} XP</td>
-            <td style="padding: 10px; font-weight: 900; color: #c2410c;">⭐ ${s.coins || 1250} Xu</td>
-            <td style="padding: 10px; text-align: center;">
-              <button onclick="handleAdminEditStudentXP(${s.id})" style="background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; cursor: pointer;">✏️ Sửa Điểm</button>
-            </td>
-          </tr>
-        `).join('');
+        if (students.length === 0) {
+          tbodyStudents.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:#64748b; font-weight:bold;">Không có học sinh thuộc Lớp ${adminSelectedClass}.</td></tr>`;
+        } else {
+          tbodyStudents.innerHTML = students.map(s => `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 10px;">${s.id}</td>
+              <td style="padding: 10px; font-weight: 800;">${s.name}</td>
+              <td style="padding: 10px;">${s.classId || s.class_id || '2AI'}</td>
+              <td style="padding: 10px; font-weight: 900; color: #16a34a;">⚡ ${s.xp || 450} XP</td>
+              <td style="padding: 10px; font-weight: 900; color: #c2410c;">⭐ ${s.coins || 1250} Xu</td>
+              <td style="padding: 10px; text-align: center;">
+                <button onclick="handleAdminEditStudentXP(${s.id})" style="background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; cursor: pointer;">✏️ Sửa Điểm</button>
+              </td>
+            </tr>
+          `).join('');
+        }
       }
 
       // 5. Tải Bài Thi
@@ -5084,16 +5108,31 @@
           }
         }
 
-        if (!teacherAccounts || teacherAccounts.length === 0) {
+        const globalSelect = document.getElementById("global-class-select");
+        const adminSelectedClass = globalSelect ? globalSelect.value : (localStorage.getItem("currentClassFilter") || "ALL");
+
+        let displayTeachers = teacherAccounts;
+        if (adminSelectedClass && adminSelectedClass !== "ALL") {
+          const clsObj = (typeof globalClasses !== 'undefined' ? globalClasses : []).find(c => String(c.id).toLowerCase().trim() === String(adminSelectedClass).toLowerCase().trim());
+          const teacherUsernameOfClass = clsObj ? clsObj.teacher_username : null;
+
+          displayTeachers = teacherAccounts.filter(t => {
+            const isTeacherOfClass = teacherUsernameOfClass && String(t.username).toLowerCase().trim() === String(teacherUsernameOfClass).toLowerCase().trim();
+            const isAssigned = (t.assignedClasses || t.classes || []).some(cId => String(cId).toLowerCase().trim() === String(adminSelectedClass).toLowerCase().trim());
+            return isTeacherOfClass || isAssigned;
+          });
+        }
+
+        if (!displayTeachers || displayTeachers.length === 0) {
           tbody.innerHTML = `
             <tr style="border-bottom:1px solid #e2e8f0; background:#f8fafc;">
               <td colspan="5" style="padding:20px; text-align:center; color:#64748b; font-weight:800; font-size:14px;">
-                📋 Chưa có tài khoản Giáo viên nào trong CSDL Supabase (public.teachers). Nhấn nút "➕ Thêm Giáo Viên Mới" để tạo!
+                📋 Không có Giáo viên phụ trách lớp được chọn (${adminSelectedClass === "ALL" ? "Tất cả" : adminSelectedClass}).
               </td>
             </tr>
           `;
         } else {
-          tbody.innerHTML = teacherAccounts.map((t) => {
+          tbody.innerHTML = displayTeachers.map((t) => {
             const assignedNames = (t.assignedClasses || t.classes || []).map(cId => {
               const cls = globalClasses.find(c => c.id === cId);
               return cls ? cls.name : cId;
@@ -6326,6 +6365,12 @@
         if (typeof renderGameTaskTable === "function") renderGameTaskTable();
         if (typeof renderExamTable === "function") renderExamTable();
         if (typeof renderTeacherStudentTable === "function") renderTeacherStudentTable();
+
+        // NẾU LÀ TÀI KHOẢN ADMIN -> NẠP LẠI BẢNG VÀ THỐNG KÊ ADMIN THEO BỘ LỌC LỚP HEADER
+        if (role === "admin") {
+          if (typeof renderAdminTeacherTable === "function") renderAdminTeacherTable();
+          if (typeof renderAdminDashboardUI === "function") renderAdminDashboardUI();
+        }
       };
 
       // KHỞI TẠO TỰ ĐỘNG
