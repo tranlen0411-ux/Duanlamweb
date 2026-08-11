@@ -65,24 +65,45 @@ window.supabaseAuth = {
       }
 
       // 1. Insert vào bảng users chung
-      const { data: newUser, error: insertErr } = await activeClient
+      let newUser = null;
+      const userPayload = {
+        username: cleanUsername,
+        password: cleanPassword,
+        full_name: cleanFullName,
+        role: userRole,
+        class_id: userRole === 'student' ? userClass : (userClass || '2A'),
+        xp: 450,
+        coins: 1250,
+        is_active: userRole === 'teacher' ? false : true
+      };
+
+      const { data: insertedData, error: insertErr } = await activeClient
         .from('users')
-        .insert([{
+        .insert([userPayload])
+        .select()
+        .maybeSingle();
+
+      if (insertErr) {
+        console.warn('[Notice primary user insert error, trying core payload]:', insertErr);
+        const corePayload = {
           username: cleanUsername,
           password: cleanPassword,
           full_name: cleanFullName,
           role: userRole,
-          class_id: userRole === 'student' ? userClass : null,
-          xp: 450,
-          coins: 1250,
-          status: userRole === 'teacher' ? 'pending' : 'approved',
-          is_active: userRole === 'teacher' ? false : true
-        }])
-        .select()
-        .single();
+          class_id: userRole === 'student' ? userClass : (userClass || '2A')
+        };
+        const { data: retryData, error: retryErr } = await activeClient
+          .from('users')
+          .insert([corePayload])
+          .select()
+          .maybeSingle();
 
-      if (insertErr) {
-        return { success: false, message: 'Lỗi CSDL: ' + insertErr.message };
+        if (retryErr) {
+          return { success: false, message: 'Lỗi CSDL: ' + (retryErr.message || insertErr.message) };
+        }
+        newUser = retryData;
+      } else {
+        newUser = insertedData;
       }
 
       // 2. Nếu là học sinh -> Insert thêm vào bảng students

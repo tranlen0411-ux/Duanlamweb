@@ -3105,13 +3105,13 @@
         if (window.supabaseAuth && window.supabaseAuth.client) {
           await window.supabaseAuth.client
             .from('users')
-            .update({ status: 'approved', is_active: true })
+            .update({ is_active: true })
             .eq('username', username);
 
           try {
             await window.supabaseAuth.client
               .from('teachers')
-              .update({ status: 'approved', is_active: true })
+              .update({ is_active: true })
               .eq('username', username);
           } catch (tErr) {}
         }
@@ -3141,13 +3141,13 @@
         if (window.supabaseAuth && window.supabaseAuth.client) {
           await window.supabaseAuth.client
             .from('users')
-            .update({ status: 'rejected', is_active: false })
+            .update({ is_active: false })
             .eq('username', username);
 
           try {
             await window.supabaseAuth.client
               .from('teachers')
-              .update({ status: 'rejected', is_active: false })
+              .update({ is_active: false })
               .eq('username', username);
           } catch (tErr) {}
         }
@@ -5098,7 +5098,6 @@
                 full_name: displayName,
                 role: 'teacher',
                 class_id: checkedClasses[0] || '2A',
-                status: 'approved',
                 is_active: true
               }]);
             } catch (err) {
@@ -5147,7 +5146,7 @@
         if (activeClient) {
           try {
             await activeClient.from('teachers').update({ is_active: newActive }).eq('id', tId);
-            await activeClient.from('users').update({ is_active: newActive, status: newActive ? 'approved' : 'pending' }).eq('username', teacher.username);
+            await activeClient.from('users').update({ is_active: newActive }).eq('username', teacher.username);
           } catch (err) {
             console.warn('[Supabase Toggle Active Error]:', err);
           }
