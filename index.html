@@ -5477,6 +5477,94 @@
         }
       };
 
+      // HAM AUDIT READ-ONLY KIỂM TRA TÍNH NHẤT QUÁN DỮ LIỆU CSDL SUPABASE (DATA CONSISTENCY AUDIT)
+      window.auditDataConsistency = async function() {
+        console.log("=== 🔍 SUPABASE DATA CONSISTENCY AUDIT ===");
+        const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
+        if (!activeClient) {
+          console.warn("⚠️ Supabase client chưa sẵn sàng.");
+          return [];
+        }
+
+        try {
+          const { data: dbUsers } = await activeClient.from('users').select('*');
+          const { data: dbTeachers } = await activeClient.from('teachers').select('*');
+          const { data: dbClasses } = await activeClient.from('classes').select('*');
+          const { data: dbStudents } = await activeClient.from('students').select('*');
+          const { data: dbExams } = await activeClient.from('exam_scores').select('*');
+          const { data: dbGames } = await activeClient.from('game_scores').select('*');
+
+          const auditResults = [];
+
+          (dbUsers || []).filter(u => u.role === 'teacher').forEach(u => {
+            const match = (dbTeachers || []).find(t => t.username === u.username);
+            auditResults.push({
+              Category: "1. Users Teacher -> Profile",
+              Item: u.username,
+              Status: match ? "MATCH 🟢" : "MISMATCH 🔴 (Thiếu hồ sơ teachers)",
+              Detail: match ? `Display: ${match.display_name}` : "Không có trong public.teachers"
+            });
+          });
+
+          (dbTeachers || []).forEach(t => {
+            const match = (dbUsers || []).find(u => u.username === t.username);
+            auditResults.push({
+              Category: "2. Teachers -> Users Acct",
+              Item: t.username,
+              Status: match ? "MATCH 🟢" : "MISMATCH 🔴 (Thiếu tài khoản users)",
+              Detail: match ? `Role: ${match.role}` : "Không có trong public.users"
+            });
+          });
+
+          (dbClasses || []).forEach(c => {
+            const teacher = (dbTeachers || []).find(t => t.username === c.teacher_username);
+            const inAssigned = teacher && (teacher.assigned_classes || []).includes(c.id);
+            auditResults.push({
+              Category: "3. Class -> Teacher Sync",
+              Item: `Class ${c.id}`,
+              Status: c.teacher_username ? (inAssigned ? "MATCH 🟢" : "MISMATCH 🟡 (Chưa sync assigned_classes)") : "UNASSIGNED 🔵",
+              Detail: `teacher_username: ${c.teacher_username || 'None'}`
+            });
+          });
+
+          (dbStudents || []).forEach(s => {
+            const match = (dbClasses || []).find(c => String(c.id).toLowerCase().trim() === String(s.class_id).toLowerCase().trim());
+            auditResults.push({
+              Category: "4. Student -> Class ID",
+              Item: `Student ID ${s.id} (${s.name})`,
+              Status: match ? "MATCH 🟢" : "INVALID CLASS 🔴",
+              Detail: `class_id: ${s.class_id}`
+            });
+          });
+
+          (dbExams || []).forEach(e => {
+            const match = (dbStudents || []).find(s => String(s.id) === String(e.student_id));
+            auditResults.push({
+              Category: "5. Exam -> Student ID",
+              Item: `Exam ID ${e.id} (student_id ${e.student_id})`,
+              Status: match ? "MATCH 🟢" : "ORPHAN EXAM 🔴",
+              Detail: `student_name: ${e.student_name}`
+            });
+          });
+
+          (dbGames || []).forEach(g => {
+            const match = (dbStudents || []).find(s => String(s.id) === String(g.student_id));
+            auditResults.push({
+              Category: "6. Game -> Student ID",
+              Item: `Game Score ID ${g.id} (student_id ${g.student_id})`,
+              Status: match ? "MATCH 🟢" : "ORPHAN GAME 🔴",
+              Detail: `category: ${g.category_key}`
+            });
+          });
+
+          console.table(auditResults);
+          return auditResults;
+        } catch (err) {
+          console.error("Lỗi khi chạy auditDataConsistency():", err);
+          return [];
+        }
+      };
+
       // LOGIC KẾT HỢP 2 TẦNG BỘ LỌC (FÚT 4): HEADER FILTER ∩ RANKING FILTER
       window.getEffectiveRankingClassFilter = function() {
         const headerSelect = document.getElementById("global-class-select");
