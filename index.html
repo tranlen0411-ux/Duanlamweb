@@ -5477,9 +5477,9 @@
         }
       };
 
-      // HAM AUDIT READ-ONLY KIỂM TRA TÍNH NHẤT QUÁN DỮ LIỆU CSDL SUPABASE (DATA CONSISTENCY AUDIT)
-      window.auditDataConsistency = async function() {
-        console.log("=== 🔍 SUPABASE DATA CONSISTENCY AUDIT ===");
+      // HAM AUDIT READ-ONLY KIỂM TRA TÍNH NHẤT QUÁN DỮ LIỆU CSDL SUPABASE (DATA INTEGRITY AUDIT)
+      window.auditDataIntegrity = window.auditDataConsistency = async function() {
+        console.log("=== 🔍 SUPABASE DATA INTEGRITY AUDIT ===");
         const activeClient = window.supabaseClient || (window.supabaseAuth && window.supabaseAuth.client);
         if (!activeClient) {
           console.warn("⚠️ Supabase client chưa sẵn sàng.");
@@ -5496,71 +5496,89 @@
 
           const auditResults = [];
 
+          // 1. Audit Teacher Accounts in Users
           (dbUsers || []).filter(u => u.role === 'teacher').forEach(u => {
             const match = (dbTeachers || []).find(t => t.username === u.username);
+            let status = "MATCH 🟢";
+            let detail = `Profile display: ${match ? match.display_name : 'None'}`;
+            if (!match) {
+              status = "NEEDS_REVIEW 🟡";
+              detail = "Tài khoản users role='teacher' chưa có hồ sơ teachers (Giữ nguyên không tự xóa)";
+            }
             auditResults.push({
               Category: "1. Users Teacher -> Profile",
               Item: u.username,
-              Status: match ? "MATCH 🟢" : "MISMATCH 🔴 (Thiếu hồ sơ teachers)",
-              Detail: match ? `Display: ${match.display_name}` : "Không có trong public.teachers"
+              Status: status,
+              Detail: detail
             });
           });
 
+          // 2. Audit Teachers -> Users Accounts
           (dbTeachers || []).forEach(t => {
             const match = (dbUsers || []).find(u => u.username === t.username);
+            let status = "MATCH 🟢";
+            let detail = `Users Role: ${match ? match.role : 'None'}`;
+            if (!match) {
+              status = "NEEDS_REVIEW 🟡";
+              detail = "Giáo viên trong teachers chưa có tài khoản users (Giữ nguyên không tự xóa)";
+            }
             auditResults.push({
               Category: "2. Teachers -> Users Acct",
               Item: t.username,
-              Status: match ? "MATCH 🟢" : "MISMATCH 🔴 (Thiếu tài khoản users)",
-              Detail: match ? `Role: ${match.role}` : "Không có trong public.users"
+              Status: status,
+              Detail: detail
             });
           });
 
+          // 3. Audit Class Teacher Assignment Sync
           (dbClasses || []).forEach(c => {
             const teacher = (dbTeachers || []).find(t => t.username === c.teacher_username);
             const inAssigned = teacher && (teacher.assigned_classes || []).includes(c.id);
             auditResults.push({
               Category: "3. Class -> Teacher Sync",
               Item: `Class ${c.id}`,
-              Status: c.teacher_username ? (inAssigned ? "MATCH 🟢" : "MISMATCH 🟡 (Chưa sync assigned_classes)") : "UNASSIGNED 🔵",
-              Detail: `teacher_username: ${c.teacher_username || 'None'}`
+              Status: c.teacher_username ? (inAssigned ? "MATCH 🟢" : "MISMATCH 🟡 (Cache assigned_classes chưa sync)") : "UNASSIGNED 🔵",
+              Detail: `classes.teacher_username: ${c.teacher_username || 'None'}`
             });
           });
 
+          // 4. Audit Student Class IDs
           (dbStudents || []).forEach(s => {
             const match = (dbClasses || []).find(c => String(c.id).toLowerCase().trim() === String(s.class_id).toLowerCase().trim());
             auditResults.push({
               Category: "4. Student -> Class ID",
               Item: `Student ID ${s.id} (${s.name})`,
               Status: match ? "MATCH 🟢" : "INVALID CLASS 🔴",
-              Detail: `class_id: ${s.class_id}`
+              Detail: `students.class_id: ${s.class_id}`
             });
           });
 
+          // 5. Audit Exam Scores Student IDs
           (dbExams || []).forEach(e => {
             const match = (dbStudents || []).find(s => String(s.id) === String(e.student_id));
             auditResults.push({
               Category: "5. Exam -> Student ID",
               Item: `Exam ID ${e.id} (student_id ${e.student_id})`,
-              Status: match ? "MATCH 🟢" : "ORPHAN EXAM 🔴",
+              Status: match ? "MATCH 🟢" : "ORPHAN 🔴",
               Detail: `student_name: ${e.student_name}`
             });
           });
 
+          // 6. Audit Game Scores Student IDs
           (dbGames || []).forEach(g => {
             const match = (dbStudents || []).find(s => String(s.id) === String(g.student_id));
             auditResults.push({
               Category: "6. Game -> Student ID",
               Item: `Game Score ID ${g.id} (student_id ${g.student_id})`,
-              Status: match ? "MATCH 🟢" : "ORPHAN GAME 🔴",
-              Detail: `category: ${g.category_key}`
+              Status: match ? "MATCH 🟢" : "ORPHAN 🔴",
+              Detail: `category_key: ${g.category_key}`
             });
           });
 
           console.table(auditResults);
           return auditResults;
         } catch (err) {
-          console.error("Lỗi khi chạy auditDataConsistency():", err);
+          console.error("Lỗi khi chạy auditDataIntegrity():", err);
           return [];
         }
       };
